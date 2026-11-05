@@ -59,7 +59,7 @@ Then try it:
 3. Optional: copy [examples/rules.json](examples/rules.json) to `.github/omc/rules.json`, and ask Copilot to run `git push --force`. The `confirm-force-push` rule stops and asks you first.
 4. Run `/omc off rules`, and repeat step 3. Copilot no longer asks because of the rule.
 
-For a one-shot run, use `copilot --experimental --plugin-dir … -p "…" --allow-all-tools`.
+> **Use oh-my-copilot in interactive sessions, not `copilot -p`.** Prompt mode is not supported. Nobody can answer `ask` rules or permission prompts, and if stream rules are on, a fire cancels the run with exit code 1 and the work is lost. A snapshot-before-exit safeguard is on the roadmap.
 
 See [How Copilot picks the anchored tools](#how-copilot-picks-the-anchored-tools).
 
