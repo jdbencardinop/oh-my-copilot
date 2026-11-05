@@ -1,6 +1,6 @@
 // Configuration and kill-switch resolution. Pure: callers pass env and file data.
 
-export const FEATURES = ["hashline", "nudge", "rules"];
+export const FEATURES = ["hashline", "nudge", "rules", "conflicts"];
 
 export function isTruthy(value) {
   return typeof value === "string" && /^(1|true|yes|on)$/i.test(value.trim());

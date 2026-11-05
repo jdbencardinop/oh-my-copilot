@@ -10,7 +10,7 @@ import { createBreaker } from "../plugin/com.github.copilot/extensions/omc/lib/g
 test("defaults: everything on", () => {
   const cfg = resolveConfig();
   assert.equal(cfg.enabled, true);
-  assert.deepEqual(cfg.features, { hashline: true, nudge: true, rules: true });
+  assert.deepEqual(cfg.features, { hashline: true, nudge: true, rules: true, conflicts: true });
   assert.equal(cfg.circuitBreakerThreshold, 3);
 });
 
@@ -39,7 +39,7 @@ test("env kill switches only turn things off", () => {
   assert.equal(cfg.features.rules, false);
   assert.equal(cfg.features.hashline, true);
   assert.equal(resolveConfig({ env: { OMC_DISABLE: "0" } }).enabled, true);
-  assert.deepEqual(parseFeatureList("all"), ["hashline", "nudge", "rules"]);
+  assert.deepEqual(parseFeatureList("all"), ["hashline", "nudge", "rules", "conflicts"]);
 });
 
 test("featureActive requires master switch, feature switch, and an untripped breaker", () => {

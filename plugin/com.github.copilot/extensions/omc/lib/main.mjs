@@ -4,6 +4,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
 import { FEATURES, featureActive, resolveConfig } from "./config.mjs";
+import { ConflictError, conflictHint, createConflictTools } from "./conflicts.mjs";
 import { createJsonCache, findProjectOmcDir, userOmcDir } from "./files.mjs";
 import { createBreaker } from "./guard.mjs";
 import * as hl from "./hashline.mjs";
@@ -287,25 +288,55 @@ export async function start(joinSession) {
     },
   ];
 
+  // ---- conflict tools ------------------------------------------------------
+
+  const conflictsDisabled = () =>
+    failure("oh-my-copilot conflict tools are turned off. Resolve conflicts with the built-in view and edit tools.");
+  const conflictKit = createConflictTools({ getCwd: () => cwd });
+  const conflictTools = conflictKit.tools.map((t) => ({
+    ...t,
+    handler: breaker.wrap(
+      "conflicts",
+      async (args) => {
+        if (!active("conflicts")) return conflictsDisabled();
+        try {
+          return await t.handler(args ?? {});
+        } catch (err) {
+          if (err instanceof ConflictError) return failure(err.message);
+          throw err;
+        }
+      },
+      (_args, _invocation, err) =>
+        err
+          ? failure(`oh-my-copilot internal error (${err?.message ?? err}). Resolve conflicts with the built-in view and edit tools.`)
+          : conflictsDisabled(),
+    ),
+  }));
+
   // ---- tool registration ---------------------------------------------------
 
   // Copilot 1.0.105 rejects setTools from extension connections, so the tool
   // list is fixed at join time there. After the first rejection we stop trying
-  // and rely on the handlers refusing calls while hashline is off.
-  let registered = active("hashline");
+  // and rely on the handlers refusing calls while their feature is off.
+  const toolGroups = [["hashline", tools], ["conflicts", conflictTools]];
+  const wantedTools = () => toolGroups.flatMap(([feature, list]) => (active(feature) ? list : []));
+  const names = (list) => list.map((t) => t.name).join(",");
+  let listed = wantedTools();
+  let registered = listed.includes(tools[0]);
   let setToolsSupported = true;
   async function syncTools() {
-    const want = active("hashline");
-    if (!session || !setToolsSupported || want === registered) return;
+    const want = wantedTools();
+    if (!session || !setToolsSupported || names(want) === names(listed)) return;
     try {
-      await session.setTools(want ? tools : []);
-      registered = want;
+      await session.setTools(want);
+      listed = want;
+      registered = want.includes(tools[0]);
     } catch (err) {
       setToolsSupported = false;
       log(
-        want
-          ? `oh-my-copilot: could not register the anchored tools mid-session (${err?.message ?? err}). Restart Copilot to use them.`
-          : `oh-my-copilot: the anchored tools stay listed until restart (${err?.message ?? err}). While off, they refuse calls.`,
+        want.some((t) => !listed.includes(t))
+          ? `oh-my-copilot: could not register tools mid-session (${err?.message ?? err}). Restart Copilot to use them.`
+          : `oh-my-copilot: its tools stay listed until restart (${err?.message ?? err}). While off, they refuse calls.`,
         "warning",
       );
     }
@@ -332,6 +363,28 @@ export async function start(joinSession) {
     undefined,
   );
 
+  // During a merge, point the model at the conflict tools. Sent again only
+  // when the set of conflicted files changes.
+  const conflictHinted = new Map();
+  const conflictContext = breaker.wrap(
+    "conflicts",
+    async (_input, invocation) => {
+      if (!listed.includes(conflictTools[0]) || !active("conflicts") || !active("nudge")) return undefined;
+      const id = invocation?.sessionId ?? "";
+      const paths = await conflictKit.unmergedPaths(cwd);
+      if (paths === null) return undefined;
+      if (paths.length === 0) {
+        conflictHinted.delete(id);
+        return undefined;
+      }
+      const key = paths.join("\0");
+      if (conflictHinted.get(id) === key) return undefined;
+      conflictHinted.set(id, key);
+      return conflictHint(paths);
+    },
+    undefined,
+  );
+
   // ---- /omc command --------------------------------------------------------
 
   const statusText = () => {
@@ -340,7 +393,7 @@ export async function start(joinSession) {
     const feature = (f) => {
       const on = featureActive(st, f);
       const why = tripped.has(f) ? "tripped by circuit breaker" : st.featureOrigin[f];
-      return `  ${f.padEnd(9)}${on ? "on " : "off"}  (${why})`;
+      return `  ${f.padEnd(10)}${on ? "on " : "off"}  (${why})`;
     };
     return [
       `oh-my-copilot ${VERSION}: ${st.enabled ? "active" : "OFF"} (${st.enabledOrigin})`,
@@ -402,7 +455,7 @@ export async function start(joinSession) {
   // ---- join ----------------------------------------------------------------
 
   session = await joinSession({
-    tools: registered ? tools : [],
+    tools: listed,
     commands: [
       {
         name: "omc",
@@ -432,7 +485,10 @@ export async function start(joinSession) {
         try {
           if (input?.workingDirectory) cwd = input.workingDirectory;
           void syncTools();
-          return await nudgeContext(input, invocation);
+          const parts = [(await nudgeContext(input, invocation))?.additionalContext];
+          parts.push(await conflictContext(input, invocation));
+          const text = parts.filter(Boolean).join("\n\n");
+          return text ? { additionalContext: text } : undefined;
         } catch (err) {
           warnOnce(`nudge hook error: ${err?.message ?? err}`);
           return undefined;

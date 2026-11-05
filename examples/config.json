@@ -3,7 +3,8 @@
   "features": {
     "hashline": true,
     "nudge": true,
-    "rules": true
+    "rules": true,
+    "conflicts": true
   },
   "circuitBreakerThreshold": 3
 }

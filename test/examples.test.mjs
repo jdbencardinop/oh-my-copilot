@@ -26,6 +26,6 @@ test("examples/rules.json compiles and each rule fires as documented", () => {
 test("examples/config.json matches the defaults", () => {
   const cfg = resolveConfig({ layers: [{ source: "example", data: load("config.json") }] });
   assert.equal(cfg.enabled, true);
-  assert.deepEqual(cfg.features, { hashline: true, nudge: true, rules: true });
+  assert.deepEqual(cfg.features, { hashline: true, nudge: true, rules: true, conflicts: true });
   assert.equal(cfg.circuitBreakerThreshold, 3);
 });

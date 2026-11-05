@@ -9,6 +9,9 @@ let root;
 let project;
 let home;
 const savedHome = process.env.COPILOT_HOME;
+const ANCHORED = ["read_anchored", "edit_anchored"];
+const CONFLICT_TOOLS = ["list_conflicts", "resolve_conflicts"];
+const ALL_TOOLS = [...ANCHORED, ...CONFLICT_TOOLS];
 
 before(() => {
   root = mkdtempSync(join(tmpdir(), "omc-main-"));
@@ -65,7 +68,7 @@ async function boot({ rejectSetTools = false } = {}) {
 test("joins exactly once and registers tools, hook, and /omc", async () => {
   const h = await boot();
   assert.equal(h.joins(), 1);
-  assert.deepEqual(h.config.tools.map((t) => t.name), ["read_anchored", "edit_anchored"]);
+  assert.deepEqual(h.config.tools.map((t) => t.name), ALL_TOOLS);
   assert.equal(typeof h.config.hooks.onPreToolUse, "function");
   assert.equal(typeof h.config.hooks.onUserPromptSubmitted, "function");
   assert.deepEqual(h.config.commands.map((c) => c.name), ["omc"]);
@@ -111,7 +114,7 @@ test("/omc off removes tools and silences rules; /omc on restores them", async (
   assert.match(refused.textResultForLlm, /built-in view and edit/);
 
   await h.command("on");
-  assert.deepEqual(h.toolSets.at(-1), ["read_anchored", "edit_anchored"]);
+  assert.deepEqual(h.toolSets.at(-1), ALL_TOOLS);
   assert.equal((await h.pre("bash", { command: "echo FORBIDDEN" })).permissionDecision, "deny");
 
   await h.command("off rules");
@@ -145,7 +148,7 @@ test("project config applies once the session reports its working directory", as
     const h = await boot();
     assert.equal((await h.pre("bash", { command: "FORBIDDEN" })).permissionDecision, "deny");
     await new Promise((r) => setImmediate(r));
-    assert.deepEqual(h.toolSets.at(-1), [], "anchored tools removed");
+    assert.deepEqual(h.toolSets.at(-1), CONFLICT_TOOLS, "anchored tools removed");
     const refused = await h.tool("read_anchored").handler({ path: "a.txt" }, {});
     assert.equal(refused.resultType, "failure");
   } finally {
@@ -158,7 +161,7 @@ test("OMC_DISABLE_FEATURES turns a feature off and /omc cannot override it", asy
   process.env.OMC_DISABLE_FEATURES = "rules";
   try {
     const h = await boot();
-    assert.equal(h.config.tools.length, 2);
+    assert.equal(h.config.tools.length, 4);
     assert.equal(await h.pre("bash", { command: "FORBIDDEN" }), undefined);
     await h.command("on rules");
     assert.equal(await h.pre("bash", { command: "FORBIDDEN" }), undefined);
@@ -172,7 +175,7 @@ test("invalid project config is ignored with a warning", async () => {
   writeFileSync(join(project, ".github", "omc", "config.json"), "{ not json");
   try {
     const h = await boot();
-    assert.equal(h.config.tools.length, 2);
+    assert.equal(h.config.tools.length, 4);
     await h.pre("bash", { command: "echo ok" });
     assert.ok(h.logs.some((l) => l.level === "warning" && /invalid config/.test(l.message)));
   } finally {
@@ -277,7 +280,7 @@ test("nudge: not sent when the anchored tools were not registered at join", asyn
   let h;
   try {
     h = await boot({ rejectSetTools: true });
-    assert.deepEqual(h.config.tools, []);
+    assert.deepEqual(h.config.tools.map((t) => t.name), CONFLICT_TOOLS);
     assert.equal(await h.prompt(), undefined);
   } finally {
     rmSync(userConfig);

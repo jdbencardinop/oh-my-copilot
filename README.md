@@ -4,9 +4,10 @@
 
 oh-my-copilot is a GitHub Copilot CLI plugin that brings ideas from [oh-my-pi](https://github.com/can1357/oh-my-pi) to Copilot. It is a proof of concept, tested on Copilot CLI 1.0.105.
 
-It adds three things to Copilot:
+It adds four things to Copilot:
 
 - **Hash-anchored editing.** `read_anchored` shows each line as `LINE:HASH|content`. `edit_anchored` then edits by anchor, for example `12:ab`, instead of retyping the old text. If the file changed since it was read, the edit is rejected and nothing is written. The plugin tells the model to prefer these tools, so you do not have to.
+- **Merge-conflict tools.** `list_conflicts` gives each conflict an id and shows ours, base and theirs. `resolve_conflicts` resolves conflicts by id with `ours`, `theirs`, `base`, both sides, or custom text. See [Resolve merge conflicts](#resolve-merge-conflicts).
 - **Tool-call rules.** Regex rules in `rules.json` run before every tool call. A rule can deny the call, ask the user, or add a note for the model.
 - **A `/omc` command.** It shows status and turns features on or off for the current session.
 
@@ -77,20 +78,39 @@ Use `read_anchored` and `edit_anchored` to read and edit existing text files, in
 
 To keep the anchored tools but stop the note, use `/omc off nudge`, `OMC_DISABLE_FEATURES=nudge`, or `{"features": {"nudge": false}}`. Then you can still ask for the tools in a prompt (for example, "Use the read_anchored and edit_anchored tools to read and edit files."), or put the text above in `~/.copilot/copilot-instructions.md` or `.github/copilot-instructions.md`. The sentence "If these tools are not available…" keeps that fallback working when the plugin is off.
 
+## Resolve merge conflicts
+
+The `conflicts` feature adds two tools, modeled on oh-my-pi's `conflict://` handles:
+
+- **`list_conflicts`** lists the conflicts in every unmerged file (from `git ls-files -u`), or in the files or folders you pass. Each conflict gets an id such as `src/app.js#2@k3vq7m`, plus its line range, the ours, base and theirs lines with their labels, and two lines of context. The base appears only with `merge.conflictStyle=diff3` or `zdiff3`.
+- **`resolve_conflicts`** takes a list of `{id, resolution, content?}`. `resolution` is `ours`, `theirs`, `base`, `both-ours-first`, `both-theirs-first`, or `custom` with `content`.
+
+What it guarantees:
+
+- **Each file is all-or-nothing.** One bad id or resolution means that file is not written.
+- **Stale ids are rejected.** The id ends with a hash of the conflict, so if the conflict changed since it was listed, the call fails and asks for a fresh list. The hash also covers the line before and after the conflict, so resolving one conflict does not invalidate the ids of the others. If two conflicts in a file have identical content, their ids go stale on any change to the file instead of risking the wrong one.
+- **The file format is kept.** Line endings (LF or CRLF), a byte-order mark, and a missing final newline stay as they were.
+- **Nothing is staged unless you ask.** The result names the files with no conflicts left and suggests `git add`. Pass `stage: true` to run `git add` on them.
+- **It stays inside the project.** Paths are relative to the session's working directory, and paths outside the repository root are refused.
+
+While a merge, cherry-pick, revert or rebase is in progress, the first prompt also gets a short hidden note that lists the conflicted files and points the model at these tools. It is sent again only when that list changes, and only while `conflicts` and `nudge` are on. Outside those operations no git command runs; during them the check uses read-only git commands and gives up after 2 seconds. In a live check with Claude Haiku 4.5, the model resolved a two-conflict merge in two calls (`list_conflicts`, then `resolve_conflicts` with `theirs` and `ours`).
+
+To turn the tools off, use `/omc off conflicts`, `OMC_DISABLE_FEATURES=conflicts`, or `{"features": {"conflicts": false}}`. Like the anchored tools, they stay listed after `/omc off` and refuse calls.
+
 ## Turn it off
 
 You can return to plain Copilot without uninstalling anything:
 
 | When | Do this |
 |---|---|
-| Right now, this session only | `/omc off`, or `/omc off <feature>` for one feature (`hashline`, `nudge`, `rules`) |
+| Right now, this session only | `/omc off`, or `/omc off <feature>` for one feature (`hashline`, `nudge`, `rules`, `conflicts`) |
 | Next launch only | Start Copilot with `OMC_DISABLE=1`, or `OMC_DISABLE_FEATURES=rules` |
 | Every session | `copilot plugin disable oh-my-copilot` |
 | Every session, keeping the plugin enabled | Add `"extensions": {"disabledExtensions": ["plugin:oh-my-copilot:omc"]}` to `~/.copilot/settings.json` |
 | One project | Put `{"enabled": false}` in `.github/omc/config.json` |
 | All extensions | Set `"extensions": {"mode": "disabled"}` in `~/.copilot/settings.json` |
 
-**After `/omc off`, the anchored tools are still listed.** Copilot does not let an extension remove its tools mid-session. They refuse calls, so the model falls back to the built-in tools.
+**After `/omc off`, the plugin's tools are still listed.** Copilot does not let an extension remove its tools mid-session. They refuse calls, so the model falls back to the built-in tools.
 
 oh-my-copilot also protects itself:
 
@@ -108,7 +128,7 @@ oh-my-copilot reads two optional files from each of two places. Project files ta
 
 It looks for the project folder from the session's working directory upward, and stops at the repository root. Edits to these files take effect on the next tool call. `/omc reload` re-reads them and clears any `/omc` overrides.
 
-`config.json` accepts `enabled`, `features.hashline`, `features.nudge`, `features.rules`, and `circuitBreakerThreshold`. `nudge` only has an effect while `hashline` is on. See [examples/config.json](examples/config.json).
+`config.json` accepts `enabled`, `features.hashline`, `features.nudge`, `features.rules`, `features.conflicts`, and `circuitBreakerThreshold`. `nudge` controls the hidden notes: the anchored-tools note (only while `hashline` is on) and the merge-conflict note (only while `conflicts` is on). See [examples/config.json](examples/config.json).
 
 ### Rules
 

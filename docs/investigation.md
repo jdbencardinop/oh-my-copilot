@@ -146,7 +146,7 @@ Use a plugin with an extension at its core. None of the options is enough alone.
 | `ast_edit`, `ast_grep` | Missing | MCP server or an extension tool wrapping ast-grep |
 | `eval` kernels | Missing (shell only) | MCP server |
 | Universal `read` and URL schemes | Partial (web fetch, GitHub MCP) | Extension tools, for example `read_uri` |
-| Conflict resolution | Missing | Extension tool |
+| Conflict resolution | Missing | **Done in the proof of concept** (`list_conflicts`, `resolve_conflicts`, behind the `conflicts` feature) |
 | `omp commit` | Missing | Skill plus extension helpers |
 | Memory | Built in (`/memory`) | Native; compare later |
 | Advisor model | Missing | Needs design: a hook plus a second model call |
@@ -179,8 +179,8 @@ You can always get back to plain Copilot without uninstalling anything.
 | Control | Scope | How | Verified |
 |---|---|---|---|
 | `OMC_DISABLE=1` | One launch | The extension joins with nothing registered | Live |
-| `OMC_DISABLE_FEATURES=rules` | One launch | Comma-separated list of `hashline`, `nudge`, `rules` or `all` | Unit tests |
-| `/omc off`, `/omc on` | This session | Rules stop at once; the anchored tools refuse calls (see the note below) | Live |
+| `OMC_DISABLE_FEATURES=rules` | One launch | Comma-separated list of `hashline`, `nudge`, `rules`, `conflicts` or `all` | Unit tests |
+| `/omc off`, `/omc on` | This session | Rules stop at once; the anchored and conflict tools refuse calls (see the note below) | Live |
 | `/omc off <feature>`, `/omc on <feature>` | This session | Per feature | Unit tests |
 | Config file | User or project | `{"enabled": false}` or `{"features": {"rules": false}}` in `~/.copilot/omc/config.json` or `.github/omc/config.json` | Live (project file) |
 | Circuit breaker | Automatic | A feature turns itself off after three consecutive internal errors. The threshold is configurable; `/omc reset` retries. | Unit tests |
@@ -195,7 +195,7 @@ Precedence works like this:
 
 **`/omc off` cannot remove tools mid-session.** Copilot 1.0.105 does not let an extension remove its own tools ("Extension connections cannot replace SDK external tools"). After `/omc off`:
 
-- `read_anchored` and `edit_anchored` stay listed;
+- `read_anchored`, `edit_anchored`, `list_conflicts` and `resolve_conflicts` stay listed;
 - any call to them returns a message telling the model to use the built-in view and edit tools;
 - if the nudge was already sent, the next prompt tells the model to go back to the built-in tools.
 
@@ -207,12 +207,13 @@ The plugin lives in [`plugin/`](../plugin). It contains one extension, `omc`, wi
 
 - `read_anchored` and `edit_anchored` tools that use the hashline format;
 - a nudge: on the first prompt of a session, hidden context tells the model to prefer those tools (only while `hashline` and `nudge` are on);
+- `list_conflicts` and `resolve_conflicts` tools that resolve merge conflicts by id (`ours`, `theirs`, `base`, both, or custom), plus a hidden note while a merge has conflicts (only while `conflicts` and `nudge` are on);
 - rules from `rules.json` that are checked before each tool call;
 - a `/omc` command for status and toggles.
 
 | Check | Result |
 |---|---|
-| `npm test` (unit tests, integration tests with a fake session, and example files) | 43 passing |
+| `npm test` (unit tests, integration tests with a fake session, and example files) | 64 passing |
 | The model uses `read_anchored`, then `edit_anchored`, to rename a function and append a line | Pass |
 | A `deny` rule blocks a bash command and shows the rule's reason | Pass |
 | A `context` rule reaches the model, which then removed the banned `console.log` | Pass |
@@ -221,6 +222,7 @@ The plugin lives in [`plugin/`](../plugin). It contains one extension, `omc`, wi
 | Installed with `copilot plugin install`, without `--plugin-dir` | Loads and enforces rules |
 | Benchmark: 84 runs, 6 edit tasks, 2 models ([docs/benchmark.md](benchmark.md)) | All runs passed. When prompted to use the anchored tools: 21–25% faster, 37–46% fewer output tokens, 9–14% fewer credits. Unprompted, the models did not use them. |
 | Instructions-file nudge, 8 runs ([spot check](benchmark.md#spot-check-nudging-with-an-instructions-file)) | With the plugin on, both models used the anchored tools in 4 of 4 runs. With the plugin off (`OMC_DISABLE=1`) and the same instructions, 4 of 4 runs used the built-in tools. All 8 passed. |
+| Conflict tools, 3 runs (Claude Haiku 4.5, diff3 merge with 2 conflicts, "keep their timeout and our port") | All 3 results were correct. Run 1, before the conflict note: the model edited the markers with `edit_anchored`. Run 2, tools deferred behind tool search: it could not find them. Run 3, tools always loaded plus the note: `list_conflicts`, then one `resolve_conflicts` call (`theirs`, `ours`); the file was left unstaged. |
 | The plugin's own nudge, 4 runs ([spot check](benchmark.md#spot-check-the-plugins-own-nudge)) | No hint and no instructions file. With the plugin on, 3 of 3 runs (2 Haiku, 1 gpt-6.1-sol) used `read_anchored` and `edit_anchored`. With `OMC_DISABLE=1`, no nudge was sent and the run used `view` and `edit`. All 4 edits were correct. |
 
 ## Open questions and risks
@@ -238,7 +240,7 @@ The plugin lives in [`plugin/`](../plugin). It contains one extension, `omc`, wi
 2. **Package for distribution.** A marketplace manifest, install docs, and a CI job that runs `npm test`.
 3. **Richer rules.** Import Cursor `.mdc` and Cline rules; scope rules by path glob; add `onPostToolUse` checks.
 4. **A stream-rules spike.** Find out whether session events plus `session.abort` can reproduce OMP's mid-stream abort and retry.
-5. **A conflict resolution tool.** Resolve with `@ours`, `@theirs` or `@base` per conflict.
+5. **A conflict resolution tool.** Done: `list_conflicts` and `resolve_conflicts` (the `conflicts` feature). Ids carry a hash of the hunk and its neighboring lines, so stale ids are rejected; hunks with identical content get ids that go stale on any change, so they are never confused; each file is written all-or-nothing; staging is opt-in. Next: binary, delete/modify and rename conflicts, which still need git.
 6. **Structural editing.** ast-grep through an MCP server.
 7. **Git workflow.** A commit-splitting skill with extension helpers.
 8. **Specialist agents.** A reviewer with a P0 to P3 rubric, and an advisor.
