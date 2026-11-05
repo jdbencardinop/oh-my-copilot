@@ -7,10 +7,11 @@ import { featureActive, parseFeatureList, resolveConfig } from "../plugin/com.gi
 import { createJsonCache, findProjectOmcDir } from "../plugin/com.github.copilot/extensions/omc/lib/files.mjs";
 import { createBreaker } from "../plugin/com.github.copilot/extensions/omc/lib/guard.mjs";
 
-test("defaults: everything on", () => {
+test("defaults: everything on except opt-in streamRules", () => {
   const cfg = resolveConfig();
   assert.equal(cfg.enabled, true);
-  assert.deepEqual(cfg.features, { hashline: true, nudge: true, rules: true, conflicts: true });
+  assert.deepEqual(cfg.features, { hashline: true, nudge: true, rules: true, imports: true, streamRules: false, conflicts: true });
+  assert.equal(resolveConfig({ layers: [{ source: "user config", data: { features: { streamRules: true } } }] }).features.streamRules, true);
   assert.equal(cfg.circuitBreakerThreshold, 3);
 });
 
@@ -39,7 +40,14 @@ test("env kill switches only turn things off", () => {
   assert.equal(cfg.features.rules, false);
   assert.equal(cfg.features.hashline, true);
   assert.equal(resolveConfig({ env: { OMC_DISABLE: "0" } }).enabled, true);
-  assert.deepEqual(parseFeatureList("all"), ["hashline", "nudge", "rules", "conflicts"]);
+  assert.deepEqual(parseFeatureList("all"), ["hashline", "nudge", "rules", "imports", "streamRules", "conflicts"]);
+  assert.deepEqual(parseFeatureList("STREAMRULES, streamrules,rules"), ["streamRules", "rules"]);
+  const off = resolveConfig({
+    env: { OMC_DISABLE_FEATURES: "streamrules" },
+    layers: [{ source: "project config", data: { features: { streamRules: true } } }],
+  });
+  assert.equal(off.features.streamRules, false);
+  assert.equal(off.featureOrigin.streamRules, "env OMC_DISABLE_FEATURES");
 });
 
 test("featureActive requires master switch, feature switch, and an untripped breaker", () => {

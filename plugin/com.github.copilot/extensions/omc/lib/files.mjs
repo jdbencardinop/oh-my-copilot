@@ -26,6 +26,19 @@ export function findProjectOmcDir(startDir) {
   }
 }
 
+/** Nearest directory containing ".git", walking up from startDir; startDir itself if none. */
+export function findProjectRoot(startDir) {
+  if (!startDir) return null;
+  const start = resolve(startDir);
+  let dir = start;
+  for (;;) {
+    if (existsSync(join(dir, ".git"))) return dir;
+    const parent = dirname(dir);
+    if (parent === dir) return start;
+    dir = parent;
+  }
+}
+
 /**
  * Read JSON files, re-parsing only when mtime or size changes.
  * Missing files return { data: undefined }; bad JSON returns { error }.
