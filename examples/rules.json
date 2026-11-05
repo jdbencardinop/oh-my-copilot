@@ -29,6 +29,12 @@
       "message": "Files in src/generated are generated. Change the generator and run npm run codegen instead."
     },
     {
+      "id": "no-debugger",
+      "pattern": "\\bdebugger;",
+      "action": "interrupt",
+      "message": "Do not leave debugger statements in code or suggest them in answers."
+    },
+    {
       "id": "tests-failed",
       "when": "post",
       "tools": ["bash"],

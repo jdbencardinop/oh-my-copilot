@@ -37,17 +37,36 @@ after(() => {
   rmSync(root, { recursive: true, force: true });
 });
 
-async function boot({ rejectSetTools = false } = {}) {
+async function boot({ rejectSetTools = false, noOn = false } = {}) {
   const logs = [];
   const toolSets = [];
+  const calls = [];
+  const listeners = [];
   let joins = 0;
   let config;
+  const emit = (ev) => listeners.forEach((l) => l(ev));
   const session = {
+    on: (handler) => {
+      listeners.push(handler);
+      return () => {};
+    },
+    abort: async () => {
+      calls.push("abort");
+      queueMicrotask(() => emit({ type: "session.idle", data: { aborted: true } }));
+    },
+    send: async (opts) => {
+      calls.push(["send", opts.prompt]);
+      return "m";
+    },
+    rpc: { history: { truncate: async ({ eventId }) => calls.push(["truncate", eventId]) } },
     log: async (message, opts) => logs.push({ message, level: opts?.level ?? "info" }),
     setTools: async (tools) => {
       toolSets.push(tools.map((t) => t.name));
       if (rejectSetTools) throw new Error("Extension connections cannot replace SDK external tools");
     },
+  };
+  if (noOn) session.on = () => {
+    throw new Error("not supported");
   };
   await start(async (c) => {
     joins++;
@@ -68,7 +87,9 @@ async function boot({ rejectSetTools = false } = {}) {
   const prompt = async (sessionId = "s1") =>
     (await config.hooks.onUserPromptSubmitted({ prompt: "fix it", workingDirectory: project }, { sessionId }))
       ?.additionalContext;
-  return { config, logs, toolSets, joins: () => joins, tool, pre, post, postFail, command, prompt };
+  const promptText = (text, sessionId = "s1") =>
+    config.hooks.onUserPromptSubmitted({ prompt: text, workingDirectory: project }, { sessionId });
+  return { config, logs, toolSets, calls, emit, listeners, joins: () => joins, tool, pre, post, postFail, command, prompt, promptText };
 }
 
 test("joins exactly once and registers tools, hook, and /omc", async () => {
@@ -591,5 +612,142 @@ test("imports: the per-session glob budget is a hard cap", async () => {
     assert.equal(await h.pre("view", { path: "src/b.ts" }), undefined, "skipped rules are not retried");
     await h.command("status");
     assert.match(h.logs.at(-1).message, /left out \(size limit\): .*g11\.mdc/);
+  });
+});
+
+// ---- stream rules ------------------------------------------------------------
+
+const USER_CONFIG = () => join(home, "omc", "config.json");
+const NO_LOG = { id: "no-log", pattern: "console\\.log", action: "interrupt", message: "Use the logger." };
+const delta = (deltaContent) => ({ type: "assistant.message_delta", data: { messageId: "m1", deltaContent } });
+const toolDelta = (inputDelta, toolName) => ({ type: "assistant.tool_call_delta", data: { toolCallId: "c1", toolName, inputDelta } });
+const tick = () => new Promise((r) => setTimeout(r, 20));
+
+async function withStreamRules(fn) {
+  mkdirSync(join(home, "omc"), { recursive: true });
+  writeFileSync(USER_CONFIG(), JSON.stringify({ features: { streamRules: true } }));
+  try {
+    return await withRules([NO_LOG], fn);
+  } finally {
+    rmSync(USER_CONFIG());
+  }
+}
+
+test("stream rules off by default: no streaming requested; interrupt rules deny tool calls only", async () => {
+  await withRules([NO_LOG], async () => {
+    const h = await boot();
+    assert.equal(Object.hasOwn(h.config, "streaming"), false);
+    assert.equal(Object.hasOwn(h.config, "includeSubAgentStreamingEvents"), false);
+    assert.equal(h.listeners.length, 0);
+    const out = await h.pre("create", { path: "a.js", file_text: "console.log(1)" });
+    assert.equal(out.permissionDecision, "deny");
+    assert.match(out.permissionDecisionReason, /\[omc rule no-log\] Use the logger\./);
+    assert.equal(await h.pre("create", { path: "a.js", file_text: "log(1)" }), undefined);
+    await h.command("on streamRules");
+    assert.match(h.logs.at(-1).message, /Restart Copilot to watch the stream/);
+    await h.command("status");
+    assert.match(h.logs.at(-1).message, /streamRules\s+on\s+\(\/omc\)/);
+    assert.match(h.logs.at(-1).message, /stream rules: not watching \(streamRules was off when Copilot started/);
+    assert.match(h.logs.at(-1).message, /1 interrupt/);
+  });
+});
+
+test("stream rules on: a streamed match aborts, drops the turn, and retries with the rule", async () => {
+  await withStreamRules(async () => {
+    const h = await boot();
+    assert.equal(h.config.streaming, true);
+    assert.equal(h.config.includeSubAgentStreamingEvents, false);
+    await h.promptText("write a hello world script");
+    h.emit({ type: "assistant.turn_start", id: "turn-1", data: {} });
+    h.emit(toolDelta('{"path":"hello.js","file_text":"conso', "create"));
+    h.emit(toolDelta('le.log(1)"}'));
+    await tick();
+    assert.deepEqual(h.calls.slice(0, 2), ["abort", ["truncate", "turn-1"]]);
+    assert.match(h.calls[2][1], /^<system-reminder>\[omc rule no-log\] Use the logger\./);
+    assert.match(h.logs.at(-1).message, /rule no-log interrupted the response \(tool create\)/);
+
+    // The retry prompt passes through the prompt hook without resetting the budget.
+    await h.promptText(h.calls[2][1]);
+    h.emit({ type: "assistant.turn_start", id: "turn-2", data: {} });
+    h.emit(delta("console.log again"));
+    await tick();
+    assert.equal(h.calls.length, 3);
+    // The preToolUse deny still backs it up.
+    assert.equal((await h.pre("create", { path: "a.js", file_text: "console.log(1)" })).permissionDecision, "deny");
+
+    await h.command("status");
+    assert.match(h.logs.at(-1).message, /stream rules: watching the stream; fired 1 time\(s\) this session \(no-log x1\)/);
+  });
+});
+
+test("stream rules: /omc off, rules off, and OMC_DISABLE_FEATURES stop interruptions", async () => {
+  await withStreamRules(async () => {
+    const h = await boot();
+    const fire = async (id) => {
+      await h.promptText(`task ${id}`);
+      h.emit({ type: "assistant.turn_start", id, data: {} });
+      h.emit(delta("console.log"));
+      await tick();
+    };
+    await h.command("off streamRules");
+    await fire("t1");
+    await h.command("on streamRules");
+    await h.command("off rules");
+    await fire("t2");
+    await h.command("on rules");
+    await h.command("off");
+    await fire("t3");
+    assert.deepEqual(h.calls, []);
+    await h.command("on");
+    await fire("t4");
+    assert.equal(h.calls[0], "abort");
+  });
+  await withStreamRules(() =>
+    withEnv("OMC_DISABLE_FEATURES", "streamrules", async () => {
+      const h = await boot();
+      assert.equal(Object.hasOwn(h.config, "streaming"), false);
+      assert.equal((await h.pre("create", { path: "a.js", file_text: "console.log(1)" })).permissionDecision, "deny");
+    }),
+  );
+});
+
+test("stream rules: sub-agent deltas never interrupt the main session", async () => {
+  await withStreamRules(async () => {
+    const h = await boot();
+    await h.promptText("go");
+    h.emit({ type: "assistant.turn_start", id: "turn-1", data: {} });
+    h.emit({ ...delta("console.log"), agentId: "sub-1" });
+    h.emit({ ...toolDelta('{"file_text":"console.log(1)"}', "create"), agentId: "sub-1" });
+    await tick();
+    assert.deepEqual(h.calls, []);
+  });
+});
+
+test("stream rules: glob context sent in a truncated turn is sent again", async () => {
+  await withStreamRules(() =>
+    withFiles(CURSOR, async () => {
+      const h = await boot();
+      await h.promptText("go");
+      h.emit({ type: "assistant.turn_start", id: "turn-1", data: {} });
+      assert.match((await h.pre("view", { path: "src/a.ts" })).additionalContext, /Prefer type aliases/);
+      h.emit(delta("console.log"));
+      await tick();
+      assert.deepEqual(h.calls[1], ["truncate", "turn-1"]);
+      h.emit({ type: "assistant.turn_start", id: "turn-2", data: {} });
+      assert.match((await h.pre("view", { path: "src/a.ts" })).additionalContext, /Prefer type aliases/, "re-sent after truncate");
+      // Marks from earlier, untruncated turns stay.
+      h.emit({ type: "assistant.turn_start", id: "turn-3", data: {} });
+      assert.equal(await h.pre("view", { path: "src/a.ts" }), undefined);
+      await h.command("status");
+      assert.match(h.logs.at(-1).message, /fired 1 time/);
+    }),
+  );
+});
+
+test("stream rules: a session without event support falls back to deny with a warning", async () => {
+  await withStreamRules(async () => {
+    const h = await boot({ noOn: true });
+    assert.ok(h.logs.some((l) => l.level === "warning" && /cannot watch this session/.test(l.message)));
+    assert.equal((await h.pre("create", { path: "a.js", file_text: "console.log(1)" })).permissionDecision, "deny");
   });
 });

@@ -10,7 +10,7 @@ const load = (name) => JSON.parse(readFileSync(new URL(`../examples/${name}`, im
 test("examples/rules.json compiles and each rule fires as documented", () => {
   const { rules, errors } = compileRules(load("rules.json"), "example");
   assert.deepEqual(errors, []);
-  assert.equal(rules.length, 5);
+  assert.equal(rules.length, 6);
   const decide = (tool, args) => toHookOutput(evaluateRules(rules, tool, args, { cwd: "/repo", root: "/repo" }));
 
   assert.equal(decide("bash", { command: "git push --force origin main" }).permissionDecision, "ask");
@@ -27,6 +27,10 @@ test("examples/rules.json compiles and each rule fires as documented", () => {
   assert.equal(decide("edit", { path: "/repo/src/generated/api.ts", old_str: "a", new_str: "b" }).permissionDecision, "deny");
   assert.equal(decide("edit", { path: "/repo/src/api.ts", old_str: "a", new_str: "b" }), undefined);
 
+  // Interrupt rules act as deny for tool calls (the stream part is in stream.test.mjs).
+  assert.equal(decide("create", { path: "a.js", file_text: "debugger;" }).permissionDecision, "deny");
+  assert.deepEqual([...rules.find((r) => r.id === "no-debugger").scope], ["text", "tools"]);
+
   const after = (out) => toPostHookOutput(evaluatePostRules(rules, "bash", { command: "npm test" }, out));
   assert.match(after("FAIL src/a.test.ts\nTests: 1 failed, 3 passed").additionalContext, /tests-failed/);
   assert.match(after("ok 1 - a\nnot ok 2 - b").additionalContext, /tests-failed/);
@@ -36,7 +40,7 @@ test("examples/rules.json compiles and each rule fires as documented", () => {
 test("examples/config.json matches the defaults", () => {
   const cfg = resolveConfig({ layers: [{ source: "example", data: load("config.json") }] });
   assert.equal(cfg.enabled, true);
-  assert.deepEqual(cfg.features, { hashline: true, nudge: true, rules: true, imports: true });
+  assert.deepEqual(cfg.features, { hashline: true, nudge: true, rules: true, imports: true, streamRules: false });
   assert.equal(cfg.circuitBreakerThreshold, 3);
 });
 

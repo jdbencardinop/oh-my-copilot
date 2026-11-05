@@ -166,3 +166,46 @@ test("resultText reads tool result objects and strings", () => {
   assert.equal(resultText("plain"), "plain");
   assert.equal(resultText(null), "");
 });
+
+test("interrupt rules: scope defaults, aliases, and validation", () => {
+  const { rules, errors } = compileRules(
+    {
+      rules: [
+        { id: "plain", pattern: "console\\.log", action: "interrupt" },
+        { id: "tool-bound", tools: ["create"], pattern: "x", action: "interrupt" },
+        { id: "path-bound", paths: "src/**", action: "interrupt" },
+        { id: "alias", pattern: "x", action: "interrupt", scope: ["tool_args", "reasoning"] },
+        { id: "text-only", pattern: "x", action: "interrupt", scope: "text" },
+        { id: "bad-scope", pattern: "x", action: "interrupt", scope: ["stdout"] },
+        { id: "scope-on-deny", pattern: "x", scope: "text" },
+        { id: "text-no-pattern", paths: "a", action: "interrupt", scope: "text" },
+        { id: "post-interrupt", when: "post", pattern: "x", action: "interrupt" },
+      ],
+    },
+    "t",
+  );
+  const scope = (id) => [...rules.find((r) => r.id === id).scope].sort();
+  assert.deepEqual(scope("plain"), ["text", "tools"]);
+  assert.deepEqual(scope("tool-bound"), ["tools"]);
+  assert.deepEqual(scope("path-bound"), ["tools"]);
+  assert.deepEqual(scope("alias"), ["reasoning", "tools"]);
+  assert.deepEqual(scope("text-only"), ["text"]);
+  assert.equal(errors.length, 4);
+  assert.match(errors.join("\n"), /bad-scope.*"scope" must be/);
+  assert.match(errors.join("\n"), /scope-on-deny.*only applies/);
+  assert.match(errors.join("\n"), /text-no-pattern.*"pattern" is required/);
+  assert.match(errors.join("\n"), /post-interrupt.*"action" must be one of context/);
+});
+
+test("interrupt rules deny matching tool calls; text-only ones never touch tools", () => {
+  const { rules } = compileRules({
+    rules: [
+      { id: "no-log", pattern: "console\\.log", action: "interrupt", message: "Use the logger." },
+      { id: "text-only", pattern: "rm -rf", action: "interrupt", scope: "text" },
+    ],
+  });
+  const out = toHookOutput(evaluateRules(rules, "create", { path: "a.js", file_text: "console.log(1)" }));
+  assert.deepEqual(out, { permissionDecision: "deny", permissionDecisionReason: "[omc rule no-log] Use the logger." });
+  assert.equal(toHookOutput(evaluateRules(rules, "edit", { path: "a.js", old_str: "console.log(1)", new_str: "log(1)" })), undefined);
+  assert.equal(toHookOutput(evaluateRules(rules, "bash", { command: "rm -rf build" })), undefined);
+});

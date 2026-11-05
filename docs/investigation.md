@@ -139,7 +139,7 @@ Use a plugin with an extension at its core. None of the options is enough alone.
 | OMP feature | In Copilot today | Plan for oh-my-copilot |
 |---|---|---|
 | Hashline edits | Missing | **Done in the proof of concept** (`read_anchored`, `edit_anchored`) |
-| Stream rules (TTSR) | Missing | **Partly done**: rules check tool calls before they run (`when: "pre"`) and their results after (`when: "post"`), scoped by tool and path glob. A true mid-stream abort and retry would need stream events plus `session.abort`; not investigated yet. |
+| Stream rules (TTSR) | Missing | **Done, opt-in** (`streamRules`, off by default): `"action": "interrupt"` rules watch the streamed reply text, tool-call arguments and, if asked, reasoning. On a match the plugin aborts the response, removes it from history (`history.truncate`), and sends `[omc rule <id>] <message>` as a reminder. Each rule fires once per prompt; at most 3 fires per prompt and 20 per session. With the feature off, the same rules deny matching tool calls. Also: rules check tool calls before they run (`when: "pre"`) and their results after (`when: "post"`), scoped by tool and path glob. Not suited to `-p`: a fire ends the run with exit code 1. |
 | Subagents | Built in | Use native subagents; add custom agents |
 | Plan mode | Built in | Native |
 | Review with a verdict | Built in (`/review`) | Optional reviewer agent with a P0 to P3 rubric |
@@ -181,11 +181,12 @@ You can always get back to plain Copilot without uninstalling anything.
 | Control | Scope | How | Verified |
 |---|---|---|---|
 | `OMC_DISABLE=1` | One launch | The extension joins with nothing registered | Live |
-| `OMC_DISABLE_FEATURES=rules` | One launch | Comma-separated list of `hashline`, `nudge`, `rules`, `imports` or `all` | Unit tests |
+| `OMC_DISABLE_FEATURES=rules` | One launch | Comma-separated list of `hashline`, `nudge`, `rules`, `imports`, `streamRules` or `all` (case-insensitive) | Unit tests |
 | `/omc off`, `/omc on` | This session | Rules stop at once; the anchored tools refuse calls (see the note below) | Live |
 | `/omc off <feature>`, `/omc on <feature>` | This session | Per feature | Unit tests |
 | Config file | User or project | `{"enabled": false}` or `{"features": {"rules": false}}` (any feature name) in `~/.copilot/omc/config.json` or `.github/omc/config.json` | Live (project file) |
 | Circuit breaker | Automatic | A feature turns itself off after three consecutive internal errors. The threshold is configurable; `/omc reset` retries. | Unit tests |
+| Stream rules opt-in | Every session | `streamRules` is the only feature that is off by default. The plugin requests streamed events (`streaming: true` in `joinSession`) only if the feature is on when Copilot starts; otherwise it leaves Copilot's own streaming setting alone. Turning it off mid-session stops interrupts at once; turning it on mid-session only enables the deny fallback until a restart. Abort, truncate and the retry each time out after 5 s. A failed or hung abort counts toward the breaker. If the session does not go idle after the abort, or truncate times out (a late truncate could erase the retry), no retry is sent: the breaker counts a failure and the user is told to send the prompt again. A truncate that fails outright still retries. A failed or hung retry trips the breaker at once. Sub-agent deltas are excluded (`includeSubAgentStreamingEvents: false`, plus an `agentId` check). | Unit tests; live on/off runs |
 | Fail open | Automatic | Internal errors never block a tool call. The entry file loads features lazily, so a broken module cannot stop Copilot. | Unit tests |
 
 Precedence works like this:
@@ -215,12 +216,13 @@ The plugin lives in [`plugin/`](../plugin). It contains one extension, `omc`, wi
 
 | Check | Result |
 |---|---|
-| `npm test` (unit tests, integration tests with a fake session, and example files) | 87 passing |
+| `npm test` (unit tests, integration tests with a fake session, and example files) | 114 passing |
 | The model uses `read_anchored`, then `edit_anchored`, to rename a function and append a line | Pass |
 | A `deny` rule blocks a bash command and shows the rule's reason | Pass |
 | A `context` rule reaches the model, which then removed the banned `console.log` | Pass |
 | `/omc status`, `/omc off` and `/omc on` in interactive mode | Pass |
 | Richer rules, 4 live runs with Haiku | A `paths: ["gen/**"]` deny rule blocked `edit_anchored` on `gen/data.txt`. A post rule matched `bash` output and its note reached the model, which followed it. An `alwaysApply` `.mdc` rule changed every reply. A glob-scoped `.mdc` rule reached the model when it used `create` on a matching file; in a run where the model wrote the file with `bash`, it did not fire (expected: shell commands have no target file). |
+| Stream rules, 3 live runs with Haiku | Rule `no-console-log` (`interrupt`, pattern `console\.log\(`). Interactive with `streamRules` on: the model began a `create` call with `console.log`; the plugin aborted it before it ran, truncated the turn, and sent the reminder. The model retried and wrote `hello.js` with `process.stdout.write`. `/omc status` showed `fired 1 time(s) (no-console-log x1)`. Interactive with the feature off: the `create` call was denied by the fallback, and the model retried without `console.log`. `-p` with the feature on: the CLI shut down when the abort landed, exited 1, and wrote no file. |
 | `OMC_DISABLE=1`, `disabledExtensions`, project `{"enabled": false}`, and a disabled plugin | Plain Copilot behavior in each case |
 | Installed with `copilot plugin install`, without `--plugin-dir` | Loads and enforces rules |
 | Benchmark: 84 runs, 6 edit tasks, 2 models ([docs/benchmark.md](benchmark.md)) | All runs passed. When prompted to use the anchored tools: 21–25% faster, 37–46% fewer output tokens, 9–14% fewer credits. Unprompted, the models did not use them. |
@@ -233,7 +235,7 @@ The plugin lives in [`plugin/`](../plugin). It contains one extension, `omc`, wi
 - **Distribution.** Direct plugin installs from local paths or repositories are deprecated. Long term, publish through a marketplace (`plugin@marketplace`).
 - **Change tracking.** Copilot's "Changes +N -M" counter does not count edits made by extension tools. How `/rewind` treats those edits is untested.
 - **Permissions.** In interactive mode, the custom tools ask for permission unless they are allowed. The proof of concept does not set `skipPermission`.
-- **True stream rules.** Can an extension watch the streamed answer, then abort and retry? Not investigated.
+- **Stream rules rely on experimental runtime behavior.** Stream deltas, `session.abort`, `history.truncate` and resending a prompt from an extension all work in CLI 1.0.105, but none is a documented contract. `-p` mode treats the abort as a cancel and exits 1 before the retry, and there is no way for an extension to detect `-p`, so the feature is off by default. Each fire costs at least one more model request. Sub-agent streams are not watched. Only Claude Haiku deltas were tested live. Matching is limited to a 16 KB tail per argument, message or reasoning block.
 - **Replacing the built-in edit tool.** `overridesBuiltInTool` exists, but the anchored tools are kept separate to avoid breaking Copilot's own editing.
 
 ## Roadmap
@@ -241,7 +243,7 @@ The plugin lives in [`plugin/`](../plugin). It contains one extension, `omc`, wi
 1. **Ship the nudge with the plugin.** Done: the `nudge` feature sends the guidance through `onUserPromptSubmitted`, once per session, and only while the anchored tools are on. A plugin skill was rejected because the model loads it only on demand and the kill switches cannot turn it off. `onSessionStart` was not used because the extension may join after the session starts. A system message from the extension could not be withdrawn mid-session. Next: run the six benchmark tasks on the `omc-nudge` arm.
 2. **Package for distribution.** A marketplace manifest, install docs, and a CI job that runs `npm test`.
 3. **Richer rules.** Done: `paths` globs (with `!` exclusions) relative to the project root; `when: "post"` rules that add context after a tool ran, from its output or the written file; Cursor `.mdc`, `.cursorrules` and Cline rules imported as hidden context (`imports` feature, on by default because Copilot does not read these files); rule files are read once per session, symlinks and paths outside the project root are skipped, and globs use a non-backtracking matcher because repositories supply them). Next: glob-scoped rules triggered by shell commands that touch files, and more formats (Windsurf, Codex).
-4. **A stream-rules spike.** Find out whether session events plus `session.abort` can reproduce OMP's mid-stream abort and retry.
+4. **Stream rules.** Done, opt-in: `"action": "interrupt"` rules with a `scope` (`text`, `tools`, `reasoning`). With `streamRules` on, the plugin watches deltas, aborts, truncates the aborted turn and retries with the rule as a reminder; with it off, the rules deny matching tool calls. Next: detect `-p` mode if the SDK exposes it, so the feature could default to on in interactive sessions; test GPT models' delta patterns; watch sub-agents.
 5. **A conflict resolution tool.** Resolve with `@ours`, `@theirs` or `@base` per conflict.
 6. **Structural editing.** ast-grep through an MCP server.
 7. **Git workflow.** A commit-splitting skill with extension helpers.

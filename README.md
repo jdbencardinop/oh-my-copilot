@@ -84,7 +84,7 @@ You can return to plain Copilot without uninstalling anything:
 
 | When | Do this |
 |---|---|
-| Right now, this session only | `/omc off`, or `/omc off <feature>` for one feature (`hashline`, `nudge`, `rules`, `imports`) |
+| Right now, this session only | `/omc off`, or `/omc off <feature>` for one feature (`hashline`, `nudge`, `rules`, `imports`, `streamRules`) |
 | Next launch only | Start Copilot with `OMC_DISABLE=1`, or `OMC_DISABLE_FEATURES=rules` |
 | Every session | `copilot plugin disable oh-my-copilot` |
 | Every session, keeping the plugin enabled | Add `"extensions": {"disabledExtensions": ["plugin:oh-my-copilot:omc"]}` to `~/.copilot/settings.json` |
@@ -109,7 +109,7 @@ oh-my-copilot reads two optional files from each of two places. Project files ta
 
 It looks for the project folder from the session's working directory upward, and stops at the repository root. Edits to these files take effect on the next tool call. `/omc reload` re-reads them and clears any `/omc` overrides.
 
-`config.json` accepts `enabled`, `features.hashline`, `features.nudge`, `features.rules`, `features.imports`, and `circuitBreakerThreshold`. `nudge` only has an effect while `hashline` is on. See [examples/config.json](examples/config.json).
+`config.json` accepts `enabled`, `features.hashline`, `features.nudge`, `features.rules`, `features.imports`, `features.streamRules`, and `circuitBreakerThreshold`. Every feature is on by default except `streamRules`; see [Stream rules](#stream-rules). `nudge` only has an effect while `hashline` is on. See [examples/config.json](examples/config.json).
 
 ### Rules
 
@@ -120,7 +120,8 @@ A rules file holds `{"rules": [...]}`. See [examples/rules.json](examples/rules.
 | `pattern` | Yes, unless `paths` or `pathPattern` is set | JavaScript regular expression to match. Without it, every call that passes the other filters matches. |
 | `id` | No | Name shown in messages, as `[omc rule <id>]` |
 | `when` | No | `pre` (default) checks the call before it runs. `post` checks it after it ran; see [Post rules](#post-rules). |
-| `action` | No | `deny` (default), `ask`, or `context`. Post rules only allow `context`, which is also their default. |
+| `action` | No | `deny` (default), `ask`, `context`, or `interrupt`. Post rules only allow `context`, which is also their default. For `interrupt`, see [Stream rules](#stream-rules). |
+| `scope` | No | Only for `interrupt` rules: what the rule watches. See [Stream rules](#stream-rules). |
 | `message` | No | Reason shown to the user and the model |
 | `tools` | No | Tool names to check, for example `["bash"]`. By default every tool is checked. |
 | `paths` | No | Glob, or list of globs, that a target file must match. See [Path globs](#path-globs). |
@@ -156,6 +157,49 @@ When several rules match, `deny` wins over `ask`, and `ask` wins over `context`.
 - Matching does not backtrack, and its cost is capped, so a hostile pattern cannot stall Copilot. A glob is rejected if it is longer than 1,024 characters, or if its `{a,b}` alternatives add up to more than 2,048 path segments. A path longer than 4,096 characters, or with more than 256 segments, never matches.
 
 The target file comes from the tool's `path` argument, or from the file headers of `apply_patch`. Shell commands have no target file, so a `paths` rule never matches `bash`. Add `tools` when a rule should only cover edits: without it, reading a matching file with `view` also matches.
+
+#### Stream rules
+
+An `interrupt` rule can stop the model while it is still writing. This is off by default. The rest of this section explains when to turn it on.
+
+```json
+{ "id": "no-console-log", "action": "interrupt", "pattern": "console\\.log\\(",
+  "message": "Never use console.log in this project. Write output with process.stdout.write instead." }
+```
+
+**With `streamRules` off (the default),** an `interrupt` rule works like a `deny` rule for tool calls: a matching call is refused, and the model sees the message. Text that only appears in the model's reply is ignored. This costs nothing and has no side effects.
+
+**With `streamRules` on,** oh-my-copilot also reads the response as it streams. When the rule matches:
+
+1. it stops the response, before a matching tool call runs;
+2. it removes that unfinished response from the conversation;
+3. it sends the model a reminder, `[omc rule <id>] <message>`, and asks it to redo the work. The chat shows `[omc rule <id>] interrupted; retrying with the rule`.
+
+The `deny` behavior stays as a backstop, in case the call finishes before the stop lands. If the response does not stop cleanly, or removing it from the conversation times out, oh-my-copilot sends no retry. It tells you the rule fired and asks you to send your prompt again.
+
+To turn it on, put `{"features": {"streamRules": true}}` in `~/.copilot/omc/config.json` or `.github/omc/config.json`, then start Copilot. The setting is read when Copilot starts, because that is when the plugin asks Copilot for the streamed response. `/omc on streamRules` in a running session only turns on the `deny` behavior until you restart. `/omc off streamRules`, and every other kill switch, stops it at once.
+
+`scope` picks what the rule watches. It can be a word or a list:
+
+| Scope | Watches |
+|---|---|
+| `text` (or `message`) | The model's reply text |
+| `tools` (or `tool_args`, `tool`) | The arguments of tool calls, using the same `field`, `tools`, `paths` and `pathPattern` as a `deny` rule |
+| `reasoning` | The model's hidden reasoning. Not watched unless you ask, because models often think about what not to do. |
+
+By default a rule watches `text` and `tools`, or only `tools` when it has `tools`, `paths` or `pathPattern`. `text` and `reasoning` need a `pattern`. A `paths` rule waits until the file path has fully streamed in.
+
+Limits:
+
+- each rule fires at most once per prompt you send;
+- at most 3 interruptions per prompt, and 20 per session;
+- a rule does not fire during a prompt that itself matches the rule, so you can still ask about the thing it forbids;
+- responses from sub-agents are not watched;
+- `/omc status` shows whether the stream is watched and how often each rule fired.
+
+> **Warning: do not use stream rules with `copilot -p`.** In prompt mode, Copilot treats the stop as a cancel and exits with code 1 before the retry is sent. The work is not done. Use it in interactive sessions only.
+>
+> **Each interruption costs at least one more model request,** because the model starts its answer again. In a test, one interruption about doubled the AI credits used by a short task.
 
 #### Post rules
 

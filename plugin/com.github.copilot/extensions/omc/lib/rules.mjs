@@ -1,16 +1,20 @@
 // Pattern rules checked before tool calls ("TTSR-lite"), and after them
 // ("when": "post"). A rule costs no context until a tool call matches it.
+// "interrupt" rules are also watched in the model's stream (stream.mjs); here
+// they act as "deny" for tool calls.
 
 import { isAbsolute, relative, resolve } from "node:path";
 import { compileGlobs, normalizePath } from "./glob.mjs";
 
-export const ACTIONS = ["deny", "ask", "context"];
+export const ACTIONS = ["deny", "ask", "context", "interrupt"];
+export const SCOPES = ["text", "tools", "reasoning"];
+const SCOPE_ALIASES = { tool_args: "tools", tool: "tools", message: "text" };
 export const POST_ACTIONS = ["context"];
 export const WHEN = ["pre", "post"];
 
-const COMMAND_TOOLS = new Set(["bash", "powershell", "shell", "run_in_terminal"]);
-const REPLACE_TOOLS = new Set(["edit", "str_replace", "str_replace_editor", "multi_edit"]);
-const CREATE_TOOLS = new Set(["create", "write", "write_file"]);
+export const COMMAND_TOOLS = new Set(["bash", "powershell", "shell", "run_in_terminal"]);
+export const REPLACE_TOOLS = new Set(["edit", "str_replace", "str_replace_editor", "multi_edit"]);
+export const CREATE_TOOLS = new Set(["create", "write", "write_file"]);
 
 /** Validate raw rule objects. Invalid rules are skipped and reported, never thrown. */
 export function compileRules(raw, source = "rules") {
@@ -48,6 +52,7 @@ export function compileRules(raw, source = "rules") {
       if (r.tools !== undefined && !(Array.isArray(r.tools) && r.tools.every((t) => typeof t === "string"))) {
         throw new Error('"tools" must be an array of tool names');
       }
+      if (r.scope !== undefined && action !== "interrupt") throw new Error('"scope" only applies to "action": "interrupt"');
       rules.push({
         id,
         source,
@@ -59,12 +64,37 @@ export function compileRules(raw, source = "rules") {
         regex: r.pattern === undefined ? null : new RegExp(r.pattern, sanitizeFlags(r.flags)),
         pathRegex: r.pathPattern ? new RegExp(r.pathPattern) : null,
         pathGlob: r.paths === undefined ? null : compileGlobs(r.paths),
+        scope: action === "interrupt" ? compileScope(r) : null,
       });
     } catch (err) {
       errors.push(`${source}: rule "${id}" skipped: ${err.message}`);
     }
   });
   return { rules, errors };
+}
+
+/**
+ * Where an interrupt rule is watched. Default: text and tool arguments, or
+ * tool arguments only when the rule is about specific tools or files.
+ */
+function compileScope(r) {
+  if (r.scope === undefined) {
+    const toolBound = r.pattern === undefined || r.paths !== undefined || r.pathPattern !== undefined ||
+      (Array.isArray(r.tools) && r.tools.length && !r.tools.includes("*"));
+    return new Set(toolBound ? ["tools"] : ["text", "tools"]);
+  }
+  const list = typeof r.scope === "string" ? [r.scope] : r.scope;
+  if (!Array.isArray(list) || !list.length) throw new Error(`"scope" must be one or more of ${SCOPES.join(", ")}`);
+  const out = new Set();
+  for (const item of list) {
+    const name = typeof item === "string" ? SCOPE_ALIASES[item] ?? item : item;
+    if (!SCOPES.includes(name)) throw new Error(`"scope" must be one or more of ${SCOPES.join(", ")}`);
+    out.add(name);
+  }
+  if (r.pattern === undefined && (out.has("text") || out.has("reasoning"))) {
+    throw new Error('"pattern" is required for the "text" and "reasoning" scopes');
+  }
+  return out;
 }
 
 function isGlobList(v) {
@@ -156,6 +186,12 @@ function pathFilter(rule, paths, globPaths) {
   return true;
 }
 
+/** True when a rule's "paths"/"pathPattern" filters accept the tool call (or it has none). */
+export function ruleMatchesPaths(rule, toolName, args, opts = {}) {
+  const paths = lazy(() => targetPaths(toolName, args));
+  return pathFilter(rule, paths, lazy(() => paths().map((p) => projectPath(p, opts))));
+}
+
 function lazy(fn) {
   let value;
   let done = false;
@@ -170,6 +206,7 @@ function lazy(fn) {
 
 /**
  * Return the pre-tool rules that match a tool call, grouped by action.
+ * "interrupt" rules with the "tools" scope are reported as "deny".
  * opts.cwd / opts.root make "paths" globs project-relative.
  */
 export function evaluateRules(rules, toolName, args, opts = {}) {
@@ -178,9 +215,11 @@ export function evaluateRules(rules, toolName, args, opts = {}) {
   const globPaths = lazy(() => paths().map((p) => projectPath(p, opts)));
   for (const rule of rules) {
     if (rule.when === "post") continue;
+    if (rule.scope && !rule.scope.has("tools")) continue;
     if (rule.tools && !rule.tools.has(toolName)) continue;
     if (!pathFilter(rule, paths, globPaths)) continue;
-    if (!rule.regex || rule.regex.test(matchText(toolName, args, rule.field))) result[rule.action].push(rule);
+    const bucket = rule.action === "interrupt" ? "deny" : rule.action;
+    if (!rule.regex || rule.regex.test(matchText(toolName, args, rule.field))) result[bucket].push(rule);
   }
   return result;
 }

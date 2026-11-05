@@ -35,6 +35,17 @@ export function createBreaker({ threshold = 3, tripped = new Set(), onError = ()
         tripped.clear();
       }
     },
+    /** Count a failure without a wrapper; failures are only cleared by a wrapped success or reset. */
+    fail(feature, err) {
+      recordFailure(feature, err);
+    },
+    /** Switch a feature off now, for failures that must not be retried. */
+    trip(feature, err) {
+      failures.set(feature, Math.max(threshold, failures.get(feature) ?? 0));
+      if (tripped.has(feature)) return;
+      tripped.add(feature);
+      safeCall(onTrip, feature, err);
+    },
     /** Wrap fn so errors return `fallback` instead of propagating. */
     wrap(feature, fn, fallback) {
       return async (...args) => {

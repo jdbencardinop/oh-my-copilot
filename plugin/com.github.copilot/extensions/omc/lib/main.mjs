@@ -4,7 +4,7 @@
 import { readFileSync, statSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
-import { FEATURES, featureActive, resolveConfig } from "./config.mjs";
+import { FEATURES, canonicalFeature, featureActive, resolveConfig } from "./config.mjs";
 import { createJsonCache, findProjectOmcDir, findProjectRoot, userOmcDir } from "./files.mjs";
 import { createBreaker } from "./guard.mjs";
 import * as hl from "./hashline.mjs";
@@ -19,6 +19,7 @@ import {
   toHookOutput,
   toPostHookOutput,
 } from "./rules.mjs";
+import { createStreamRules } from "./stream.mjs";
 
 export const VERSION = "0.1.0";
 export const EXTENSION_ID = "plugin:oh-my-copilot:omc";
@@ -204,6 +205,34 @@ export async function start(joinSession) {
     undefined,
   );
 
+  // ---- stream rules ----------------------------------------------------------
+  // "interrupt" rules watched in the model's stream. Streaming is requested
+  // only when the feature is on at join (the join config cannot change later),
+  // so with it off the session is exactly as before.
+
+  // Glob-scoped imported rules marked as sent during the current main-agent
+  // turn. If a stream rule truncates that turn, their context is gone from
+  // history, so they are unmarked to be sent again.
+  const turnGlobMarks = [];
+  const streamActive = () => active("rules") && active("streamRules");
+  const stream = createStreamRules({
+    getSession: () => session,
+    getRules: () => loadRules(cwd).rules,
+    isActive: streamActive,
+    pathOpts: () => pathOpts(cwd),
+    log,
+    breaker,
+    onTurnStart: () => {
+      turnGlobMarks.length = 0;
+    },
+    onTruncated: () => {
+      for (const m of turnGlobMarks.splice(0)) {
+        m.st.globs.delete(m.file);
+        m.st.globChars = Math.max(0, m.st.globChars - m.chars);
+      }
+    },
+  });
+
   // ---- imported Cursor / Cline rules ---------------------------------------
 
   // Per session: the rules as read at the first use (files are read once per
@@ -273,12 +302,15 @@ export async function start(joinSession) {
         const sep = out.length ? 2 : 0;
         const room = Math.min(IMPORT_LIMITS.globRuleChars, IMPORT_LIMITS.globSessionChars - st.globChars - sep);
         st.globs.add(rule.file);
+        const mark = { st, file: rule.file, chars: 0 };
+        turnGlobMarks.push(mark);
         const r = room > 0 ? renderGlobRule(rule, room) : { text: "" };
         if (!r.text) {
           importStats.omitted.add(rule.file);
           continue;
         }
-        st.globChars += r.text.length + sep;
+        mark.chars = r.text.length + sep;
+        st.globChars += mark.chars;
         st.sent = true;
         if (r.truncated) importStats.truncated.add(rule.file);
         out.push(r.text);
@@ -513,6 +545,15 @@ export async function start(joinSession) {
     const st = currentState();
     const { rules, sources } = loadRules(cwd);
     const postCount = rules.filter((r) => r.when === "post").length;
+    const interruptCount = rules.filter((r) => r.action === "interrupt").length;
+    const fires = [...stream.stats.byRule].map(([id, n]) => `${id} x${n}`).join(", ");
+    const streamNote = !stream.stats.watching
+      ? featureActive(st, "streamRules")
+        ? "not watching (streamRules was off when Copilot started; restart to watch). Interrupt rules still deny matching tool calls"
+        : "not watching. Interrupt rules deny matching tool calls only"
+      : featureActive(st, "streamRules") && featureActive(st, "rules")
+        ? "watching the stream"
+        : "paused (streamRules or rules is off)";
     const limitNote = [
       importStats.truncated.size ? `truncated: ${[...importStats.truncated].join(", ")}` : "",
       importStats.omitted.size ? `left out (size limit): ${[...importStats.omitted].join(", ")}` : "",
@@ -520,14 +561,19 @@ export async function start(joinSession) {
     const feature = (f) => {
       const on = featureActive(st, f);
       const why = tripped.has(f) ? "tripped by circuit breaker" : st.featureOrigin[f];
-      return `  ${f.padEnd(9)}${on ? "on " : "off"}  (${why})`;
+      return `  ${f.padEnd(12)}${on ? "on " : "off"}  (${why})`;
     };
     return [
       `oh-my-copilot ${VERSION}: ${st.enabled ? "active" : "OFF"} (${st.enabledOrigin})`,
       ...FEATURES.map(feature),
       `  working directory: ${cwd}`,
       `  rules files: ${sources.length ? sources.join(", ") : "none"}` +
-        (sources.length ? ` (${rules.length - postCount} pre, ${postCount} post)` : ""),
+        (sources.length
+          ? ` (${rules.length - postCount} pre, ${postCount} post${interruptCount ? `; ${interruptCount} interrupt` : ""})`
+          : ""),
+      `  stream rules: ${streamNote}; fired ${stream.stats.fires} time(s) this session` +
+        (fires ? ` (${fires})` : "") +
+        ` (caps: ${stream.limits.perPrompt} per prompt, ${stream.limits.perSession} per session)`,
       `  imported rules: ${importSummary()}`,
       `  imported context: ${importStats.sessions ? `sent in ${importStats.sessions} session(s), last ${importStats.alwaysChars} chars` : "not sent yet"}` +
         ` (caps: ${IMPORT_LIMITS.alwaysChars} chars at start, ${IMPORT_LIMITS.globRuleChars} per glob rule, ${IMPORT_LIMITS.globSessionChars} per session)` +
@@ -544,8 +590,9 @@ export async function start(joinSession) {
     `Features: ${FEATURES.join(", ")}.`;
 
   const handleCommand = async ({ args }) => {
-    const [verb = "status", feature] = (args ?? "").trim().toLowerCase().split(/\s+/).filter(Boolean);
-    if (feature && !FEATURES.includes(feature)) return log(`Unknown feature "${feature}". ${usage}`, "warning");
+    const [verb = "status", name] = (args ?? "").trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const feature = name && canonicalFeature(name);
+    if (name && !feature) return log(`Unknown feature "${name}". ${usage}`, "warning");
     switch (verb) {
       case "status":
         return log(statusText());
@@ -560,9 +607,13 @@ export async function start(joinSession) {
         }
         await syncTools();
         const target = feature ? `"${feature}"` : "oh-my-copilot";
+        const restart =
+          value && feature === "streamRules" && !stream.stats.watching
+            ? " Restart Copilot to watch the stream; until then interrupt rules only deny matching tool calls."
+            : "";
         return log(
           `${target} is ${value ? "on" : "off"} for this session.` +
-            (value ? "" : " Copilot's built-in tools and behavior are unaffected."),
+            (value ? restart : " Copilot's built-in tools and behavior are unaffected."),
         );
       }
       case "reload":
@@ -586,7 +637,10 @@ export async function start(joinSession) {
 
   // ---- join ----------------------------------------------------------------
 
+  const watchStream = streamActive();
   session = await joinSession({
+    // Sub-agent deltas are left out: the SDK default would include them.
+    ...(watchStream ? { streaming: true, includeSubAgentStreamingEvents: false } : {}),
     tools: registered ? tools : [],
     commands: [
       {
@@ -640,6 +694,11 @@ export async function start(joinSession) {
       onUserPromptSubmitted: async (input, invocation) => {
         if (input?.workingDirectory) cwd = input.workingDirectory;
         void syncTools();
+        try {
+          if (stream.stats.watching) stream.handlePrompt(input?.prompt);
+        } catch (err) {
+          warnOnce(`stream rules hook error: ${err?.message ?? err}`);
+        }
         let nudge;
         let imported;
         try {
@@ -657,6 +716,14 @@ export async function start(joinSession) {
       },
     },
   });
+  if (watchStream) {
+    try {
+      session.on((ev) => stream.handleEvent(ev));
+      stream.stats.watching = true;
+    } catch (err) {
+      log(`oh-my-copilot: stream rules cannot watch this session (${err?.message ?? err}); interrupt rules only deny tool calls.`, "warning");
+    }
+  }
   for (const [message, level, ephemeral] of pending.splice(0)) log(message, level, ephemeral);
   return session;
 }
