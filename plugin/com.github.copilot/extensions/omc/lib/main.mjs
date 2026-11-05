@@ -58,6 +58,7 @@ const IMPORT_TRIGGER_TOOLS = new Set([
   "write_file",
   "edit_anchored",
   "apply_patch",
+  "resolve_conflicts",
 ]);
 const MAX_POST_FILE_BYTES = 1024 * 1024;
 

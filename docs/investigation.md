@@ -112,7 +112,7 @@ These SDK hooks are available to extensions in 1.0.105:
 
 `onPostToolUse` sees the tool's result and can add context for the model or replace the result. It only fires for successful calls; `onPostToolUseFailure` gets the error text of failed calls and can only add context. Post rules use both, and only add context.
 
-`onUserPromptSubmitted` can add hidden context to a prompt. Copilot appends it to the prompt as a `<system_reminder>` block, and it stays in the conversation. The nudge and the always-on imported rules are built on it; when both apply, they share one block.
+`onUserPromptSubmitted` can add hidden context to a prompt. Copilot appends it to the prompt as a `<system_reminder>` block, and it stays in the conversation. The nudge, the merge-conflict note and the always-on imported rules are built on it; when more than one applies, they share one block, in that order (nudge, conflict note, imported rules).
 
 Things to know before writing an extension:
 
@@ -217,7 +217,7 @@ The plugin lives in [`plugin/`](../plugin). It contains one extension, `omc`, wi
 
 | Check | Result |
 |---|---|
-| `npm test` (unit tests, integration tests with a fake session, and example files) | 150 passing |
+| `npm test` (unit tests, integration tests with a fake session, and example files) | 151 passing |
 | The model uses `read_anchored`, then `edit_anchored`, to rename a function and append a line | Pass |
 | A `deny` rule blocks a bash command and shows the rule's reason | Pass |
 | A `context` rule reaches the model, which then removed the banned `console.log` | Pass |

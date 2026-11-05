@@ -101,6 +101,27 @@ test("paths: globs relative to the project root, with ! exclusions", () => {
   assert.deepEqual(evaluateRules(rules, "create", { path: "src/a.ts", file_text: "any" }).deny.map((r) => r.id), ["ts-only"], "no opts: paths used as given");
 });
 
+test("targetPaths and paths rules cover the conflict tools", () => {
+  assert.deepEqual(
+    targetPaths("resolve_conflicts", {
+      resolutions: [
+        { id: "gen/data.txt#1@abcdef", resolution: "ours" },
+        { id: "conflict://a#b.txt#2@abcd", resolution: "theirs" },
+        { id: "gen/data.txt#3@ghijkl", resolution: "ours" },
+        { id: "bogus", resolution: "ours" },
+      ],
+    }),
+    ["gen/data.txt", "a#b.txt"],
+  );
+  assert.deepEqual(targetPaths("list_conflicts", { path: ["a.txt", "b/c.txt"] }), ["a.txt", "b/c.txt"]);
+  const { rules } = compileRules({ rules: [{ id: "gen", action: "deny", paths: ["gen/**"], message: "generated" }] });
+  const opts = { cwd: "/repo", root: "/repo" };
+  const deny = (args) => evaluateRules(rules, "resolve_conflicts", args, opts).deny.map((r) => r.id);
+  assert.deepEqual(deny({ resolutions: [{ id: "gen/data.txt#1@abcdef", resolution: "ours" }] }), ["gen"]);
+  assert.deepEqual(deny({ resolutions: [{ id: "src/a.txt#1@abcdef", resolution: "ours" }] }), []);
+  assert.deepEqual(evaluateRules(rules, "list_conflicts", { path: ["src", "gen/x.txt"] }, opts).deny.map((r) => r.id), ["gen"]);
+});
+
 test("projectPath", () => {
   assert.equal(projectPath("a/b.ts", { cwd: "/r/sub", root: "/r" }), "sub/a/b.ts");
   assert.equal(projectPath("/r/a.ts", { cwd: "/r", root: "/r" }), "a.ts");

@@ -156,7 +156,14 @@ export function targetPaths(toolName, args) {
   if (args == null) return [];
   const paths = [];
   for (const key of ["path", "file_path", "filePath"]) {
-    if (typeof args[key] === "string") paths.push(args[key]);
+    for (const p of [].concat(args[key] ?? [])) if (typeof p === "string" && p) paths.push(p);
+  }
+  if (toolName === "resolve_conflicts" && Array.isArray(args.resolutions)) {
+    // Ids are "[conflict://]PATH#N@HASH"; the path itself may contain "#".
+    for (const r of args.resolutions) {
+      const m = typeof r?.id === "string" && /^(?:conflict:\/\/)?(.+)#\d+@[0-9a-z]+$/i.exec(r.id.trim());
+      if (m && !paths.includes(m[1])) paths.push(m[1]);
+    }
   }
   if (toolName === "apply_patch") {
     const patch = typeof args === "string" ? args : args.input ?? args.patch;
