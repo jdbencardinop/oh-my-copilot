@@ -1,0 +1,6 @@
+{
+  "id": "makefile-tabs",
+  "file": "Makefile",
+  "compare": "exact",
+  "prompt": "Edit `Makefile`: in the `test` target, add a `$(GO) vet $(PKGS)` step before the test command, and change the test command to `$(GO) test -race -count=1 $(PKGS)`. In the `clean` target, also remove `coverage.out`. Recipe lines must stay tab-indented."
+}

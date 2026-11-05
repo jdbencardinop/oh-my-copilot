@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "features": {
+    "hashline": true,
+    "rules": true
+  },
+  "circuitBreakerThreshold": 3
+}

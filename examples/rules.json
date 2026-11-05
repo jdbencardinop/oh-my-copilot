@@ -1,0 +1,25 @@
+{
+  "rules": [
+    {
+      "id": "confirm-force-push",
+      "tools": ["bash"],
+      "pattern": "git\\s+push\\b.*(--force\\b|--force-with-lease\\b|\\s-f\\b)",
+      "action": "ask",
+      "message": "Force-pushing rewrites shared history. Confirm before running it."
+    },
+    {
+      "id": "no-private-keys",
+      "pattern": "-----BEGIN [A-Z ]*PRIVATE KEY-----",
+      "action": "deny",
+      "message": "This looks like a private key. Do not write credentials into files or commands."
+    },
+    {
+      "id": "no-console-log",
+      "tools": ["edit", "create", "edit_anchored"],
+      "pathPattern": "\\.(ts|tsx)$",
+      "pattern": "console\\.log\\(",
+      "action": "context",
+      "message": "This project uses its logger module instead of console.log."
+    }
+  ]
+}

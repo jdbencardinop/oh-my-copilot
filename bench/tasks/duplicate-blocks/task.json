@@ -1,0 +1,6 @@
+{
+  "id": "duplicate-blocks",
+  "file": "services.yaml",
+  "compare": "trimmed",
+  "prompt": "In `services.yaml`, update only the `inventory` service: set its image tag to `v1.5.0`, `replicas` to 4, the memory request (under `requests`) to `384Mi`, and `LOG_LEVEL` to `debug`. Every other service must stay exactly as it is."
+}

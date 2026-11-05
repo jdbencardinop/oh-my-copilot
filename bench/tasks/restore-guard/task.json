@@ -1,0 +1,6 @@
+{
+  "id": "restore-guard",
+  "file": "hashline.mjs",
+  "compare": "trimmed",
+  "prompt": "Fix the bug in `hashline.mjs`. A guard clause was removed from the `normalizeEdit` function. For replace and delete operations, when the `end` anchor resolves to a line before the `start` anchor, it must throw `new AnchorError(`\"end\" (line ${e}) is before \"start\" (line ${s}).`)` right after `e` is computed. Restore the missing guard clause."
+}

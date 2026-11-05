@@ -1,0 +1,7 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "oh-my-copilot",
+  "version": "0.1.0",
+  "description": "OMP-style harness upgrades for GitHub Copilot CLI: hash-anchored edits and pattern rules, with layered kill switches.",
+  "keywords": ["copilot-cli", "extension", "hashline", "rules"]
+}

@@ -1,0 +1,130 @@
+# Service deployment settings. Each block is applied as-is by the deploy job.
+services:
+  auth:
+    image: registry.example.com/shop/auth:v1.4.2
+    replicas: 2
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    env:
+      LOG_LEVEL: info
+      TIMEOUT_SECONDS: "30"
+    healthcheck:
+      path: /healthz
+      intervalSeconds: 10
+  billing:
+    image: registry.example.com/shop/billing:v1.4.2
+    replicas: 2
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    env:
+      LOG_LEVEL: info
+      TIMEOUT_SECONDS: "30"
+    healthcheck:
+      path: /healthz
+      intervalSeconds: 10
+  catalog:
+    image: registry.example.com/shop/catalog:v1.4.2
+    replicas: 2
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    env:
+      LOG_LEVEL: info
+      TIMEOUT_SECONDS: "30"
+    healthcheck:
+      path: /healthz
+      intervalSeconds: 10
+  checkout:
+    image: registry.example.com/shop/checkout:v1.4.2
+    replicas: 2
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    env:
+      LOG_LEVEL: info
+      TIMEOUT_SECONDS: "30"
+    healthcheck:
+      path: /healthz
+      intervalSeconds: 10
+  inventory:
+    image: registry.example.com/shop/inventory:v1.5.0
+    replicas: 4
+    resources:
+      requests:
+        cpu: 100m
+        memory: 384Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    env:
+      LOG_LEVEL: debug
+      TIMEOUT_SECONDS: "30"
+    healthcheck:
+      path: /healthz
+      intervalSeconds: 10
+  notifications:
+    image: registry.example.com/shop/notifications:v1.4.2
+    replicas: 2
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    env:
+      LOG_LEVEL: info
+      TIMEOUT_SECONDS: "30"
+    healthcheck:
+      path: /healthz
+      intervalSeconds: 10
+  search:
+    image: registry.example.com/shop/search:v1.4.2
+    replicas: 2
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    env:
+      LOG_LEVEL: info
+      TIMEOUT_SECONDS: "30"
+    healthcheck:
+      path: /healthz
+      intervalSeconds: 10
+  shipping:
+    image: registry.example.com/shop/shipping:v1.4.2
+    replicas: 2
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    env:
+      LOG_LEVEL: info
+      TIMEOUT_SECONDS: "30"
+    healthcheck:
+      path: /healthz
+      intervalSeconds: 10

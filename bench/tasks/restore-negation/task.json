@@ -1,0 +1,6 @@
+{
+  "id": "restore-negation",
+  "file": "rules.mjs",
+  "compare": "trimmed",
+  "prompt": "Fix the bug in `rules.mjs`. In the `evaluateRules` function, a negation operator was removed, so a rule restricted to specific tools is skipped for those tools and applied to every other tool instead. Restore the missing negation."
+}

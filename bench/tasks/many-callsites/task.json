@@ -1,0 +1,6 @@
+{
+  "id": "many-callsites",
+  "file": "account.js",
+  "compare": "trimmed",
+  "prompt": "In `account.js`, every function except `renderFooter` must call `fetchUser(id, { cache: true })` instead of `fetchUser(id)`. Leave `renderFooter` unchanged and change nothing else."
+}

@@ -1,0 +1,6 @@
+{
+  "id": "rename-function",
+  "file": "main.mjs",
+  "compare": "trimmed",
+  "prompt": "In `main.mjs`, rename the function `syncTools` to `refreshToolRegistration`, including its declaration and every call site. Change nothing else."
+}
