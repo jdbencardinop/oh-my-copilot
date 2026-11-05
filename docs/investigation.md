@@ -95,7 +95,7 @@ Copilot already covers much of what OMP adds to Pi: subagents, plan mode, LSP, r
 | Plugin | A bundle of everything below | `copilot plugin install`, a marketplace, or `--plugin-dir` | Agent Plugins 1.0 layout: `plugin.json`, `skills/`, `mcp.json`, and `com.github.copilot/{agents,commands,hooks,lsp.json,extensions}` |
 | Extension | Custom tools, slash commands, SDK hooks, session messages | `com.github.copilot/extensions/<name>/extension.mjs` in a plugin. Also `~/.copilot/extensions` and `.github/extensions`. | Runs as a child process over JSON-RPC. Needs `--experimental`. |
 | Skills | Instructions and scripts the model loads on demand | `skills/<name>/SKILL.md` | No code needed |
-| Custom agents | Named agent profiles with their own prompt and tools | `agents/*.agent.md` | Usable as subagents |
+| Custom agents | Named agent profiles with their own prompt and tools | `com.github.copilot/agents/*.agent.md` in a plugin; also `~/.copilot/agents` and `.github/agents` | Usable as subagents. Plugin agents are namespaced, for example `oh-my-copilot:reviewer`. |
 | MCP servers | External tools over MCP | `mcp.json` | Any language |
 | Shell hooks | Commands run on lifecycle events | `hooks.json` | Can deny tool calls |
 | LSP config | Language servers | `lsp.json` | |
@@ -140,14 +140,14 @@ Use a plugin with an extension at its core. None of the options is enough alone.
 | Stream rules (TTSR) | Missing | **Partly done**: rules check tool calls before they run. A true mid-stream abort and retry would need stream events plus `session.abort`; not investigated yet. |
 | Subagents | Built in | Use native subagents; add custom agents |
 | Plan mode | Built in | Native |
-| Review with a verdict | Built in (`/review`) | Optional reviewer agent with a P0 to P3 rubric |
+| Review with a verdict | Built in (`/review`) | **Done**: `reviewer` agent with a P0 to P3 rubric and a `VERDICT:` line |
 | LSP | Built-in config | Ship `lsp.json` presets |
 | Debugger (DAP) | Missing | MCP server |
 | `ast_edit`, `ast_grep` | Missing | MCP server or an extension tool wrapping ast-grep |
 | `eval` kernels | Missing (shell only) | MCP server |
 | Universal `read` and URL schemes | Partial (web fetch, GitHub MCP) | Extension tools, for example `read_uri` |
 | Conflict resolution | Missing | Extension tool |
-| `omp commit` | Missing | Skill plus extension helpers |
+| `omp commit` | Missing | **Done**: `commit` skill with a hunk-staging helper script; no extension code |
 | Memory | Built in (`/memory`) | Native; compare later |
 | Advisor model | Missing | Needs design: a hook plus a second model call |
 | Web search | Partial (`/research`, web fetch) | MCP server |
@@ -240,6 +240,6 @@ The plugin lives in [`plugin/`](../plugin). It contains one extension, `omc`, wi
 4. **A stream-rules spike.** Find out whether session events plus `session.abort` can reproduce OMP's mid-stream abort and retry.
 5. **A conflict resolution tool.** Resolve with `@ours`, `@theirs` or `@base` per conflict.
 6. **Structural editing.** ast-grep through an MCP server.
-7. **Git workflow.** A commit-splitting skill with extension helpers.
-8. **Specialist agents.** A reviewer with a P0 to P3 rubric, and an advisor.
+7. **Git workflow.** Done: the `commit` skill splits the working tree into ordered, atomic commits. Its helper, `scripts/hunks.mjs`, lists hunks with stable ids, stages them with `git apply --cached`, and verifies against a working-tree snapshot. A script was enough, so no extension tool was added. Copilot asks before running a script outside the repository; in `-p` mode, pass `--add-dir` with the plugin folder. Live check (claude-haiku-4.5): a five-change tree became five commits, one file split by hunk, nothing lost.
+8. **Specialist agents.** Reviewer done: `oh-my-copilot:reviewer` grades findings P0 to P3 and ends with a ship verdict. Tools are limited to `read`, `search` and `execute`; the prompt keeps the shell read-only, which Copilot cannot enforce. Live check: it found a planted off-by-one as P1. Advisor not started: OMP's advisor reads every turn, which needs a hook and a second model call rather than an agent file.
 9. **An optional launcher.** It would add `--experimental` and BYOK profiles.

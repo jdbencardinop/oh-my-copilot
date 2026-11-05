@@ -77,6 +77,47 @@ Use `read_anchored` and `edit_anchored` to read and edit existing text files, in
 
 To keep the anchored tools but stop the note, use `/omc off nudge`, `OMC_DISABLE_FEATURES=nudge`, or `{"features": {"nudge": false}}`. Then you can still ask for the tools in a prompt (for example, "Use the read_anchored and edit_anchored tools to read and edit files."), or put the text above in `~/.copilot/copilot-instructions.md` or `.github/copilot-instructions.md`. The sentence "If these tools are not available…" keeps that fallback working when the plugin is off.
 
+## Commit splitting and code review
+
+The plugin also ships a skill and a custom agent. Both are plain Copilot features: they need no extension and no `--experimental`, so they keep working even with `OMC_DISABLE=1`.
+
+### `commit` skill: atomic commits
+
+Ask Copilot to "split my changes into atomic commits". It loads the `commit` skill, which works like `omp commit`:
+
+1. It reads `git status` and the staged and unstaged diffs, and learns the message style from `git log` (Conventional Commits if the repository uses them).
+2. It groups hunks by intent (fix, refactor, feature, docs), orders the commits so each one stands on its own, and shows you the plan. It waits for your approval unless you said to go ahead.
+3. It stages each group with a helper, commits, and then checks that nothing was lost.
+
+It never pushes, never rewrites existing commits, never touches the working tree, and leaves anything that looks like a secret unstaged.
+
+The helper, [`scripts/hunks.mjs`](plugin/skills/commit/scripts/hunks.mjs), stages single hunks without `git add -p`. It lists hunks with stable ids, stages the ones you pick with `git apply --cached`, and records a snapshot of the working tree to verify against at the end. You can also run it yourself:
+
+```bash
+node plugin/skills/commit/scripts/hunks.mjs list            # ids for hunks, whole-file changes, untracked files
+node plugin/skills/commit/scripts/hunks.mjs stage h1a2b3c4d
+node plugin/skills/commit/scripts/hunks.mjs snapshot        # before; prints a tree id
+node plugin/skills/commit/scripts/hunks.mjs verify <tree-id>
+```
+
+> [!NOTE]
+> The helper lives in the plugin folder, outside your repository, so Copilot asks for permission to run it. In `-p` mode, where nobody can answer, add `--add-dir <plugin folder>` (or approve the folder once interactively). If the helper is denied, the skill falls back to file-level staging and hand-written patches.
+
+### `reviewer` agent: P0 to P3 findings and a ship verdict
+
+Ask Copilot to "use the reviewer agent to review my changes", or select it with `/agent`. It shows up as `oh-my-copilot:reviewer`. Like OMP's `/review`, it reviews uncommitted changes by default, or a commit, branch or files you name, and grades each finding:
+
+| Level | Meaning |
+|---|---|
+| P0 | Must fix: security hole, data loss, crash, broken build |
+| P1 | Bug: wrong result, unhandled error, regression |
+| P2 | Risk or maintainability concern |
+| P3 | Nit, only when you ask for nits |
+
+Each finding gives a `file:line` location, evidence, impact, and a fix. The answer ends with `VERDICT: SHIP`, `VERDICT: SHIP WITH FIXES`, or `VERDICT: DO NOT SHIP`. The agent only has read, search and shell tools, and its instructions limit the shell to read-only commands such as `git diff` and running existing tests.
+
+To turn them off, disable the plugin, or turn off the skill with `/skills` or `"disabledSkills": ["commit"]` in `settings.json`. The `/omc` switches do not cover them, because they are not part of the extension.
+
 ## Turn it off
 
 You can return to plain Copilot without uninstalling anything:
@@ -149,6 +190,8 @@ The tests use only Node's built-in test runner. They need Node 20 or later and n
 | `plugin/plugin.json` | Plugin manifest (Agent Plugins 1.0) |
 | `plugin/com.github.copilot/extensions/omc/extension.mjs` | Entry point. It checks `OMC_DISABLE`, then loads the features. |
 | `plugin/com.github.copilot/extensions/omc/lib/` | Feature code: `main.mjs` wires everything into the session; the other modules are pure logic |
+| `plugin/skills/commit/` | The `commit` skill and its staging helper, `scripts/hunks.mjs` |
+| `plugin/com.github.copilot/agents/` | Custom agents: `reviewer.agent.md` |
 | `test/` | Unit tests, and integration tests that use a fake session |
 | `examples/` | Sample `config.json` and `rules.json` |
 | `docs/investigation.md` | Research notes, feature map, and roadmap |
