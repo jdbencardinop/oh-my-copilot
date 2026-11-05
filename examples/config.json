@@ -4,9 +4,10 @@
     "hashline": true,
     "nudge": true,
     "rules": true,
-    "imports": true,
+    "imports": false,
     "streamRules": false,
     "conflicts": true
   },
+  "importPaths": {},
   "circuitBreakerThreshold": 3
 }

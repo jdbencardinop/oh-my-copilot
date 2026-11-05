@@ -1,5 +1,5 @@
 // Import natural-language rules from Cursor (.cursor/rules/*.mdc, .cursorrules)
-// and Cline (.clinerules file or directory). Copilot CLI 1.0.105 does not read
+// Cline (.clinerules file or directory), and Windsurf. Copilot CLI does not read
 // these files itself. Parsing is pure; loadImportedRules does the file I/O.
 // Nothing here throws on bad input: problems come back as `errors`.
 
@@ -135,6 +135,27 @@ export function parsePlainRule(text, file, origin) {
   return buildRule({ file, origin, data: fm.data, body: fm.body, globs, always: globs.length === 0 });
 }
 
+export function parseWindsurf(text, file) {
+  const fm = parseFrontmatter(text);
+  if (fm.error) return { error: `${file}: ${fm.error}; skipped` };
+  const trigger = fm.data.trigger ?? "manual";
+  if (!["always_on", "glob", "model_decision", "agent", "manual"].includes(trigger)) {
+    return { error: `${file}: unsupported Windsurf trigger "${trigger}"; skipped` };
+  }
+  const globs = trigger === "glob" ? globList(fm.data.globs) : [];
+  if (trigger === "glob" && !globs.length) return { error: `${file}: glob trigger needs globs; skipped` };
+  if (["model_decision", "agent"].includes(trigger) &&
+      (typeof fm.data.description !== "string" || !fm.data.description.trim())) {
+    return { error: `${file}: ${trigger} trigger needs a description; skipped` };
+  }
+  const r = buildRule({
+    file, origin: "windsurf", data: fm.data, body: fm.body,
+    globs, always: trigger === "always_on",
+  });
+  if (r.rule && trigger === "manual") r.rule.kind = "manual";
+  return r;
+}
+
 // Imported files come from the repository, which may be untrusted. Symlinks
 // are never followed, and every path must resolve inside the project root,
 // so a rule file cannot pull in e.g. ~/.aws/credentials.
@@ -201,10 +222,10 @@ function readSmall(path, errors, label, rootReal) {
 }
 
 /**
- * Read Cursor and Cline rule files under a project root.
+ * Read selected Cursor, Cline and Windsurf rule files under a project root.
  * Returns { rules, errors, sources, key } where key changes when any file does.
  */
-export function loadImportedRules(root) {
+export function loadImportedRules(root, { enabled = () => true } = {}) {
   const rules = [];
   const errors = [];
   const sources = [];
@@ -220,6 +241,7 @@ export function loadImportedRules(root) {
   const ctx = { rel };
   const add = (path, parse) => {
     const label = rel(path);
+    if (!enabled(label)) return;
     const read = readSmall(path, errors, label, rootReal);
     if (read === null) return;
     stamps.push(read.stamp);
@@ -238,27 +260,48 @@ export function loadImportedRules(root) {
   if (cursorKind === "dir") {
     const files = [];
     walk(cursorDir, [".mdc"], LIMITS.depth, files, errors, ctx);
-    files.forEach((f) => add(f, parseMdc));
-    sources.push(`.cursor/rules (${files.length})`);
+    const selected = files.filter((f) => enabled(rel(f)));
+    selected.forEach((f) => add(f, parseMdc));
+    if (selected.length) sources.push(`.cursor/rules (${selected.length})`);
   }
   const cursorLegacy = join(root, ".cursorrules");
   const legacyKind = kindOf(cursorLegacy, rootReal);
   skip(cursorLegacy, legacyKind);
-  if (legacyKind === "file") {
+  if (legacyKind === "file" && enabled(".cursorrules")) {
     add(cursorLegacy, (t, f) => parsePlainRule(t, f, "cursor"));
     sources.push(".cursorrules");
   }
   const cline = join(root, ".clinerules");
   const clineKind = kindOf(cline, rootReal);
   skip(cline, clineKind);
-  if (clineKind === "file") {
+  if (clineKind === "file" && enabled(".clinerules")) {
     add(cline, (t, f) => parsePlainRule(t, f, "cline"));
     sources.push(".clinerules");
   } else if (clineKind === "dir") {
     const files = [];
     walk(cline, [".md", ".txt"], 0, files, errors, ctx);
-    files.forEach((f) => add(f, (t, l) => parsePlainRule(t, l, "cline")));
-    sources.push(`.clinerules/ (${files.length})`);
+    const selected = files.filter((f) => enabled(rel(f)));
+    selected.forEach((f) => add(f, (t, l) => parsePlainRule(t, l, "cline")));
+    if (selected.length) sources.push(`.clinerules/ (${selected.length})`);
+  }
+  const windsurf = join(root, ".windsurf", "rules");
+  const windsurfKind = kindOf(windsurf, rootReal);
+  skip(windsurf, windsurfKind);
+  if (windsurfKind === "dir") {
+    const files = [];
+    walk(windsurf, [".md"], LIMITS.depth, files, errors, ctx);
+    const selected = files.filter((f) => enabled(rel(f)));
+    selected.forEach((f) => add(f, parseWindsurf));
+    if (selected.length) sources.push(`.windsurf/rules (${selected.length})`);
+  }
+  for (const name of [".windsurfrules", ".windsurf/global_rules.md"]) {
+    const path = join(root, name);
+    const kind = kindOf(path, rootReal);
+    skip(path, kind);
+    if (kind === "file" && enabled(name)) {
+      add(path, (t, f) => parsePlainRule(t, f, "windsurf"));
+      sources.push(name);
+    }
   }
   return { rules, errors, sources, key: stamps.join("|") };
 }
@@ -279,11 +322,12 @@ export function renderAlways(rules, maxChars = LIMITS.alwaysChars) {
   const always = rules.filter((r) => r.kind === "always");
   const requested = rules.filter((r) => r.kind === "requested");
   if (!always.length && !requested.length) return { text: "", truncated: [], omitted: [] };
+  if (maxChars < 200) return { text: "", truncated: [], omitted: [...always, ...requested].map((r) => r.file) };
   const truncated = [];
   const omitted = [];
   const notFit = [];
   const parts = always.length
-    ? ["oh-my-copilot imported these project rules from Cursor and Cline rule files. Follow them like project instructions."]
+    ? ["oh-my-copilot imported these project rules from other agents' rule files. Follow them like project instructions."]
     : [];
   let index = "";
   if (requested.length) {

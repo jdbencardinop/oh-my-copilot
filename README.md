@@ -9,7 +9,7 @@ It adds five things to Copilot:
 - **Hash-anchored editing.** `read_anchored` shows each line as `LINE:HASH|content`. `edit_anchored` then edits by anchor, for example `12:ab`, instead of retyping the old text. If the file changed since it was read, the edit is rejected and nothing is written. The plugin tells the model to prefer these tools, so you do not have to.
 - **Merge-conflict tools.** `list_conflicts` gives each conflict an id and shows ours, base and theirs. `resolve_conflicts` resolves conflicts by id with `ours`, `theirs`, `base`, both sides, or custom text. See [Resolve merge conflicts](#resolve-merge-conflicts).
 - **Tool-call rules.** Rules in `rules.json` run before every tool call, and optionally after it. A rule can deny the call, ask the user, or add a note for the model. Rules can be scoped to files with globs such as `src/**/*.ts`.
-- **Cursor and Cline rules.** Copilot does not read `.cursor/rules/*.mdc`, `.cursorrules` or `.clinerules`. oh-my-copilot passes them to the model, so a project's existing rules work without copying them.
+- **Optional rule imports.** Import Cursor, Cline and Windsurf instructions without copying them. This OMP-inspired behavior is added by OMC, not native Copilot. Imports are off by default; enable all sources or select individual files and directories.
 - **A `/omc` command.** It shows status and turns features on or off for the current session.
 
 If anything goes wrong, Copilot keeps working as normal. See [Turn it off](#turn-it-off).
@@ -170,7 +170,7 @@ oh-my-copilot reads two optional files from each of two places. Project files ta
 
 It looks for the project folder from the session's working directory upward, and stops at the repository root. Edits to these files take effect on the next tool call. `/omc reload` re-reads them and clears any `/omc` overrides.
 
-`config.json` accepts `enabled`, `features.hashline`, `features.nudge`, `features.rules`, `features.imports`, `features.streamRules`, `features.conflicts`, and `circuitBreakerThreshold`. Every feature is on by default except `streamRules`; see [Stream rules](#stream-rules). `nudge` controls the hidden notes: the anchored-tools note (only while `hashline` is on) and the merge-conflict note (only while `conflicts` is on). See [examples/config.json](examples/config.json).
+`config.json` accepts `enabled`, `features.hashline`, `features.nudge`, `features.rules`, `features.imports`, `features.streamRules`, `features.conflicts`, `importPaths`, and `circuitBreakerThreshold`. Every feature is on by default except `imports` and `streamRules`. `nudge` controls the hidden notes: the anchored-tools note (only while `hashline` is on) and the merge-conflict note (only while `conflicts` is on). See [examples/config.json](examples/config.json).
 
 ### Rules
 
@@ -279,9 +279,28 @@ For post rules, `field` can be:
 - `all`: the arguments and the output;
 - a dotted argument path, such as `command`.
 
-### Cursor and Cline rules
+### Native Copilot instructions versus OMC imports
 
-The `imports` feature reads rule files that other coding agents use, from the project root:
+Copilot CLI already reads these instruction files without this plugin, according to [GitHub's instruction-file documentation](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions):
+
+| Native location | Scope |
+|---|---|
+| `~/.copilot/copilot-instructions.md` | User instructions across repositories |
+| `~/.copilot/instructions/**/*.instructions.md` | Modular user instructions |
+| `.github/copilot-instructions.md` | Repository instructions; not an entire `.github/copilot/` directory |
+| `.github/instructions/**/*.instructions.md` | Path-specific instructions using `applyTo` |
+| `AGENTS.md` | Agent instructions |
+| `CLAUDE.md` and `.claude/CLAUDE.md` | Agent instructions, not limited to choosing a Claude model |
+| `GEMINI.md` | Agent instructions, not limited to choosing a Gemini model |
+| Directories in `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` | Additional `AGENTS.md` and `*.instructions.md` files |
+
+`COPILOT_HOME` replaces `~/.copilot` for user-level files. Repository and agent files are discovered at the repository root, working directory, intermediate directories and directories along files being worked on; modular repository instruction discovery excludes intermediate directories. Use Copilot's `/instructions` to inspect and toggle native files. Applicable instructions are combined; GitHub does not define a general precedence order. OMC does not re-import these files or control them with `/omc`.
+
+The current official CLI file list does not list `.claude/rules`; OMC does not import that directory either.
+
+### Imported project rules (opt-in)
+
+Importing other agents' rule formats is inspired by [OMP's discovery providers](https://github.com/can1357/oh-my-pi/tree/main/packages/coding-agent/src/discovery), not built into Copilot CLI. OMC supports these extra files under the project root:
 
 | File | How it is used |
 |---|---|
@@ -291,14 +310,44 @@ The `imports` feature reads rule files that other coding agents use, from the pr
 | `.cursor/rules/**/*.mdc` with none of these | Not imported. In Cursor these rules apply only when you mention them. |
 | `.cursorrules` | Added to the first prompt |
 | `.clinerules` file, or `*.md` and `*.txt` files in a `.clinerules/` folder | Added to the first prompt. A `paths:` list in the file's frontmatter makes it glob-scoped instead. |
+| `.windsurf/rules/**/*.md` with `trigger: always_on` | Added to the next prompt |
+| `.windsurf/rules/**/*.md` with `trigger: glob` and `globs` | Added when a file tool targets a matching file |
+| `.windsurf/rules/**/*.md` with `trigger: model_decision` (or `agent`) and `description` | Listed by path and description; the model decides whether to read it |
+| `.windsurf/rules/**/*.md` with `trigger: manual`, or no trigger | Not automatically imported |
+| `.windsurfrules` and `.windsurf/global_rules.md` | Always-on project instructions; `paths:` or `globs:` frontmatter scopes them |
 
-The rules reach the model as hidden context, like the nudge, and stay in the conversation. Copilot CLI does not read these files itself. It reads `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.claude/rules`, `.github/copilot-instructions.md` and `.github/instructions`, which oh-my-copilot leaves alone. See [examples/cursor-rules](examples/cursor-rules).
+These are natural-language instructions, not enforced `rules.json` deny/ask rules. They reach the model as hidden context and stay in the conversation. Windsurf activation modes follow its documented [rule format](https://docs.devin.ai/cli/extensibility/rules.md); missing triggers are conservatively treated as manual. OMC does not import user-global Windsurf memories, nested workspace roots, `.devin` rules, or arbitrary other formats. Those need separate compatibility work rather than treating every Markdown file as always-on.
 
-- **Size limits.** The first prompt carries at most 12,000 characters of imported rules, one glob-scoped rule at most 6,000, and all glob-scoped rules together at most 24,000 per session. These are hard caps. Longer rules are cut, with a note telling the model which file to read for the rest. Rules that do not fit at all are listed by file name, ending with "and N more" when the list itself would not fit. Glob-scoped rules past the session budget are skipped. `/omc status` lists the files that were cut or left out.
-- **When rules change.** A session reads the rules once. Changes apply to the next session.
+Select imports for this session:
+
+```text
+/omc on imports .clinerules
+/omc on imports .cursorrules
+/omc on imports .windsurf/rules
+/omc off imports .windsurf/rules/legacy.md
+/omc on imports ".cursor/rules/Style Guide.mdc"
+/omc status
+```
+
+Starting from the default, the first command enables **only Cline**. Paths are literal, case-sensitive, project-relative files or directories, not globs; the most specific selection wins. A bare `/omc on imports` enables all supported sources except explicit path exclusions. `/omc off imports` pauses every import, including selected paths. Enabling a path after that pause starts a fresh, selective session selection. `/omc reload` clears session switches and restores config-file choices. Environment kill switches and the circuit breaker still apply.
+
+To persist a Cline-only selection, put this in `.github/omc/config.json` or your Copilot home's `omc/config.json`:
+
+```json
+{
+  "importPaths": {
+    ".clinerules": true
+  }
+}
+```
+
+`features.imports` sets the default for unselected sources (false by default); `importPaths` overrides individual files or directories. Thus `{"features":{"imports":true},"importPaths":{".cursorrules":false}}` enables everything except legacy Cursor rules. User configuration, project configuration and session path choices layer in that order. `OMC_DISABLE_FEATURES=imports` disables all of them.
+
+- **Size limits.** Always-on rules and on-request indexes together carry at most 12,000 characters per session; a glob-scoped rule carries at most 6,000, and all glob-scoped rules together at most 24,000. Switching paths off and on does not reset those budgets. Longer rules are cut, with a note telling the model which file to read for the rest. Rules that do not fit are listed or skipped. `/omc status` lists files cut or left out.
+- **When rules change.** Files are cached per session and selection. Changing the selection reloads selected files; otherwise edits apply to the next session. Newly enabled always-on rules arrive on the next prompt; glob rules arrive on the next matching file-tool call.
 - **Only regular files inside the project.** Symlinks are skipped with a warning, as are files that resolve outside the project root, so a cloned repository cannot pull in files such as `~/.aws/credentials`.
 - **Glob-scoped rules need a file tool.** They are triggered by `view`, `create`, `edit`, `read_anchored`, `edit_anchored` and `apply_patch`, not by shell commands.
-- **On by default.** The feature does nothing in projects without these files. If you already copied the rules into Copilot's own instruction files, turn it off to avoid sending them twice: `{"features": {"imports": false}}` or `/omc off imports`. Turning it off mid-session tells the model to stop following the imported rules.
+- **Opt-in, with a soft retraction.** Disabled rule contents are not read, even by `/omc status`. Turning a source off after it was sent adds a request on the next prompt to stop following those files, without retracting unaffected imports. This cannot erase earlier context or guarantee that the model forgets it; start a new session for a clean boundary. Avoid enabling imports already copied into native Copilot instruction files.
 
 ## Develop
 

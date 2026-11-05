@@ -1,10 +1,10 @@
 // oh-my-copilot runtime: hash-anchored edit tools, pattern rules, imported
-// Cursor/Cline rules, and the /omc control command. Every hook and tool fails open.
+// project instructions from other agents, and the /omc control command.
 
 import { readFileSync, statSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
-import { FEATURES, canonicalFeature, featureActive, resolveConfig } from "./config.mjs";
+import { FEATURES, IMPORT_ROOTS, canonicalFeature, featureActive, importPathEnabled, normalizeImportPath, resolveConfig } from "./config.mjs";
 import { ConflictError, conflictHint, createConflictTools } from "./conflicts.mjs";
 import { createJsonCache, findProjectOmcDir, findProjectRoot, userOmcDir } from "./files.mjs";
 import { createBreaker } from "./guard.mjs";
@@ -41,10 +41,10 @@ export const NUDGE_OFF =
   "Use Copilot's built-in tools (`view`, `edit`, `create`) as usual.";
 
 export const IMPORTS_OFF =
-  "oh-my-copilot: the Cursor and Cline project rules it added earlier in this conversation are turned off. " +
+  "oh-my-copilot: the imported project rules it added earlier in this conversation are turned off. " +
   "Do not treat them as instructions any more unless the user asks.";
 
-// Tools whose target file pulls in glob-scoped Cursor/Cline rules. Reads are
+// Tools whose target file pulls in glob-scoped imported rules. Reads are
 // included so the rule usually arrives before the model writes the file.
 const IMPORT_TRIGGER_TOOLS = new Set([
   "view",
@@ -95,7 +95,7 @@ export async function start(joinSession) {
   // Effective state = config files + env kill switches, then /omc overrides.
   // Files are mtime-cached, so resolving on demand is cheap and picks up edits.
 
-  const overrides = { enabled: undefined, features: {} };
+  const overrides = { enabled: undefined, features: {}, importPaths: {}, importDefault: undefined, replaceImportPaths: false };
   const tripped = new Set();
 
   const loadConfig = () => {
@@ -106,7 +106,9 @@ export async function start(joinSession) {
       if (r.error) warnOnce(`ignoring invalid config ${r.error}`);
       else if (r.data !== undefined) layers.push({ source: `${scope} config`, data: r.data });
     }
-    return resolveConfig({ env: process.env, layers });
+    const cfg = resolveConfig({ env: process.env, layers });
+    cfg.importPathErrors.forEach(warnOnce);
+    return cfg;
   };
 
   const currentState = () => {
@@ -119,6 +121,15 @@ export async function start(joinSession) {
       if (cfg.featureOrigin[f].startsWith("env")) continue;
       cfg.features[f] = value;
       cfg.featureOrigin[f] = "/omc";
+    }
+    cfg.importPaths = { ...(overrides.replaceImportPaths ? {} : cfg.importPaths), ...overrides.importPaths };
+    cfg.importDefault = overrides.importDefault ?? cfg.importDefault;
+    if (!cfg.featureOrigin.imports.startsWith("env")) {
+      if (overrides.features.imports !== undefined) cfg.importDefault = overrides.features.imports;
+      if (overrides.features.imports !== false) {
+        cfg.features.imports = cfg.importDefault || Object.values(cfg.importPaths).includes(true);
+        if (Object.keys(overrides.importPaths).length) cfg.featureOrigin.imports = "/omc paths";
+      }
     }
     breaker.threshold = cfg.circuitBreakerThreshold;
     return { ...cfg, tripped };
@@ -235,17 +246,16 @@ export async function start(joinSession) {
     },
   });
 
-  // ---- imported Cursor / Cline rules ---------------------------------------
+  // ---- imported project rules ----------------------------------------------
 
-  // Per session: the rules as read at the first use (files are read once per
-  // session), whether the always-on block was handled, which glob rules were
-  // sent, and how many characters they used.
+  // Cache selected files per session; a selection change reloads them. Track
+  // delivery per file so toggles retract only the affected instructions.
   const importSessions = new Map();
   const importStats = { sessions: 0, alwaysChars: 0, truncated: new Set(), omitted: new Set() };
   const importState = (id) => {
     let st = importSessions.get(id);
     if (!st) {
-      st = { loaded: null, always: false, sent: false, globs: new Set(), globChars: 0 };
+      st = { loaded: null, selection: null, always: new Set(), alwaysChars: 0, sent: new Set(), globs: new Set(), globChars: 0 };
       importSessions.set(id, st);
     }
     return st;
@@ -253,12 +263,19 @@ export async function start(joinSession) {
 
   const loadImports = (dir) => {
     const root = findProjectRoot(dir);
-    const r = loadImportedRules(root);
+    const cfg = currentState();
+    const r = loadImportedRules(root, { enabled: (path) =>
+      featureActive(cfg, "imports") && importPathEnabled(path, cfg.importDefault, cfg.importPaths) });
     r.errors.forEach((e) => warnOnce(`imported rules: ${e}`));
     return { ...r, root };
   };
   const sessionImports = (st, dir) => {
-    st.loaded ??= loadImports(dir);
+    const cfg = currentState();
+    const selection = JSON.stringify([findProjectRoot(dir), cfg.importDefault, cfg.importPaths]);
+    if (st.selection !== selection) {
+      st.loaded = loadImports(dir);
+      st.selection = selection;
+    }
     return st.loaded;
   };
 
@@ -267,16 +284,16 @@ export async function start(joinSession) {
     "imports",
     async (input, invocation) => {
       const st = importState(sessionKey(input, invocation));
-      if (st.always) return undefined;
-      st.always = true;
       const { rules } = sessionImports(st, input?.workingDirectory || cwd);
-      const r = renderAlways(rules);
-      if (!r.text) return undefined;
-      st.sent = true;
-      importStats.sessions++;
-      importStats.alwaysChars = r.text.length;
+      const candidates = rules.filter((r) => !st.always.has(r.file) && (r.kind === "always" || r.kind === "requested"));
+      const r = renderAlways(candidates, Math.max(0, IMPORT_LIMITS.alwaysChars - st.alwaysChars));
       r.truncated.forEach((f) => importStats.truncated.add(f));
       r.omitted.forEach((f) => importStats.omitted.add(f));
+      if (!r.text) return undefined;
+      candidates.forEach((r) => { st.always.add(r.file); st.sent.add(r.file); });
+      if (st.alwaysChars === 0) importStats.sessions++;
+      st.alwaysChars += r.text.length;
+      importStats.alwaysChars = st.alwaysChars;
       return r.text;
     },
     undefined,
@@ -313,7 +330,7 @@ export async function start(joinSession) {
         }
         mark.chars = r.text.length + sep;
         st.globChars += mark.chars;
-        st.sent = true;
+        st.sent.add(rule.file);
         if (r.truncated) importStats.truncated.add(rule.file);
         out.push(r.text);
       }
@@ -326,11 +343,21 @@ export async function start(joinSession) {
   // the circuit breaker) sends a one-line retraction. This check sits outside
   // the breaker so it still runs once "imports" has tripped.
   const importsContext = async (input, invocation) => {
-    if (active("imports")) return importsPrompt(input, invocation);
     const id = sessionKey(input, invocation);
-    if (!importSessions.get(id)?.sent) return undefined;
-    importSessions.delete(id);
-    return IMPORTS_OFF;
+    const st = importSessions.get(id);
+    const cfg = currentState();
+    const enabled = featureActive(cfg, "imports");
+    const removed = st ? [...st.sent].filter((file) =>
+      !enabled || !importPathEnabled(file, cfg.importDefault, cfg.importPaths)) : [];
+    for (const file of removed) {
+      st.sent.delete(file);
+      st.always.delete(file);
+      st.globs.delete(file);
+    }
+    const retraction = removed.length ? enabled
+      ? `oh-my-copilot: stop following the imported rules from these files unless the user asks: ${removed.join(", ")}.`
+      : IMPORTS_OFF : undefined;
+    return joinContext(retraction, enabled ? await importsPrompt(input, invocation) : undefined);
   };
 
   // ---- hashline tools ------------------------------------------------------
@@ -582,6 +609,7 @@ export async function start(joinSession) {
   // ---- /omc command --------------------------------------------------------
 
   const importSummary = () => {
+    if (!active("imports")) return "off (no rule contents read)";
     const { rules, sources, errors } = loadImports(cwd);
     if (!sources.length) return "none";
     const count = (k) => rules.filter((r) => r.kind === k).length;
@@ -629,6 +657,9 @@ export async function start(joinSession) {
         (fires ? ` (${fires})` : "") +
         ` (caps: ${stream.limits.perPrompt} per prompt, ${stream.limits.perSession} per session)`,
       `  imported rules: ${importSummary()}`,
+      `  import selections (default ${st.importDefault ? "on" : "off"}): ` +
+        [...new Set([...IMPORT_ROOTS, ...Object.keys(st.importPaths)])]
+          .map((p) => `${p}=${featureActive(st, "imports") && importPathEnabled(p, st.importDefault, st.importPaths) ? "on" : "off"}`).join(", "),
       `  imported context: ${importStats.sessions ? `sent in ${importStats.sessions} session(s), last ${importStats.alwaysChars} chars` : "not sent yet"}` +
         ` (caps: ${IMPORT_LIMITS.alwaysChars} chars at start, ${IMPORT_LIMITS.globRuleChars} per glob rule, ${IMPORT_LIMITS.globSessionChars} per session)` +
         (limitNote.length ? `; ${limitNote.join("; ")}` : ""),
@@ -640,13 +671,32 @@ export async function start(joinSession) {
   };
 
   const usage =
-    "Usage: /omc [status|on|off|reload|reset|help], /omc on <feature>, /omc off <feature>. " +
+    "Usage: /omc [status|on|off|reload|reset|help], /omc on|off <feature>, /omc on|off imports <path>. " +
     `Features: ${FEATURES.join(", ")}.`;
 
   const handleCommand = async ({ args }) => {
-    const [verb = "status", name] = (args ?? "").trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const [, rawVerb = "status", name, importPath] =
+      /^(\S+)(?:\s+(\S+))?(?:\s+([\s\S]+))?$/.exec((args ?? "").trim()) ?? [];
+    const verb = rawVerb.toLowerCase();
     const feature = name && canonicalFeature(name);
     if (name && !feature) return log(`Unknown feature "${name}". ${usage}`, "warning");
+    if (importPath !== undefined) {
+      if (!["on", "off"].includes(verb) || feature !== "imports") return log(usage, "warning");
+      const path = normalizeImportPath(importPath.replace(/^(["'])(.*)\1$/, "$2"));
+      const cfg = currentState();
+      if (cfg.featureOrigin.imports.startsWith("env")) return log("Imports are disabled by OMC_DISABLE_FEATURES; path switches cannot override it.", "warning");
+      const value = verb === "on";
+      if (value && overrides.features.imports === false) {
+        delete overrides.features.imports;
+        overrides.importDefault = false;
+        overrides.importPaths = {};
+        overrides.replaceImportPaths = true;
+      }
+      overrides.importPaths[path] = value;
+      if (value) breaker.reset("imports");
+      return log(`Import path "${path}" is ${value ? "on" : "off"} for this session. ` +
+        "The most specific path wins; changes apply on the next prompt. Context already sent cannot be erased.");
+    }
     switch (verb) {
       case "status":
         return log(statusText());
@@ -675,6 +725,9 @@ export async function start(joinSession) {
         reported.clear();
         overrides.enabled = undefined;
         overrides.features = {};
+        overrides.importPaths = {};
+        overrides.importDefault = undefined;
+        overrides.replaceImportPaths = false;
         breaker.reset();
         await syncTools();
         return log(`Reloaded configuration and rules; /omc overrides cleared.\n${statusText()}`);

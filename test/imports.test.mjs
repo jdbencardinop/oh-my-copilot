@@ -10,9 +10,54 @@ import {
   parseFrontmatter,
   parseMdc,
   parsePlainRule,
+  parseWindsurf,
   renderAlways,
   renderGlobRule,
 } from "../plugin/com.github.copilot/extensions/omc/lib/imports.mjs";
+import { importPathEnabled } from "../plugin/com.github.copilot/extensions/omc/lib/config.mjs";
+
+test("parseWindsurf preserves activation modes instead of promoting manual rules", () => {
+  const parse = (front) => parseWindsurf(`---\n${front}\n---\nUse typed APIs.`, ".windsurf/rules/api.md");
+  assert.equal(parse("trigger: always_on\nglobs: *.ts").rule.kind, "always");
+  const glob = parse("trigger: glob\nglobs: src/**/*.ts").rule;
+  assert.equal(glob.kind, "glob");
+  assert.ok(glob.match("src/a.ts"));
+  assert.ok(!glob.match("src/a.js"));
+  assert.equal(parse("trigger: model_decision\ndescription: API design").rule.kind, "requested");
+  assert.equal(parse("trigger: agent\ndescription: API design").rule.kind, "requested");
+  assert.equal(parse("trigger: manual\ndescription: API design\nglobs: *.ts").rule.kind, "manual");
+  assert.equal(parseWindsurf("Plain text", "api.md").rule.kind, "manual");
+  assert.match(parse("trigger: glob").error, /needs globs/);
+  assert.match(parse("trigger: model_decision").error, /needs a description/);
+  assert.match(parse("trigger: surprising").error, /unsupported.*trigger/);
+});
+
+test("Windsurf discovery and path selection exclude disabled contents before parsing", () => {
+  const root = mkdtempSync(join(tmpdir(), "omc-windsurf-"));
+  try {
+    mkdirSync(join(root, ".windsurf", "rules", "nested"), { recursive: true });
+    writeFileSync(join(root, ".windsurf", "rules", "style.md"), "---\ntrigger: always_on\n---\nWindsurf style");
+    writeFileSync(join(root, ".windsurf", "rules", "nested", "ts.md"), "---\ntrigger: glob\nglobs: *.ts\n---\nTS style");
+    writeFileSync(join(root, ".windsurf", "rules", "broken.md"), "---\ntrigger: always_on");
+    writeFileSync(join(root, ".windsurf", "global_rules.md"), "Global project style");
+    writeFileSync(join(root, ".windsurfrules"), "Legacy style");
+    writeFileSync(join(root, ".cursorrules"), "---\nbroken");
+    const all = loadImportedRules(root);
+    assert.equal(all.rules.length, 4);
+    assert.equal(all.errors.length, 2);
+    const selected = loadImportedRules(root, {
+      enabled: (path) => importPathEnabled(path, false, {
+        ".windsurf/rules": true, ".windsurf/rules/broken.md": false,
+      }),
+    });
+    assert.deepEqual(selected.rules.map((r) => r.kind), ["glob", "always"]);
+    assert.deepEqual(selected.errors, [], "disabled files were not read or parsed");
+    symlinkSync(join(root, ".windsurfrules"), join(root, ".windsurf", "rules", "link.md"));
+    assert.ok(loadImportedRules(root).errors.some((e) => /link.md: symlink/.test(e)));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test("parseFrontmatter: scalars, quotes, booleans, flow and block lists, comments", () => {
   const { data, body } = parseFrontmatter(

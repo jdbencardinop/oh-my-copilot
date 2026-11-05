@@ -3,16 +3,43 @@ import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { featureActive, parseFeatureList, resolveConfig } from "../plugin/com.github.copilot/extensions/omc/lib/config.mjs";
+import { featureActive, importPathEnabled, normalizeImportPath, parseFeatureList, resolveConfig } from "../plugin/com.github.copilot/extensions/omc/lib/config.mjs";
 import { createJsonCache, findProjectOmcDir } from "../plugin/com.github.copilot/extensions/omc/lib/files.mjs";
 import { createBreaker } from "../plugin/com.github.copilot/extensions/omc/lib/guard.mjs";
 
-test("defaults: everything on except opt-in streamRules", () => {
+test("defaults: imports and streamRules are opt-in", () => {
   const cfg = resolveConfig();
   assert.equal(cfg.enabled, true);
-  assert.deepEqual(cfg.features, { hashline: true, nudge: true, rules: true, imports: true, streamRules: false, conflicts: true });
+  assert.deepEqual(cfg.features, { hashline: true, nudge: true, rules: true, imports: false, streamRules: false, conflicts: true });
   assert.equal(resolveConfig({ layers: [{ source: "user config", data: { features: { streamRules: true } } }] }).features.streamRules, true);
   assert.equal(cfg.circuitBreakerThreshold, 3);
+});
+
+test("import selections are literal, case-sensitive paths with most-specific precedence", () => {
+  assert.equal(normalizeImportPath("./.cursor/rules/Style Guide.mdc/"), ".cursor/rules/Style Guide.mdc");
+  assert.equal(normalizeImportPath(".clinerules\\testing.md"), ".clinerules/testing.md");
+  for (const path of ["/.clinerules", "../.clinerules", ".cursor/rules/../secret", ".cursor/rules/*.mdc", "AGENTS.md", ".clinerules-other", ""]) {
+    assert.throws(() => normalizeImportPath(path), /import path/i, path);
+  }
+  const selections = { ".cursor/rules/Style.mdc": true, ".cursor/rules": false };
+  assert.equal(importPathEnabled(".cursor/rules/Style.mdc", true, selections), true);
+  assert.equal(importPathEnabled(".cursor/rules/style.mdc", true, selections), false);
+  assert.equal(importPathEnabled(".clinerules/a.md", false, { ".clinerules": true }), true);
+  assert.equal(importPathEnabled(".clinerules-other", false, { ".clinerules": true }), false);
+});
+
+test("importPaths opt in selected sources, layer normally, and cannot bypass env kill switches", () => {
+  const layers = [
+    { source: "user", data: { importPaths: { ".clinerules": true, ".cursor/rules": true } } },
+    { source: "project", data: { importPaths: { ".cursor/rules": false, "../secret": true, ".cursorrules": "yes" } } },
+  ];
+  const cfg = resolveConfig({ layers });
+  assert.equal(cfg.features.imports, true);
+  assert.equal(cfg.importDefault, false);
+  assert.deepEqual(cfg.importPaths, { ".clinerules": true, ".cursor/rules": false });
+  assert.equal(cfg.importPathErrors.length, 2);
+  assert.equal(resolveConfig({ layers, env: { OMC_DISABLE_FEATURES: "imports" } }).features.imports, false);
+  assert.match(resolveConfig({ layers: [{ source: "bad", data: { importPaths: [] } }] }).importPathErrors[0], /must be an object/);
 });
 
 test("later layers win and record their origin", () => {

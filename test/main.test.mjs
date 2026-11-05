@@ -40,7 +40,7 @@ after(() => {
   rmSync(root, { recursive: true, force: true });
 });
 
-async function boot({ rejectSetTools = false, noOn = false } = {}) {
+async function boot({ rejectSetTools = false, noOn = false, imports = false } = {}) {
   const logs = [];
   const toolSets = [];
   const calls = [];
@@ -92,6 +92,7 @@ async function boot({ rejectSetTools = false, noOn = false } = {}) {
       ?.additionalContext;
   const promptText = (text, sessionId = "s1") =>
     config.hooks.onUserPromptSubmitted({ prompt: text, workingDirectory: project }, { sessionId });
+  if (imports) await command("on imports");
   return { config, logs, toolSets, calls, emit, listeners, joins: () => joins, tool, pre, post, postFail, command, prompt, promptText };
 }
 
@@ -346,7 +347,10 @@ async function withFiles(files, fn) {
   try {
     return await fn();
   } finally {
-    for (const dir of [".cursor", ".clinerules", ".cursorrules", "src"]) rmSync(join(project, dir), { recursive: true, force: true });
+    for (const file of made) rmSync(file, { force: true });
+    for (const dir of [".cursor", ".clinerules", ".cursorrules", ".windsurf", ".windsurfrules", "src"]) {
+      rmSync(join(project, dir), { recursive: true, force: true });
+    }
   }
 }
 
@@ -424,9 +428,170 @@ const CURSOR = {
   ".clinerules/01-tests.md": "Run npm test after changes.",
 };
 
-test("imports: always rules and the on-request index ride along with the nudge, once per session", async () => {
+test("imports are opt-in: no injection or rule-content reads even during status", async () => {
+  await withFiles({ ...CURSOR, ".cursorrules": "---\nbroken" }, async () => {
+    const h = await boot();
+    assert.equal(await h.prompt(), NUDGE);
+    assert.equal(await h.pre("view", { path: "src/a.ts" }), undefined);
+    await h.command("status");
+    assert.match(h.logs.at(-1).message, /imports\s+off\s+\(default\)/);
+    assert.match(h.logs.at(-1).message, /imported rules: off \(no rule contents read\)/);
+    assert.ok(!h.logs.some((l) => /no closing/.test(l.message)));
+  });
+});
+
+test("imports: select only Cline, add a case-sensitive Cursor file, and retract it selectively", async () => {
+  await withFiles({
+    ...CURSOR,
+    ".cursor/rules/Style  Guide.mdc": "---\nalwaysApply: true\n---\nCase-sensitive rule.",
+    ".cursorrules": "Legacy cursor rule.",
+  }, async () => {
+    const h = await boot();
+    await h.command("on imports .clinerules");
+    const cline = await h.prompt();
+    assert.match(cline, /Run npm test/);
+    assert.doesNotMatch(cline, /British English|Legacy cursor|Database migrations/);
+    assert.equal(await h.pre("view", { path: "src/a.ts" }), undefined);
+    await h.command('ON IMPORTS ".cursor/rules/Style  Guide.mdc"');
+    const added = await h.prompt();
+    assert.match(added, /Case-sensitive rule/);
+    assert.doesNotMatch(added, /Run npm test|British English/);
+    await h.command('off imports ".cursor/rules/Style  Guide.mdc"');
+    assert.match(await h.prompt(), /stop following.*Style  Guide\.mdc/);
+    assert.equal(await h.prompt(), undefined);
+    await h.command("status");
+    assert.match(h.logs.at(-1).message, /\.clinerules=on/);
+    assert.match(h.logs.at(-1).message, /\.cursor\/rules=off/);
+  });
+});
+
+test("imports: bare on enables all, specific exclusions win, and global off remains a kill switch", async () => {
   await withFiles(CURSOR, async () => {
     const h = await boot();
+    await h.command("off imports .cursor/rules");
+    await h.command("on imports");
+    const ctx = await h.prompt();
+    assert.match(ctx, /Run npm test/);
+    assert.doesNotMatch(ctx, /British English|Database migrations/);
+    await h.command("on imports .cursor/rules/style.mdc");
+    assert.match(await h.prompt(), /British English/);
+    await h.command("off imports");
+    assert.equal(await h.prompt(), IMPORTS_OFF);
+    assert.equal(await h.pre("view", { path: "src/a.ts" }), undefined);
+    await h.command("on imports .clinerules");
+    const onlyCline = await h.prompt();
+    assert.match(onlyCline, /Run npm test/);
+    assert.doesNotMatch(onlyCline, /British English|Database migrations/);
+    await h.command("reload");
+    assert.equal(await h.prompt(), IMPORTS_OFF);
+    assert.equal(await h.pre("view", { path: "src/a.ts" }), undefined);
+  });
+});
+
+test("imports: config can select Cline without enabling other sources", async () => {
+  await withFiles({
+    ...CURSOR,
+    ".github/omc/config.json": JSON.stringify({ importPaths: { ".clinerules": true } }),
+  }, async () => {
+    const h = await boot();
+    const ctx = await h.prompt();
+    assert.match(ctx, /Run npm test/);
+    assert.doesNotMatch(ctx, /British English/);
+    assert.equal(await h.pre("view", { path: "src/a.ts" }), undefined);
+    await h.command("off imports");
+    assert.equal(await h.prompt(), IMPORTS_OFF);
+    await h.command("on imports .cursor/rules/style.mdc");
+    const onlyCursor = await h.prompt();
+    assert.match(onlyCursor, /British English/);
+    assert.doesNotMatch(onlyCursor, /Run npm test/, "a fresh selection must not revive config-enabled sources");
+    await h.command("reload");
+    const restored = await h.prompt();
+    assert.match(restored, /stop following.*style\.mdc/);
+    assert.match(restored, /Run npm test/, "reload restores config selections");
+  });
+});
+
+test("imports: bad paths warn, and path switches cannot bypass environment kill switches", async () => {
+  const h = await boot();
+  for (const command of ["on imports ../secret", "on imports AGENTS.md", "off imports .cursor/rules/*.mdc", "on rules .clinerules"]) {
+    await h.command(command);
+    assert.equal(h.logs.at(-1).level, "warning");
+  }
+  await withEnv("OMC_DISABLE_FEATURES", "imports", async () => {
+    await h.command("on imports .clinerules");
+    assert.match(h.logs.at(-1).message, /cannot override/);
+    assert.equal(await h.prompt(), NUDGE);
+  });
+  await withEnv("OMC_DISABLE", "1", async () => {
+    await h.command("on imports .clinerules");
+    assert.equal(await h.prompt(), NUDGE_OFF, "only retract the previously sent nudge");
+  });
+});
+
+test("imports: toggling sources does not reset the always-on session budget", async () => {
+  await withFiles({
+    ".cursorrules": "C".repeat(20_000),
+    ".clinerules/a.md": "L".repeat(20_000),
+  }, async () => {
+    const h = await boot();
+    await h.command("on imports .cursorrules");
+    const first = await h.prompt();
+    const firstChars = first.length - NUDGE.length - 2;
+    await h.command("off imports");
+    assert.equal(await h.prompt(), IMPORTS_OFF);
+    await h.command("on imports .clinerules");
+    const second = await h.prompt();
+    assert.ok(firstChars + (second?.length ?? 0) <= 12_000);
+    assert.doesNotMatch(second ?? "", /L{200}/);
+    await h.command("status");
+    assert.match(h.logs.at(-1).message, /left out \(size limit\): .*\.clinerules\/a\.md/);
+  });
+});
+
+test("imports: native Copilot instruction files are never imported", async () => {
+  await withFiles({
+    "AGENTS.md": "NATIVE_ONLY_AGENTS",
+    "CLAUDE.md": "NATIVE_ONLY_CLAUDE",
+    ".github/copilot-instructions.md": "NATIVE_ONLY_COPILOT",
+    ".claude/CLAUDE.md": "NATIVE_ONLY_DOTCLAUDE",
+    ".cursorrules": "Extra cursor guidance.",
+  }, async () => {
+    const h = await boot({ imports: true });
+    const ctx = await h.prompt();
+    assert.match(ctx, /Extra cursor guidance/);
+    assert.doesNotMatch(ctx, /NATIVE_ONLY/);
+    await h.command("status");
+    assert.doesNotMatch(h.logs.at(-1).message, /NATIVE_ONLY/);
+  });
+});
+
+test("imports: Windsurf always, glob, model-decision and manual modes reach the right hooks", async () => {
+  await withFiles({
+    ".windsurf/rules/style.md": "---\ntrigger: always_on\n---\nWindsurf always rule.",
+    ".windsurf/rules/ts.md": "---\ntrigger: glob\nglobs: src/**/*.ts\n---\nWindsurf TypeScript rule.",
+    ".windsurf/rules/db.md": "---\ntrigger: model_decision\ndescription: Database schema\n---\nDatabase body.",
+    ".windsurf/rules/manual.md": "---\ntrigger: manual\n---\nManual body.",
+    ".windsurfrules": "Legacy windsurf.",
+  }, async () => {
+    const h = await boot();
+    await h.command("on imports .windsurf/rules");
+    const ctx = await h.prompt();
+    assert.match(ctx, /Windsurf always rule/);
+    assert.match(ctx, /db\.md: Database schema/);
+    assert.doesNotMatch(ctx, /Database body|Manual body|Legacy windsurf|Windsurf TypeScript rule/);
+    assert.match((await h.pre("view", { path: "src/a.ts" })).additionalContext, /Windsurf TypeScript rule/);
+    await h.command("off imports .windsurf/rules/ts.md");
+    const removed = await h.prompt();
+    assert.match(removed, /stop following.*ts\.md/);
+    await h.command("on imports .windsurf/rules/ts.md");
+    await h.prompt();
+    assert.match((await h.pre("view", { path: "src/a.ts" })).additionalContext, /Windsurf TypeScript rule/);
+  });
+});
+
+test("imports: always rules and the on-request index ride along with the nudge, once per session", async () => {
+  await withFiles(CURSOR, async () => {
+    const h = await boot({ imports: true });
     const ctx = await h.prompt();
     assert.ok(ctx.startsWith(NUDGE), "nudge first");
     assert.match(ctx, /<rule source="\.cursor\/rules\/style\.mdc">\nAlways answer in British English\.\n<\/rule>/);
@@ -438,7 +603,7 @@ test("imports: always rules and the on-request index ride along with the nudge, 
 
     await h.command("status");
     const status = h.logs.at(-1).message;
-    assert.match(status, /imports\s+on\s+\(default\)/);
+    assert.match(status, /imports\s+on\s+\(\/omc\)/);
     assert.match(status, /imported rules: \.cursor\/rules \(4\), \.clinerules\/ \(1\): 2 always, 1 glob-scoped, 1 on request, 1 manual/);
     assert.match(status, /imported context: sent in 2 session\(s\)/);
   });
@@ -446,7 +611,7 @@ test("imports: always rules and the on-request index ride along with the nudge, 
 
 test("imports: glob-scoped rules are added once per session when a matching file is read or written", async () => {
   await withFiles(CURSOR, async () => {
-    const h = await boot();
+    const h = await boot({ imports: true });
     assert.equal(await h.pre("create", { path: "src/a.test.ts", file_text: "x" }), undefined, "excluded by !glob");
     assert.equal(await h.pre("bash", { command: "cat src/a.ts" }), undefined, "bash does not trigger");
     const first = await h.pre("view", { path: join(project, "src", "a.ts") });
@@ -460,7 +625,7 @@ test("imports: glob-scoped rules are added once per session when a matching file
 
 test("imports: glob context merges with rules output", async () => {
   await withFiles(CURSOR, async () => {
-    const h = await boot();
+    const h = await boot({ imports: true });
     const ctx = await h.pre("edit_anchored", { path: "src/a.ts", edits: [{ op: "replace", start: "1:aa", content: "TODO" }] });
     assert.match(ctx.additionalContext, /^\[omc rule ctx\] file an issue\n\noh-my-copilot: project rule/);
     const deny = await h.pre("create", { path: "src/c.ts", file_text: "FORBIDDEN" }, "s3");
@@ -490,7 +655,7 @@ test("imports: kill switches stop injection; /omc off after sending retracts onc
       rmSync(join(project, ".github", "omc", "config.json"));
     }
 
-    const h = await boot();
+    const h = await boot({ imports: true });
     assert.match(await h.prompt(), /British English/);
     await h.command("off imports");
     assert.equal(await h.prompt(), IMPORTS_OFF);
@@ -507,7 +672,7 @@ test("imports: kill switches stop injection; /omc off after sending retracts onc
 
 test("imports: oversized rules are truncated and reported in /omc status", async () => {
   await withFiles({ ".cursorrules": "R".repeat(20_000) }, async () => {
-    const h = await boot();
+    const h = await boot({ imports: true });
     const ctx = await h.prompt();
     assert.ok(ctx.length < NUDGE.length + 12_100);
     assert.match(ctx, /truncated by oh-my-copilot; read \.cursorrules/);
@@ -518,7 +683,7 @@ test("imports: oversized rules are truncated and reported in /omc status", async
 
 test("imports: invalid rule files are skipped with a warning", async () => {
   await withFiles({ ".cursor/rules/bad.mdc": "---\nalwaysApply: true\n", ".cursor/rules/ok.mdc": "---\nalwaysApply: true\n---\nOK rule" }, async () => {
-    const h = await boot();
+    const h = await boot({ imports: true });
     assert.match(await h.prompt(), /OK rule/);
     assert.ok(h.logs.some((l) => l.level === "warning" && /bad\.mdc.*no closing/.test(l.message)));
   });
@@ -526,7 +691,7 @@ test("imports: invalid rule files are skipped with a warning", async () => {
 
 test("imports: internal errors fail open and trip only the breaker", async () => {
   await withFiles(CURSOR, async () => {
-    const h = await boot();
+    const h = await boot({ imports: true });
     const boom = {
       get path() {
         throw new Error("boom");
@@ -566,7 +731,7 @@ test("imports: a symlinked .cursorrules is not followed", async () => {
   writeFileSync(secret, "aws_secret_access_key=SECRET");
   symlinkSync(secret, join(project, ".cursorrules"));
   try {
-    const h = await boot();
+    const h = await boot({ imports: true });
     assert.equal(await h.prompt(), NUDGE);
     assert.ok(h.logs.some((l) => l.level === "warning" && /\.cursorrules: symlink; skipped/.test(l.message)));
   } finally {
@@ -577,7 +742,7 @@ test("imports: a symlinked .cursorrules is not followed", async () => {
 
 test("imports: rule files are read once per session", async () => {
   await withFiles({ ".cursor/rules/style.mdc": CURSOR[".cursor/rules/style.mdc"] }, async () => {
-    const h = await boot();
+    const h = await boot({ imports: true });
     assert.match(await h.prompt(), /British English/);
     writeFileSync(join(project, ".cursor", "rules", "ts.mdc"), CURSOR[".cursor/rules/ts.mdc"]);
     assert.equal(await h.pre("view", { path: "src/a.ts" }), undefined, "session s1 keeps the rules it read first");
@@ -590,7 +755,7 @@ test("imports: rule files are read once per session", async () => {
 
 test("imports: a breaker trip after sending still retracts once", async () => {
   await withFiles(CURSOR, async () => {
-    const h = await boot();
+    const h = await boot({ imports: true });
     assert.match(await h.prompt(), /British English/);
     const boom = {
       get path() {
@@ -609,7 +774,7 @@ test("imports: the per-session glob budget is a hard cap", async () => {
   for (let i = 0; i < 12; i++)
     files[`.cursor/rules/g${String(i).padStart(2, "0")}.mdc`] = `---\nglobs: src/**\n---\n${"G".repeat(5000)}`;
   await withFiles(files, async () => {
-    const h = await boot();
+    const h = await boot({ imports: true });
     const ctx = (await h.pre("view", { path: "src/a.ts" })).additionalContext;
     assert.ok(ctx.length <= 24_000, `length ${ctx.length}`);
     assert.equal(await h.pre("view", { path: "src/b.ts" }), undefined, "skipped rules are not retried");
@@ -729,7 +894,7 @@ test("stream rules: sub-agent deltas never interrupt the main session", async ()
 test("stream rules: glob context sent in a truncated turn is sent again", async () => {
   await withStreamRules(() =>
     withFiles(CURSOR, async () => {
-      const h = await boot();
+      const h = await boot({ imports: true });
       await h.promptText("go");
       h.emit({ type: "assistant.turn_start", id: "turn-1", data: {} });
       assert.match((await h.pre("view", { path: "src/a.ts" })).additionalContext, /Prefer type aliases/);
