@@ -16,10 +16,25 @@
     {
       "id": "no-console-log",
       "tools": ["edit", "create", "edit_anchored"],
-      "pathPattern": "\\.(ts|tsx)$",
+      "paths": ["**/*.{ts,tsx}", "!**/*.test.{ts,tsx}"],
       "pattern": "console\\.log\\(",
       "action": "context",
       "message": "This project uses its logger module instead of console.log."
+    },
+    {
+      "id": "no-generated-edits",
+      "tools": ["edit", "create", "edit_anchored", "apply_patch"],
+      "paths": ["src/generated/**"],
+      "action": "deny",
+      "message": "Files in src/generated are generated. Change the generator and run npm run codegen instead."
+    },
+    {
+      "id": "tests-failed",
+      "when": "post",
+      "tools": ["bash"],
+      "pattern": "^(FAIL|not ok)\\b|\\b[1-9]\\d* (failed|failing)\\b",
+      "flags": "m",
+      "message": "The test run reported failures. Fix them before moving on, and do not say the tests pass."
     }
   ]
 }

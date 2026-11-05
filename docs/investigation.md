@@ -108,9 +108,11 @@ These SDK hooks are available to extensions in 1.0.105:
 - `onSessionStart`, `onSessionEnd`, `onErrorOccurred`;
 - `onAgentStop`, `onSubagentStart`, `onSubagentStop`.
 
-`onPreToolUse` can allow, deny or ask about a tool call, rewrite its arguments, or add context for the model. The rules feature is built on it.
+`onPreToolUse` can allow, deny or ask about a tool call, rewrite its arguments, or add context for the model. The rules feature is built on it, and so are glob-scoped imported rules.
 
-`onUserPromptSubmitted` can add hidden context to a prompt. Copilot appends it to the prompt as a `<system_reminder>` block, and it stays in the conversation. The nudge feature is built on it.
+`onPostToolUse` sees the tool's result and can add context for the model or replace the result. It only fires for successful calls; `onPostToolUseFailure` gets the error text of failed calls and can only add context. Post rules use both, and only add context.
+
+`onUserPromptSubmitted` can add hidden context to a prompt. Copilot appends it to the prompt as a `<system_reminder>` block, and it stays in the conversation. The nudge and the always-on imported rules are built on it; when both apply, they share one block.
 
 Things to know before writing an extension:
 
@@ -137,7 +139,7 @@ Use a plugin with an extension at its core. None of the options is enough alone.
 | OMP feature | In Copilot today | Plan for oh-my-copilot |
 |---|---|---|
 | Hashline edits | Missing | **Done in the proof of concept** (`read_anchored`, `edit_anchored`) |
-| Stream rules (TTSR) | Missing | **Partly done**: rules check tool calls before they run. A true mid-stream abort and retry would need stream events plus `session.abort`; not investigated yet. |
+| Stream rules (TTSR) | Missing | **Partly done**: rules check tool calls before they run (`when: "pre"`) and their results after (`when: "post"`), scoped by tool and path glob. A true mid-stream abort and retry would need stream events plus `session.abort`; not investigated yet. |
 | Subagents | Built in | Use native subagents; add custom agents |
 | Plan mode | Built in | Native |
 | Review with a verdict | Built in (`/review`) | Optional reviewer agent with a P0 to P3 rubric |
@@ -154,7 +156,7 @@ Use a plugin with an extension at its core. None of the options is enough alone.
 | Browser | Built-in `browser-use` plugin, disabled by default | Native |
 | Collaboration | Partial (`/remote`, `/share`) | Native |
 | ACP | Built in (`--acp`) | Native |
-| Config inheritance | Partial (Copilot's own instruction files) | Importer for Cursor and Cline rules, later |
+| Config inheritance | Partial: Copilot reads `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.claude/rules`, and its own instruction files | **Done for Cursor and Cline** (`imports`): `.cursor/rules/*.mdc` (always, glob-scoped, on request), `.cursorrules`, `.clinerules`. Windsurf, Codex and others, later. |
 | 60+ providers | BYOK, one provider at a time | Launcher profiles |
 | In-process native tools | Not needed | Copilot ships its own grep and glob |
 
@@ -179,10 +181,10 @@ You can always get back to plain Copilot without uninstalling anything.
 | Control | Scope | How | Verified |
 |---|---|---|---|
 | `OMC_DISABLE=1` | One launch | The extension joins with nothing registered | Live |
-| `OMC_DISABLE_FEATURES=rules` | One launch | Comma-separated list of `hashline`, `nudge`, `rules` or `all` | Unit tests |
+| `OMC_DISABLE_FEATURES=rules` | One launch | Comma-separated list of `hashline`, `nudge`, `rules`, `imports` or `all` | Unit tests |
 | `/omc off`, `/omc on` | This session | Rules stop at once; the anchored tools refuse calls (see the note below) | Live |
 | `/omc off <feature>`, `/omc on <feature>` | This session | Per feature | Unit tests |
-| Config file | User or project | `{"enabled": false}` or `{"features": {"rules": false}}` in `~/.copilot/omc/config.json` or `.github/omc/config.json` | Live (project file) |
+| Config file | User or project | `{"enabled": false}` or `{"features": {"rules": false}}` (any feature name) in `~/.copilot/omc/config.json` or `.github/omc/config.json` | Live (project file) |
 | Circuit breaker | Automatic | A feature turns itself off after three consecutive internal errors. The threshold is configurable; `/omc reset` retries. | Unit tests |
 | Fail open | Automatic | Internal errors never block a tool call. The entry file loads features lazily, so a broken module cannot stop Copilot. | Unit tests |
 
@@ -207,16 +209,18 @@ The plugin lives in [`plugin/`](../plugin). It contains one extension, `omc`, wi
 
 - `read_anchored` and `edit_anchored` tools that use the hashline format;
 - a nudge: on the first prompt of a session, hidden context tells the model to prefer those tools (only while `hashline` and `nudge` are on);
-- rules from `rules.json` that are checked before each tool call;
+- rules from `rules.json` that are checked before each tool call, or after it (`when: "post"`), optionally scoped by path globs;
+- Cursor and Cline rule files passed to the model as hidden context (`imports`);
 - a `/omc` command for status and toggles.
 
 | Check | Result |
 |---|---|
-| `npm test` (unit tests, integration tests with a fake session, and example files) | 43 passing |
+| `npm test` (unit tests, integration tests with a fake session, and example files) | 87 passing |
 | The model uses `read_anchored`, then `edit_anchored`, to rename a function and append a line | Pass |
 | A `deny` rule blocks a bash command and shows the rule's reason | Pass |
 | A `context` rule reaches the model, which then removed the banned `console.log` | Pass |
 | `/omc status`, `/omc off` and `/omc on` in interactive mode | Pass |
+| Richer rules, 4 live runs with Haiku | A `paths: ["gen/**"]` deny rule blocked `edit_anchored` on `gen/data.txt`. A post rule matched `bash` output and its note reached the model, which followed it. An `alwaysApply` `.mdc` rule changed every reply. A glob-scoped `.mdc` rule reached the model when it used `create` on a matching file; in a run where the model wrote the file with `bash`, it did not fire (expected: shell commands have no target file). |
 | `OMC_DISABLE=1`, `disabledExtensions`, project `{"enabled": false}`, and a disabled plugin | Plain Copilot behavior in each case |
 | Installed with `copilot plugin install`, without `--plugin-dir` | Loads and enforces rules |
 | Benchmark: 84 runs, 6 edit tasks, 2 models ([docs/benchmark.md](benchmark.md)) | All runs passed. When prompted to use the anchored tools: 21–25% faster, 37–46% fewer output tokens, 9–14% fewer credits. Unprompted, the models did not use them. |
@@ -236,7 +240,7 @@ The plugin lives in [`plugin/`](../plugin). It contains one extension, `omc`, wi
 
 1. **Ship the nudge with the plugin.** Done: the `nudge` feature sends the guidance through `onUserPromptSubmitted`, once per session, and only while the anchored tools are on. A plugin skill was rejected because the model loads it only on demand and the kill switches cannot turn it off. `onSessionStart` was not used because the extension may join after the session starts. A system message from the extension could not be withdrawn mid-session. Next: run the six benchmark tasks on the `omc-nudge` arm.
 2. **Package for distribution.** A marketplace manifest, install docs, and a CI job that runs `npm test`.
-3. **Richer rules.** Import Cursor `.mdc` and Cline rules; scope rules by path glob; add `onPostToolUse` checks.
+3. **Richer rules.** Done: `paths` globs (with `!` exclusions) relative to the project root; `when: "post"` rules that add context after a tool ran, from its output or the written file; Cursor `.mdc`, `.cursorrules` and Cline rules imported as hidden context (`imports` feature, on by default because Copilot does not read these files); rule files are read once per session, symlinks and paths outside the project root are skipped, and globs use a non-backtracking matcher because repositories supply them). Next: glob-scoped rules triggered by shell commands that touch files, and more formats (Windsurf, Codex).
 4. **A stream-rules spike.** Find out whether session events plus `session.abort` can reproduce OMP's mid-stream abort and retry.
 5. **A conflict resolution tool.** Resolve with `@ours`, `@theirs` or `@base` per conflict.
 6. **Structural editing.** ast-grep through an MCP server.

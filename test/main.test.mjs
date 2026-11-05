@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, test } from "node:test";
-import { NUDGE, NUDGE_OFF, start } from "../plugin/com.github.copilot/extensions/omc/lib/main.mjs";
+import { IMPORTS_OFF, NUDGE, NUDGE_OFF, start } from "../plugin/com.github.copilot/extensions/omc/lib/main.mjs";
 
 let root;
 let project;
@@ -54,12 +55,20 @@ async function boot({ rejectSetTools = false } = {}) {
     return session;
   });
   const tool = (name) => config.tools.find((t) => t.name === name) ?? null;
-  const pre = (toolName, toolArgs) => config.hooks.onPreToolUse({ toolName, toolArgs, workingDirectory: project });
+  const pre = (toolName, toolArgs, sessionId = "s1") =>
+    config.hooks.onPreToolUse({ toolName, toolArgs, workingDirectory: project, sessionId }, { sessionId });
+  const post = (toolName, toolArgs, text) =>
+    config.hooks.onPostToolUse(
+      { toolName, toolArgs, toolResult: { textResultForLlm: text, resultType: "success" }, workingDirectory: project },
+      { sessionId: "s1" },
+    );
+  const postFail = (toolName, toolArgs, error) =>
+    config.hooks.onPostToolUseFailure({ toolName, toolArgs, error, workingDirectory: project }, { sessionId: "s1" });
   const command = (args) => config.commands.find((c) => c.name === "omc").handler({ args });
   const prompt = async (sessionId = "s1") =>
     (await config.hooks.onUserPromptSubmitted({ prompt: "fix it", workingDirectory: project }, { sessionId }))
       ?.additionalContext;
-  return { config, logs, toolSets, joins: () => joins, tool, pre, command, prompt };
+  return { config, logs, toolSets, joins: () => joins, tool, pre, post, postFail, command, prompt };
 }
 
 test("joins exactly once and registers tools, hook, and /omc", async () => {
@@ -68,6 +77,8 @@ test("joins exactly once and registers tools, hook, and /omc", async () => {
   assert.deepEqual(h.config.tools.map((t) => t.name), ["read_anchored", "edit_anchored"]);
   assert.equal(typeof h.config.hooks.onPreToolUse, "function");
   assert.equal(typeof h.config.hooks.onUserPromptSubmitted, "function");
+  assert.equal(typeof h.config.hooks.onPostToolUse, "function");
+  assert.equal(typeof h.config.hooks.onPostToolUseFailure, "function");
   assert.deepEqual(h.config.commands.map((c) => c.name), ["omc"]);
 });
 
@@ -284,4 +295,301 @@ test("nudge: not sent when the anchored tools were not registered at join", asyn
   }
   await h.command("reload");
   assert.equal(await h.prompt(), undefined, "hashline is on again, but the tools are not listed");
+});
+
+// ---- richer rules: path globs, post rules, imported Cursor/Cline rules ----
+
+const RULES_FILE = () => join(project, ".github", "omc", "rules.json");
+
+async function withRules(rules, fn) {
+  const saved = readFileSync(RULES_FILE(), "utf8");
+  writeFileSync(RULES_FILE(), JSON.stringify({ rules }));
+  try {
+    return await fn();
+  } finally {
+    writeFileSync(RULES_FILE(), saved);
+  }
+}
+
+async function withFiles(files, fn) {
+  const made = [];
+  for (const [rel, text] of Object.entries(files)) {
+    const p = join(project, rel);
+    mkdirSync(join(p, ".."), { recursive: true });
+    writeFileSync(p, text);
+    made.push(p);
+  }
+  try {
+    return await fn();
+  } finally {
+    for (const dir of [".cursor", ".clinerules", ".cursorrules", "src"]) rmSync(join(project, dir), { recursive: true, force: true });
+  }
+}
+
+test("paths: glob-scoped deny is relative to the project root, with exclusions", async () => {
+  await withRules(
+    [{ id: "no-gen", tools: ["edit", "create"], paths: ["src/gen/**", "!**/*.keep"], message: "generated code" }],
+    async () => {
+      const h = await boot();
+      const deny = await h.pre("create", { path: join(project, "src", "gen", "a.ts"), file_text: "x" });
+      assert.equal(deny.permissionDecision, "deny");
+      assert.match(deny.permissionDecisionReason, /\[omc rule no-gen\] generated code/);
+      assert.equal(await h.pre("create", { path: "src/gen/b.ts", file_text: "x" }).then((r) => r?.permissionDecision), "deny");
+      assert.equal(await h.pre("create", { path: "src/gen/.keep", file_text: "" }), undefined);
+      assert.equal(await h.pre("create", { path: "src/a.ts", file_text: "x" }), undefined);
+    },
+  );
+});
+
+test("post rules add context after a tool ran, also for failures, and follow the rules switch", async () => {
+  await withRules(
+    [
+      { id: "tests-failed", when: "post", tools: ["bash"], pattern: "\\bFAIL\\b", message: "Tests failed. Fix them first." },
+      { id: "pre-still-works", tools: ["bash"], pattern: "FORBIDDEN" },
+    ],
+    async () => {
+      const h = await boot();
+      assert.deepEqual(await h.post("bash", { command: "npm test" }, "FAIL a.test.js"), {
+        additionalContext: "[omc rule tests-failed] Tests failed. Fix them first.",
+      });
+      assert.equal(await h.post("bash", { command: "npm test" }, "all passed"), undefined);
+      assert.match((await h.postFail("bash", { command: "npm test" }, "exit 1: FAIL x")).additionalContext, /tests-failed/);
+      assert.equal(await h.pre("bash", { command: "echo FAIL" }), undefined, "post rules do not run before the tool");
+      assert.equal((await h.pre("bash", { command: "FORBIDDEN" })).permissionDecision, "deny");
+      await h.command("status");
+      assert.match(h.logs.at(-1).message, /rules\.json \(2\) \(1 pre, 1 post\)/);
+      await h.command("off rules");
+      assert.equal(await h.post("bash", { command: "npm test" }, "FAIL"), undefined);
+      assert.equal(await h.postFail("bash", {}, "FAIL"), undefined);
+    },
+  );
+});
+
+test("post rule with field file reads the file as written", async () => {
+  await withRules(
+    [{ id: "todo-left", when: "post", tools: ["edit"], paths: "*.txt", field: "file", pattern: "TODO", message: "TODO left" }],
+    async () => {
+      const h = await boot();
+      writeFileSync(join(project, "todo.txt"), "a\nTODO b\n");
+      try {
+        assert.match((await h.post("edit", { path: "todo.txt" }, "ok")).additionalContext, /todo-left/);
+        assert.equal(await h.post("edit", { path: "a.txt" }, "ok TODO"), undefined);
+        assert.equal(await h.post("edit", { path: "missing.txt" }, "ok"), undefined, "missing file: no match, no error");
+      } finally {
+        rmSync(join(project, "todo.txt"));
+      }
+    },
+  );
+});
+
+test("hooks never throw on odd input", async () => {
+  await withRules([{ id: "p", when: "post", pattern: "x" }], async () => {
+    const h = await boot();
+    assert.equal(await h.config.hooks.onPostToolUse({ toolName: "bash", toolArgs: null, workingDirectory: project }), undefined);
+    assert.equal(await h.config.hooks.onPostToolUseFailure({}), undefined);
+    await h.config.hooks.onPreToolUse({ toolName: "view", toolArgs: null, workingDirectory: project });
+    assert.ok(!h.logs.some((l) => /error/.test(l.message)));
+  });
+});
+
+const CURSOR = {
+  ".cursor/rules/style.mdc": "---\ndescription: Style\nalwaysApply: true\n---\nAlways answer in British English.",
+  ".cursor/rules/ts.mdc": "---\ndescription: TS rules\nglobs: src/**/*.ts, !**/*.test.ts\nalwaysApply: false\n---\nPrefer type aliases over interfaces.",
+  ".cursor/rules/db.mdc": "---\ndescription: Database migrations\nalwaysApply: false\n---\nNever edit old migrations.",
+  ".cursor/rules/manual.mdc": "---\nalwaysApply: false\n---\nManual only.",
+  ".clinerules/01-tests.md": "Run npm test after changes.",
+};
+
+test("imports: always rules and the on-request index ride along with the nudge, once per session", async () => {
+  await withFiles(CURSOR, async () => {
+    const h = await boot();
+    const ctx = await h.prompt();
+    assert.ok(ctx.startsWith(NUDGE), "nudge first");
+    assert.match(ctx, /<rule source="\.cursor\/rules\/style\.mdc">\nAlways answer in British English\.\n<\/rule>/);
+    assert.match(ctx, /<rule source="\.clinerules\/01-tests\.md">/);
+    assert.match(ctx, /- \.cursor\/rules\/db\.mdc: Database migrations/);
+    assert.doesNotMatch(ctx, /Never edit old migrations|Manual only|Prefer type aliases/);
+    assert.equal(await h.prompt(), undefined, "sent once");
+    assert.match(await h.prompt("s2"), /British English/, "per session");
+
+    await h.command("status");
+    const status = h.logs.at(-1).message;
+    assert.match(status, /imports\s+on\s+\(default\)/);
+    assert.match(status, /imported rules: \.cursor\/rules \(4\), \.clinerules\/ \(1\): 2 always, 1 glob-scoped, 1 on request, 1 manual/);
+    assert.match(status, /imported context: sent in 2 session\(s\)/);
+  });
+});
+
+test("imports: glob-scoped rules are added once per session when a matching file is read or written", async () => {
+  await withFiles(CURSOR, async () => {
+    const h = await boot();
+    assert.equal(await h.pre("create", { path: "src/a.test.ts", file_text: "x" }), undefined, "excluded by !glob");
+    assert.equal(await h.pre("bash", { command: "cat src/a.ts" }), undefined, "bash does not trigger");
+    const first = await h.pre("view", { path: join(project, "src", "a.ts") });
+    assert.match(first.additionalContext, /files matching src\/\*\*\/\*\.ts, !\*\*\/\*\.test\.ts \(from \.cursor\/rules\/ts\.mdc\)/);
+    assert.match(first.additionalContext, /Prefer type aliases/);
+    assert.equal(first.permissionDecision, undefined);
+    assert.equal(await h.pre("create", { path: "src/b.ts", file_text: "x" }), undefined, "once per session");
+    assert.match((await h.pre("create", { path: "src/b.ts", file_text: "x" }, "s2")).additionalContext, /Prefer type aliases/);
+  });
+});
+
+test("imports: glob context merges with rules output", async () => {
+  await withFiles(CURSOR, async () => {
+    const h = await boot();
+    const ctx = await h.pre("edit_anchored", { path: "src/a.ts", edits: [{ op: "replace", start: "1:aa", content: "TODO" }] });
+    assert.match(ctx.additionalContext, /^\[omc rule ctx\] file an issue\n\noh-my-copilot: project rule/);
+    const deny = await h.pre("create", { path: "src/c.ts", file_text: "FORBIDDEN" }, "s3");
+    assert.equal(deny?.permissionDecision, undefined, "no-token only applies to bash");
+  });
+});
+
+test("imports: kill switches stop injection; /omc off after sending retracts once", async () => {
+  await withFiles(CURSOR, async () => {
+    await withEnv("OMC_DISABLE_FEATURES", "imports", async () => {
+      const h = await boot();
+      assert.equal(await h.prompt(), NUDGE);
+      assert.equal(await h.pre("view", { path: "src/a.ts" }), undefined);
+      await h.command("on imports");
+      assert.equal(await h.pre("view", { path: "src/a.ts" }), undefined, "/omc cannot override env");
+    });
+    await withEnv("OMC_DISABLE", "1", async () => {
+      const h = await boot();
+      assert.equal(await h.prompt(), undefined);
+      assert.equal(await h.pre("view", { path: "src/a.ts" }), undefined);
+    });
+    writeFileSync(join(project, ".github", "omc", "config.json"), JSON.stringify({ features: { imports: false } }));
+    try {
+      const h = await boot();
+      assert.equal(await h.prompt(), NUDGE);
+    } finally {
+      rmSync(join(project, ".github", "omc", "config.json"));
+    }
+
+    const h = await boot();
+    assert.match(await h.prompt(), /British English/);
+    await h.command("off imports");
+    assert.equal(await h.prompt(), IMPORTS_OFF);
+    assert.equal(await h.prompt(), undefined, "retraction is sent once");
+    assert.equal(await h.pre("view", { path: "src/a.ts" }), undefined);
+    await h.command("on imports");
+    assert.match(await h.prompt(), /British English/, "sent again when turned back on");
+
+    const quiet = await boot();
+    await quiet.command("off imports");
+    assert.equal(await quiet.prompt(), NUDGE, "nothing to retract if nothing was sent");
+  });
+});
+
+test("imports: oversized rules are truncated and reported in /omc status", async () => {
+  await withFiles({ ".cursorrules": "R".repeat(20_000) }, async () => {
+    const h = await boot();
+    const ctx = await h.prompt();
+    assert.ok(ctx.length < NUDGE.length + 12_100);
+    assert.match(ctx, /truncated by oh-my-copilot; read \.cursorrules/);
+    await h.command("status");
+    assert.match(h.logs.at(-1).message, /truncated: \.cursorrules/);
+  });
+});
+
+test("imports: invalid rule files are skipped with a warning", async () => {
+  await withFiles({ ".cursor/rules/bad.mdc": "---\nalwaysApply: true\n", ".cursor/rules/ok.mdc": "---\nalwaysApply: true\n---\nOK rule" }, async () => {
+    const h = await boot();
+    assert.match(await h.prompt(), /OK rule/);
+    assert.ok(h.logs.some((l) => l.level === "warning" && /bad\.mdc.*no closing/.test(l.message)));
+  });
+});
+
+test("imports: internal errors fail open and trip only the breaker", async () => {
+  await withFiles(CURSOR, async () => {
+    const h = await boot();
+    const boom = {
+      get path() {
+        throw new Error("boom");
+      },
+    };
+    for (let i = 0; i < 3; i++) assert.equal(await h.pre("view", boom), undefined);
+    assert.ok(h.logs.some((l) => /"imports" is off/.test(l.message)));
+    await h.command("status");
+    assert.match(h.logs.at(-1).message, /imports\s+off\s+\(tripped by circuit breaker\)/);
+    assert.equal(await h.prompt(), NUDGE, "the nudge is unaffected");
+    await h.command("reset");
+    assert.match((await h.pre("view", { path: "src/a.ts" })).additionalContext, /Prefer type aliases/);
+  });
+});
+
+test("post rule with field file ignores devices and FIFOs instead of blocking", { timeout: 5000 }, async () => {
+  await withRules([{ id: "f", when: "post", tools: ["edit"], field: "file", pattern: "x", message: "m" }], async () => {
+    const h = await boot();
+    assert.equal(await h.post("edit", { path: "/dev/zero" }, "ok"), undefined);
+    assert.equal(await h.post("edit", { path: "/dev/null" }, "ok"), undefined);
+    const fifo = join(project, "pipe.txt");
+    try {
+      execFileSync("mkfifo", [fifo]);
+    } catch {
+      return; // no mkfifo on this platform
+    }
+    try {
+      assert.equal(await h.post("edit", { path: fifo }, "ok"), undefined);
+    } finally {
+      rmSync(fifo, { force: true });
+    }
+  });
+});
+
+test("imports: a symlinked .cursorrules is not followed", async () => {
+  const secret = join(root, "secret.txt");
+  writeFileSync(secret, "aws_secret_access_key=SECRET");
+  symlinkSync(secret, join(project, ".cursorrules"));
+  try {
+    const h = await boot();
+    assert.equal(await h.prompt(), NUDGE);
+    assert.ok(h.logs.some((l) => l.level === "warning" && /\.cursorrules: symlink; skipped/.test(l.message)));
+  } finally {
+    rmSync(join(project, ".cursorrules"), { force: true });
+    rmSync(secret, { force: true });
+  }
+});
+
+test("imports: rule files are read once per session", async () => {
+  await withFiles({ ".cursor/rules/style.mdc": CURSOR[".cursor/rules/style.mdc"] }, async () => {
+    const h = await boot();
+    assert.match(await h.prompt(), /British English/);
+    writeFileSync(join(project, ".cursor", "rules", "ts.mdc"), CURSOR[".cursor/rules/ts.mdc"]);
+    assert.equal(await h.pre("view", { path: "src/a.ts" }), undefined, "session s1 keeps the rules it read first");
+    assert.match((await h.pre("view", { path: "src/a.ts" }, "s2")).additionalContext, /Prefer type aliases/, "a new session reads again");
+    rmSync(join(project, ".cursor", "rules", "ts.mdc"));
+    assert.equal(await h.pre("create", { path: "src/b.ts", file_text: "" }, "s2"), undefined, "s2 already had it");
+    assert.equal(await h.pre("view", { path: "src/a.ts" }, "s3"), undefined, "deleted rules are gone for new sessions");
+  });
+});
+
+test("imports: a breaker trip after sending still retracts once", async () => {
+  await withFiles(CURSOR, async () => {
+    const h = await boot();
+    assert.match(await h.prompt(), /British English/);
+    const boom = {
+      get path() {
+        throw new Error("boom");
+      },
+    };
+    for (let i = 0; i < 3; i++) await h.pre("view", boom);
+    assert.ok(h.logs.some((l) => /"imports" is off/.test(l.message)));
+    assert.equal(await h.prompt(), `${IMPORTS_OFF}`);
+    assert.equal(await h.prompt(), undefined, "retracted once");
+  });
+});
+
+test("imports: the per-session glob budget is a hard cap", async () => {
+  const files = {};
+  for (let i = 0; i < 12; i++)
+    files[`.cursor/rules/g${String(i).padStart(2, "0")}.mdc`] = `---\nglobs: src/**\n---\n${"G".repeat(5000)}`;
+  await withFiles(files, async () => {
+    const h = await boot();
+    const ctx = (await h.pre("view", { path: "src/a.ts" })).additionalContext;
+    assert.ok(ctx.length <= 24_000, `length ${ctx.length}`);
+    assert.equal(await h.pre("view", { path: "src/b.ts" }), undefined, "skipped rules are not retried");
+    await h.command("status");
+    assert.match(h.logs.at(-1).message, /left out \(size limit\): .*g11\.mdc/);
+  });
 });

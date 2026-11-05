@@ -1,0 +1,7 @@
+---
+description: TypeScript conventions
+globs: src/**/*.{ts,tsx}, !**/*.test.ts
+alwaysApply: false
+---
+- Prefer `type` aliases over `interface`.
+- Never use `any`; use `unknown` and narrow it.

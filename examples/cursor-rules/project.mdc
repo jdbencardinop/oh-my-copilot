@@ -1,0 +1,6 @@
+---
+description: Project-wide conventions
+alwaysApply: true
+---
+- Keep changes small and focused.
+- Add or update a test for every behavior change.

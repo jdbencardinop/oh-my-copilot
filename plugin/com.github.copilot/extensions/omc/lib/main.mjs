@@ -1,13 +1,24 @@
-// oh-my-copilot runtime: hash-anchored edit tools, pattern rules, and the
-// /omc control command. Every hook and tool fails open.
+// oh-my-copilot runtime: hash-anchored edit tools, pattern rules, imported
+// Cursor/Cline rules, and the /omc control command. Every hook and tool fails open.
 
+import { readFileSync, statSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
 import { FEATURES, featureActive, resolveConfig } from "./config.mjs";
-import { createJsonCache, findProjectOmcDir, userOmcDir } from "./files.mjs";
+import { createJsonCache, findProjectOmcDir, findProjectRoot, userOmcDir } from "./files.mjs";
 import { createBreaker } from "./guard.mjs";
 import * as hl from "./hashline.mjs";
-import { compileRules, evaluateRules, toHookOutput } from "./rules.mjs";
+import { LIMITS as IMPORT_LIMITS, loadImportedRules, renderAlways, renderGlobRule } from "./imports.mjs";
+import {
+  compileRules,
+  evaluatePostRules,
+  evaluateRules,
+  projectPath,
+  resultText,
+  targetPaths,
+  toHookOutput,
+  toPostHookOutput,
+} from "./rules.mjs";
 
 export const VERSION = "0.1.0";
 export const EXTENSION_ID = "plugin:oh-my-copilot:omc";
@@ -26,6 +37,30 @@ export const NUDGE =
 export const NUDGE_OFF =
   "oh-my-copilot: ignore the earlier guidance about `read_anchored` and `edit_anchored`. " +
   "Use Copilot's built-in tools (`view`, `edit`, `create`) as usual.";
+
+export const IMPORTS_OFF =
+  "oh-my-copilot: the Cursor and Cline project rules it added earlier in this conversation are turned off. " +
+  "Do not treat them as instructions any more unless the user asks.";
+
+// Tools whose target file pulls in glob-scoped Cursor/Cline rules. Reads are
+// included so the rule usually arrives before the model writes the file.
+const IMPORT_TRIGGER_TOOLS = new Set([
+  "view",
+  "read_anchored",
+  "edit",
+  "str_replace",
+  "str_replace_editor",
+  "multi_edit",
+  "create",
+  "write",
+  "write_file",
+  "edit_anchored",
+  "apply_patch",
+]);
+const MAX_POST_FILE_BYTES = 1024 * 1024;
+
+const sessionKey = (input, invocation) => invocation?.sessionId ?? input?.sessionId ?? "";
+const joinContext = (...parts) => parts.filter(Boolean).join("\n\n") || undefined;
 
 class UserError extends Error {}
 
@@ -128,15 +163,141 @@ export async function start(joinSession) {
     return { rules, sources };
   };
 
+  const pathOpts = (dir) => ({ cwd: dir, root: findProjectRoot(dir) });
+
   const evaluate = breaker.wrap(
     "rules",
     async (input) => {
-      const { rules } = loadRules(input.workingDirectory || cwd);
+      const dir = input.workingDirectory || cwd;
+      const { rules } = loadRules(dir);
       if (rules.length === 0) return undefined;
-      return toHookOutput(evaluateRules(rules, input.toolName, input.toolArgs));
+      return toHookOutput(evaluateRules(rules, input.toolName, input.toolArgs, pathOpts(dir)));
     },
     undefined,
   );
+
+  // Target files as they are after the tool ran, for post rules with field "file".
+  const fileTextFor = (dir) => (p) => {
+    try {
+      const abs = isAbsolute(p) ? p : resolve(dir, p);
+      // Regular files only: devices and FIFOs report size 0 and can block forever.
+      const st = statSync(abs);
+      if (!st.isFile() || st.size > MAX_POST_FILE_BYTES) return undefined;
+      const buf = readFileSync(abs);
+      return buf.subarray(0, 8192).includes(0) ? undefined : buf.toString("utf8");
+    } catch {
+      return undefined;
+    }
+  };
+
+  // onPostToolUse passes toolResult; onPostToolUseFailure passes only error.
+  const evaluatePost = breaker.wrap(
+    "rules",
+    async (input) => {
+      const dir = input.workingDirectory || cwd;
+      const { rules } = loadRules(dir);
+      if (!rules.some((r) => r.when === "post")) return undefined;
+      const text = input.toolResult !== undefined ? resultText(input.toolResult) : String(input.error ?? "");
+      const opts = { ...pathOpts(dir), fileText: fileTextFor(dir) };
+      return toPostHookOutput(evaluatePostRules(rules, input.toolName, input.toolArgs, text, opts));
+    },
+    undefined,
+  );
+
+  // ---- imported Cursor / Cline rules ---------------------------------------
+
+  // Per session: the rules as read at the first use (files are read once per
+  // session), whether the always-on block was handled, which glob rules were
+  // sent, and how many characters they used.
+  const importSessions = new Map();
+  const importStats = { sessions: 0, alwaysChars: 0, truncated: new Set(), omitted: new Set() };
+  const importState = (id) => {
+    let st = importSessions.get(id);
+    if (!st) {
+      st = { loaded: null, always: false, sent: false, globs: new Set(), globChars: 0 };
+      importSessions.set(id, st);
+    }
+    return st;
+  };
+
+  const loadImports = (dir) => {
+    const root = findProjectRoot(dir);
+    const r = loadImportedRules(root);
+    r.errors.forEach((e) => warnOnce(`imported rules: ${e}`));
+    return { ...r, root };
+  };
+  const sessionImports = (st, dir) => {
+    st.loaded ??= loadImports(dir);
+    return st.loaded;
+  };
+
+  // Always-on rules go into the first prompt of a session, like the nudge.
+  const importsPrompt = breaker.wrap(
+    "imports",
+    async (input, invocation) => {
+      const st = importState(sessionKey(input, invocation));
+      if (st.always) return undefined;
+      st.always = true;
+      const { rules } = sessionImports(st, input?.workingDirectory || cwd);
+      const r = renderAlways(rules);
+      if (!r.text) return undefined;
+      st.sent = true;
+      importStats.sessions++;
+      importStats.alwaysChars = r.text.length;
+      r.truncated.forEach((f) => importStats.truncated.add(f));
+      r.omitted.forEach((f) => importStats.omitted.add(f));
+      return r.text;
+    },
+    undefined,
+  );
+
+  // Glob-scoped rules are added once per rule per session, when a read or
+  // write tool targets a matching file.
+  const importsPre = breaker.wrap(
+    "imports",
+    async (input, invocation) => {
+      if (!IMPORT_TRIGGER_TOOLS.has(input.toolName)) return undefined;
+      const paths = targetPaths(input.toolName, input.toolArgs);
+      if (!paths.length) return undefined;
+      const dir = input.workingDirectory || cwd;
+      const st = importState(sessionKey(input, invocation));
+      const { rules, root } = sessionImports(st, dir);
+      const globRules = rules.filter((r) => r.kind === "glob");
+      if (!globRules.length) return undefined;
+      const rel = paths.map((p) => projectPath(p, { cwd: dir, root }));
+      const out = [];
+      for (const rule of globRules) {
+        if (st.globs.has(rule.file) || !rel.some((p) => rule.match(p))) continue;
+        // The per-session budget is a hard cap, separators included. A rule
+        // that no longer fits is skipped and listed as left out in /omc status.
+        const sep = out.length ? 2 : 0;
+        const room = Math.min(IMPORT_LIMITS.globRuleChars, IMPORT_LIMITS.globSessionChars - st.globChars - sep);
+        st.globs.add(rule.file);
+        const r = room > 0 ? renderGlobRule(rule, room) : { text: "" };
+        if (!r.text) {
+          importStats.omitted.add(rule.file);
+          continue;
+        }
+        st.globChars += r.text.length + sep;
+        st.sent = true;
+        if (r.truncated) importStats.truncated.add(rule.file);
+        out.push(r.text);
+      }
+      return joinContext(...out);
+    },
+    undefined,
+  );
+
+  // Turning the feature off after something was sent (by any switch, including
+  // the circuit breaker) sends a one-line retraction. This check sits outside
+  // the breaker so it still runs once "imports" has tripped.
+  const importsContext = async (input, invocation) => {
+    if (active("imports")) return importsPrompt(input, invocation);
+    const id = sessionKey(input, invocation);
+    if (!importSessions.get(id)?.sent) return undefined;
+    importSessions.delete(id);
+    return IMPORTS_OFF;
+  };
 
   // ---- hashline tools ------------------------------------------------------
 
@@ -334,9 +495,28 @@ export async function start(joinSession) {
 
   // ---- /omc command --------------------------------------------------------
 
+  const importSummary = () => {
+    const { rules, sources, errors } = loadImports(cwd);
+    if (!sources.length) return "none";
+    const count = (k) => rules.filter((r) => r.kind === k).length;
+    const parts = [
+      `${count("always")} always`,
+      `${count("glob")} glob-scoped`,
+      `${count("requested")} on request`,
+      `${count("manual")} manual (not imported)`,
+    ];
+    if (errors.length) parts.push(`${errors.length} skipped`);
+    return `${sources.join(", ")}: ${parts.join(", ")}`;
+  };
+
   const statusText = () => {
     const st = currentState();
-    const { sources } = loadRules(cwd);
+    const { rules, sources } = loadRules(cwd);
+    const postCount = rules.filter((r) => r.when === "post").length;
+    const limitNote = [
+      importStats.truncated.size ? `truncated: ${[...importStats.truncated].join(", ")}` : "",
+      importStats.omitted.size ? `left out (size limit): ${[...importStats.omitted].join(", ")}` : "",
+    ].filter(Boolean);
     const feature = (f) => {
       const on = featureActive(st, f);
       const why = tripped.has(f) ? "tripped by circuit breaker" : st.featureOrigin[f];
@@ -346,7 +526,12 @@ export async function start(joinSession) {
       `oh-my-copilot ${VERSION}: ${st.enabled ? "active" : "OFF"} (${st.enabledOrigin})`,
       ...FEATURES.map(feature),
       `  working directory: ${cwd}`,
-      `  rules files: ${sources.length ? sources.join(", ") : "none"}`,
+      `  rules files: ${sources.length ? sources.join(", ") : "none"}` +
+        (sources.length ? ` (${rules.length - postCount} pre, ${postCount} post)` : ""),
+      `  imported rules: ${importSummary()}`,
+      `  imported context: ${importStats.sessions ? `sent in ${importStats.sessions} session(s), last ${importStats.alwaysChars} chars` : "not sent yet"}` +
+        ` (caps: ${IMPORT_LIMITS.alwaysChars} chars at start, ${IMPORT_LIMITS.globRuleChars} per glob rule, ${IMPORT_LIMITS.globSessionChars} per session)` +
+        (limitNote.length ? `; ${limitNote.join("; ")}` : ""),
       `  circuit breaker: trips after ${breaker.threshold} consecutive errors`,
       "Fallback: /omc off (this session), OMC_DISABLE=1 (next start), " +
         `"extensions": {"disabledExtensions": ["${EXTENSION_ID}"]} in ~/.copilot/settings.json, ` +
@@ -417,26 +602,58 @@ export async function start(joinSession) {
       },
     ],
     hooks: {
-      onPreToolUse: async (input) => {
+      onPreToolUse: async (input, invocation) => {
+        let out;
         try {
           if (input?.workingDirectory) cwd = input.workingDirectory;
           void syncTools();
-          if (!active("rules")) return undefined;
-          return await evaluate(input);
+          if (active("rules")) out = await evaluate(input);
         } catch (err) {
           warnOnce(`rules hook error: ${err?.message ?? err}`);
+        }
+        try {
+          const ctx = active("imports") ? await importsPre(input, invocation) : undefined;
+          if (ctx) out = { ...out, additionalContext: joinContext(out?.additionalContext, ctx) };
+        } catch (err) {
+          warnOnce(`imported rules hook error: ${err?.message ?? err}`);
+        }
+        return out;
+      },
+      onPostToolUse: async (input) => {
+        try {
+          if (!active("rules")) return undefined;
+          return await evaluatePost(input);
+        } catch (err) {
+          warnOnce(`post rules hook error: ${err?.message ?? err}`);
+          return undefined;
+        }
+      },
+      onPostToolUseFailure: async (input) => {
+        try {
+          if (!active("rules")) return undefined;
+          return await evaluatePost(input);
+        } catch (err) {
+          warnOnce(`post rules hook error: ${err?.message ?? err}`);
           return undefined;
         }
       },
       onUserPromptSubmitted: async (input, invocation) => {
+        if (input?.workingDirectory) cwd = input.workingDirectory;
+        void syncTools();
+        let nudge;
+        let imported;
         try {
-          if (input?.workingDirectory) cwd = input.workingDirectory;
-          void syncTools();
-          return await nudgeContext(input, invocation);
+          nudge = (await nudgeContext(input, invocation))?.additionalContext;
         } catch (err) {
           warnOnce(`nudge hook error: ${err?.message ?? err}`);
-          return undefined;
         }
+        try {
+          imported = await importsContext(input, invocation);
+        } catch (err) {
+          warnOnce(`imported rules hook error: ${err?.message ?? err}`);
+        }
+        const additionalContext = joinContext(nudge, imported);
+        return additionalContext ? { additionalContext } : undefined;
       },
     },
   });

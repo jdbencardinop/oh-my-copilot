@@ -3,7 +3,8 @@
   "features": {
     "hashline": true,
     "nudge": true,
-    "rules": true
+    "rules": true,
+    "imports": true
   },
   "circuitBreakerThreshold": 3
 }

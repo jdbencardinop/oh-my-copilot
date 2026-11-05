@@ -4,10 +4,11 @@
 
 oh-my-copilot is a GitHub Copilot CLI plugin that brings ideas from [oh-my-pi](https://github.com/can1357/oh-my-pi) to Copilot. It is a proof of concept, tested on Copilot CLI 1.0.105.
 
-It adds three things to Copilot:
+It adds four things to Copilot:
 
 - **Hash-anchored editing.** `read_anchored` shows each line as `LINE:HASH|content`. `edit_anchored` then edits by anchor, for example `12:ab`, instead of retyping the old text. If the file changed since it was read, the edit is rejected and nothing is written. The plugin tells the model to prefer these tools, so you do not have to.
-- **Tool-call rules.** Regex rules in `rules.json` run before every tool call. A rule can deny the call, ask the user, or add a note for the model.
+- **Tool-call rules.** Rules in `rules.json` run before every tool call, and optionally after it. A rule can deny the call, ask the user, or add a note for the model. Rules can be scoped to files with globs such as `src/**/*.ts`.
+- **Cursor and Cline rules.** Copilot does not read `.cursor/rules/*.mdc`, `.cursorrules` or `.clinerules`. oh-my-copilot passes them to the model, so a project's existing rules work without copying them.
 - **A `/omc` command.** It shows status and turns features on or off for the current session.
 
 If anything goes wrong, Copilot keeps working as normal. See [Turn it off](#turn-it-off).
@@ -72,7 +73,7 @@ Use `read_anchored` and `edit_anchored` to read and edit existing text files, in
 ```
 
 - **It costs about 100 tokens once per session.** The note stays in the conversation, so later prompts add nothing.
-- **It follows the kill switches.** No note is sent while `hashline` or `nudge` is off, from any source: `OMC_DISABLE`, `OMC_DISABLE_FEATURES`, a config file, `/omc off`, or the circuit breaker. If you turn it off after the note was sent, the next prompt tells the model to go back to the built-in tools. `/omc on` sends the note again.
+- **It follows the kill switches.** No note is sent while `hashline` or `nudge` is off, from any source: `OMC_DISABLE`, `OMC_DISABLE_FEATURES`, a config file, `/omc off`, or the circuit breaker. If you turn it off after the note was sent, the next prompt tells the model to go back to the built-in tools. Turning it back on sends the note again. Use the same form you turned it off with: `/omc on` after `/omc off`, or `/omc on nudge` after `/omc off nudge`. A bare `/omc on` does not clear per-feature overrides.
 - **It is checked.** In a [small live check](docs/benchmark.md#spot-check-the-plugins-own-nudge), 3 of 3 runs used the anchored tools with no hint in the prompt, and a run with `OMC_DISABLE=1` used the built-in tools.
 
 To keep the anchored tools but stop the note, use `/omc off nudge`, `OMC_DISABLE_FEATURES=nudge`, or `{"features": {"nudge": false}}`. Then you can still ask for the tools in a prompt (for example, "Use the read_anchored and edit_anchored tools to read and edit files."), or put the text above in `~/.copilot/copilot-instructions.md` or `.github/copilot-instructions.md`. The sentence "If these tools are not available…" keeps that fallback working when the plugin is off.
@@ -83,7 +84,7 @@ You can return to plain Copilot without uninstalling anything:
 
 | When | Do this |
 |---|---|
-| Right now, this session only | `/omc off`, or `/omc off <feature>` for one feature (`hashline`, `nudge`, `rules`) |
+| Right now, this session only | `/omc off`, or `/omc off <feature>` for one feature (`hashline`, `nudge`, `rules`, `imports`) |
 | Next launch only | Start Copilot with `OMC_DISABLE=1`, or `OMC_DISABLE_FEATURES=rules` |
 | Every session | `copilot plugin disable oh-my-copilot` |
 | Every session, keeping the plugin enabled | Add `"extensions": {"disabledExtensions": ["plugin:oh-my-copilot:omc"]}` to `~/.copilot/settings.json` |
@@ -108,7 +109,7 @@ oh-my-copilot reads two optional files from each of two places. Project files ta
 
 It looks for the project folder from the session's working directory upward, and stops at the repository root. Edits to these files take effect on the next tool call. `/omc reload` re-reads them and clears any `/omc` overrides.
 
-`config.json` accepts `enabled`, `features.hashline`, `features.nudge`, `features.rules`, and `circuitBreakerThreshold`. `nudge` only has an effect while `hashline` is on. See [examples/config.json](examples/config.json).
+`config.json` accepts `enabled`, `features.hashline`, `features.nudge`, `features.rules`, `features.imports`, and `circuitBreakerThreshold`. `nudge` only has an effect while `hashline` is on. See [examples/config.json](examples/config.json).
 
 ### Rules
 
@@ -116,13 +117,15 @@ A rules file holds `{"rules": [...]}`. See [examples/rules.json](examples/rules.
 
 | Field | Required | Meaning |
 |---|---|---|
-| `pattern` | Yes | JavaScript regular expression to match |
+| `pattern` | Yes, unless `paths` or `pathPattern` is set | JavaScript regular expression to match. Without it, every call that passes the other filters matches. |
 | `id` | No | Name shown in messages, as `[omc rule <id>]` |
-| `action` | No | `deny` (default), `ask`, or `context` |
+| `when` | No | `pre` (default) checks the call before it runs. `post` checks it after it ran; see [Post rules](#post-rules). |
+| `action` | No | `deny` (default), `ask`, or `context`. Post rules only allow `context`, which is also their default. |
 | `message` | No | Reason shown to the user and the model |
 | `tools` | No | Tool names to check, for example `["bash"]`. By default every tool is checked. |
-| `pathPattern` | No | Regular expression that the target file path must match |
-| `field` | No | `auto` (default), `all`, or a dotted argument path such as `command` |
+| `paths` | No | Glob, or list of globs, that a target file must match. See [Path globs](#path-globs). |
+| `pathPattern` | No | Regular expression that the target file path, as the tool received it, must match |
+| `field` | No | Which text `pattern` is matched against. Pre rules: `auto` (default), `all`, or a dotted argument path such as `command`. Post rules: see below. |
 | `flags` | No | Regex flags: any of `i`, `m`, `s`, `u` |
 | `enabled` | No | `false` skips the rule |
 
@@ -135,6 +138,62 @@ With `field: "auto"`, a rule matches what the tool would run or write:
 - every string argument, for any other tool.
 
 When several rules match, `deny` wins over `ask`, and `ask` wins over `context`. A rule that is invalid is skipped, and Copilot shows a warning.
+
+#### Path globs
+
+`paths` limits a rule to tool calls whose target file matches. Paths are matched relative to the project root (the nearest folder with `.git`, or the working directory).
+
+```json
+{ "id": "no-generated-edits", "tools": ["edit", "create", "edit_anchored", "apply_patch"],
+  "paths": ["src/generated/**", "!**/README.md"], "message": "Change the generator instead." }
+```
+
+- `*` matches within one folder, `**` matches any number of folders, `?` matches one character.
+- `{ts,tsx}` matches either word, and `[0-9]` matches a character range.
+- A pattern without `/`, such as `*.ts`, matches the file name in any folder.
+- A pattern that starts with `!` excludes files. A file matches when it matches any normal pattern and no `!` pattern. A list with only `!` patterns matches every other file.
+- Files outside the project are matched by their absolute path.
+- Matching does not backtrack, and its cost is capped, so a hostile pattern cannot stall Copilot. A glob is rejected if it is longer than 1,024 characters, or if its `{a,b}` alternatives add up to more than 2,048 path segments. A path longer than 4,096 characters, or with more than 256 segments, never matches.
+
+The target file comes from the tool's `path` argument, or from the file headers of `apply_patch`. Shell commands have no target file, so a `paths` rule never matches `bash`. Add `tools` when a rule should only cover edits: without it, reading a matching file with `view` also matches.
+
+#### Post rules
+
+A rule with `"when": "post"` runs after a tool call finished, and adds its `message` as a note for the model. It cannot block anything, because the tool already ran. Use it to point out problems in a result:
+
+```json
+{ "id": "tests-failed", "when": "post", "tools": ["bash"],
+  "pattern": "^(FAIL|not ok)\\b|\\b[1-9]\\d* (failed|failing)\\b", "flags": "m",
+  "message": "The test run reported failures. Fix them before moving on." }
+```
+
+For post rules, `field` can be:
+
+- `auto` or `result` (default): the tool's output, or its error message if it failed;
+- `file`: the target files as they are after the tool ran (up to 1 MB each), for example to check a whole file after an edit;
+- `all`: the arguments and the output;
+- a dotted argument path, such as `command`.
+
+### Cursor and Cline rules
+
+The `imports` feature reads rule files that other coding agents use, from the project root:
+
+| File | How it is used |
+|---|---|
+| `.cursor/rules/**/*.mdc` with `alwaysApply: true` | Added to the first prompt of the session |
+| `.cursor/rules/**/*.mdc` with `globs` | Added once per session, the first time Copilot reads or edits a matching file |
+| `.cursor/rules/**/*.mdc` with only a `description` | Listed by path and description in the first prompt, so the model can read the file when it is relevant |
+| `.cursor/rules/**/*.mdc` with none of these | Not imported. In Cursor these rules apply only when you mention them. |
+| `.cursorrules` | Added to the first prompt |
+| `.clinerules` file, or `*.md` and `*.txt` files in a `.clinerules/` folder | Added to the first prompt. A `paths:` list in the file's frontmatter makes it glob-scoped instead. |
+
+The rules reach the model as hidden context, like the nudge, and stay in the conversation. Copilot CLI does not read these files itself. It reads `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.claude/rules`, `.github/copilot-instructions.md` and `.github/instructions`, which oh-my-copilot leaves alone. See [examples/cursor-rules](examples/cursor-rules).
+
+- **Size limits.** The first prompt carries at most 12,000 characters of imported rules, one glob-scoped rule at most 6,000, and all glob-scoped rules together at most 24,000 per session. These are hard caps. Longer rules are cut, with a note telling the model which file to read for the rest. Rules that do not fit at all are listed by file name, ending with "and N more" when the list itself would not fit. Glob-scoped rules past the session budget are skipped. `/omc status` lists the files that were cut or left out.
+- **When rules change.** A session reads the rules once. Changes apply to the next session.
+- **Only regular files inside the project.** Symlinks are skipped with a warning, as are files that resolve outside the project root, so a cloned repository cannot pull in files such as `~/.aws/credentials`.
+- **Glob-scoped rules need a file tool.** They are triggered by `view`, `create`, `edit`, `read_anchored`, `edit_anchored` and `apply_patch`, not by shell commands.
+- **On by default.** The feature does nothing in projects without these files. If you already copied the rules into Copilot's own instruction files, turn it off to avoid sending them twice: `{"features": {"imports": false}}` or `/omc off imports`. Turning it off mid-session tells the model to stop following the imported rules.
 
 ## Develop
 
@@ -150,7 +209,7 @@ The tests use only Node's built-in test runner. They need Node 20 or later and n
 | `plugin/com.github.copilot/extensions/omc/extension.mjs` | Entry point. It checks `OMC_DISABLE`, then loads the features. |
 | `plugin/com.github.copilot/extensions/omc/lib/` | Feature code: `main.mjs` wires everything into the session; the other modules are pure logic |
 | `test/` | Unit tests, and integration tests that use a fake session |
-| `examples/` | Sample `config.json` and `rules.json` |
+| `examples/` | Sample `config.json`, `rules.json`, and Cursor rules (`cursor-rules/`) |
 | `docs/investigation.md` | Research notes, feature map, and roadmap |
 | `docs/benchmark.md` | Stock Copilot vs oh-my-copilot edit benchmark |
 | `bench/` | Benchmark tasks, runner (`run.mjs`), report (`report.mjs`) and raw results. Running it uses AI credits. |
