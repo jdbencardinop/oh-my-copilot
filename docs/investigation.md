@@ -216,7 +216,7 @@ The plugin lives in [`plugin/`](../plugin). It contains one extension, `omc`, wi
 
 | Check | Result |
 |---|---|
-| `npm test` (unit tests, integration tests with a fake session, and example files) | 114 passing |
+| `npm test` (unit tests, integration tests with a fake session, and example files) | 129 passing |
 | The model uses `read_anchored`, then `edit_anchored`, to rename a function and append a line | Pass |
 | A `deny` rule blocks a bash command and shows the rule's reason | Pass |
 | A `context` rule reaches the model, which then removed the banned `console.log` | Pass |
