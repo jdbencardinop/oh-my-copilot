@@ -110,6 +110,8 @@ These SDK hooks are available to extensions in 1.0.105:
 
 `onPreToolUse` can allow, deny or ask about a tool call, rewrite its arguments, or add context for the model. The rules feature is built on it.
 
+`onUserPromptSubmitted` can add hidden context to a prompt. Copilot appends it to the prompt as a `<system_reminder>` block, and it stays in the conversation. The nudge feature is built on it.
+
 Things to know before writing an extension:
 
 - **Never write to stdout.** It carries JSON-RPC. Use `session.log` for messages.
@@ -177,7 +179,7 @@ You can always get back to plain Copilot without uninstalling anything.
 | Control | Scope | How | Verified |
 |---|---|---|---|
 | `OMC_DISABLE=1` | One launch | The extension joins with nothing registered | Live |
-| `OMC_DISABLE_FEATURES=rules` | One launch | Comma-separated list of `hashline`, `rules` or `all` | Unit tests |
+| `OMC_DISABLE_FEATURES=rules` | One launch | Comma-separated list of `hashline`, `nudge`, `rules` or `all` | Unit tests |
 | `/omc off`, `/omc on` | This session | Rules stop at once; the anchored tools refuse calls (see the note below) | Live |
 | `/omc off <feature>`, `/omc on <feature>` | This session | Per feature | Unit tests |
 | Config file | User or project | `{"enabled": false}` or `{"features": {"rules": false}}` in `~/.copilot/omc/config.json` or `.github/omc/config.json` | Live (project file) |
@@ -194,21 +196,23 @@ Precedence works like this:
 **`/omc off` cannot remove tools mid-session.** Copilot 1.0.105 does not let an extension remove its own tools ("Extension connections cannot replace SDK external tools"). After `/omc off`:
 
 - `read_anchored` and `edit_anchored` stay listed;
-- any call to them returns a message telling the model to use the built-in view and edit tools.
+- any call to them returns a message telling the model to use the built-in view and edit tools;
+- if the nudge was already sent, the next prompt tells the model to go back to the built-in tools.
 
 To remove the tools from the list entirely, restart with `OMC_DISABLE=1` or use one of the disable settings above.
 
 ## Proof of concept
 
-The plugin lives in [`plugin/`](../plugin). It contains one extension, `omc`, with three features:
+The plugin lives in [`plugin/`](../plugin). It contains one extension, `omc`, with these features:
 
 - `read_anchored` and `edit_anchored` tools that use the hashline format;
+- a nudge: on the first prompt of a session, hidden context tells the model to prefer those tools (only while `hashline` and `nudge` are on);
 - rules from `rules.json` that are checked before each tool call;
 - a `/omc` command for status and toggles.
 
 | Check | Result |
 |---|---|
-| `npm test` (unit tests, integration tests with a fake session, and example files) | 37 passing |
+| `npm test` (unit tests, integration tests with a fake session, and example files) | 43 passing |
 | The model uses `read_anchored`, then `edit_anchored`, to rename a function and append a line | Pass |
 | A `deny` rule blocks a bash command and shows the rule's reason | Pass |
 | A `context` rule reaches the model, which then removed the banned `console.log` | Pass |
@@ -217,6 +221,7 @@ The plugin lives in [`plugin/`](../plugin). It contains one extension, `omc`, wi
 | Installed with `copilot plugin install`, without `--plugin-dir` | Loads and enforces rules |
 | Benchmark: 84 runs, 6 edit tasks, 2 models ([docs/benchmark.md](benchmark.md)) | All runs passed. When prompted to use the anchored tools: 21–25% faster, 37–46% fewer output tokens, 9–14% fewer credits. Unprompted, the models did not use them. |
 | Instructions-file nudge, 8 runs ([spot check](benchmark.md#spot-check-nudging-with-an-instructions-file)) | With the plugin on, both models used the anchored tools in 4 of 4 runs. With the plugin off (`OMC_DISABLE=1`) and the same instructions, 4 of 4 runs used the built-in tools. All 8 passed. |
+| The plugin's own nudge, 4 runs ([spot check](benchmark.md#spot-check-the-plugins-own-nudge)) | No hint and no instructions file. With the plugin on, 3 of 3 runs (2 Haiku, 1 gpt-6.1-sol) used `read_anchored` and `edit_anchored`. With `OMC_DISABLE=1`, no nudge was sent and the run used `view` and `edit`. All 4 edits were correct. |
 
 ## Open questions and risks
 
@@ -229,7 +234,7 @@ The plugin lives in [`plugin/`](../plugin). It contains one extension, `omc`, wi
 
 ## Roadmap
 
-1. **Ship the nudge with the plugin.** Without a prompt hint, the models never used the anchored tools. A personal instructions file fixed that in a [spot check](benchmark.md#spot-check-nudging-with-an-instructions-file), but each user must create it. Look into a skill, a prompt hook, or instructions provided by the plugin.
+1. **Ship the nudge with the plugin.** Done: the `nudge` feature sends the guidance through `onUserPromptSubmitted`, once per session, and only while the anchored tools are on. A plugin skill was rejected because the model loads it only on demand and the kill switches cannot turn it off. `onSessionStart` was not used because the extension may join after the session starts. A system message from the extension could not be withdrawn mid-session. Next: run the six benchmark tasks on the `omc-nudge` arm.
 2. **Package for distribution.** A marketplace manifest, install docs, and a CI job that runs `npm test`.
 3. **Richer rules.** Import Cursor `.mdc` and Cline rules; scope rules by path glob; add `onPostToolUse` checks.
 4. **A stream-rules spike.** Find out whether session events plus `session.abort` can reproduce OMP's mid-stream abort and retry.

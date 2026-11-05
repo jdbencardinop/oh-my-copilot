@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, test } from "node:test";
-import { start } from "../plugin/com.github.copilot/extensions/omc/lib/main.mjs";
+import { NUDGE, NUDGE_OFF, start } from "../plugin/com.github.copilot/extensions/omc/lib/main.mjs";
 
 let root;
 let project;
@@ -56,7 +56,10 @@ async function boot({ rejectSetTools = false } = {}) {
   const tool = (name) => config.tools.find((t) => t.name === name) ?? null;
   const pre = (toolName, toolArgs) => config.hooks.onPreToolUse({ toolName, toolArgs, workingDirectory: project });
   const command = (args) => config.commands.find((c) => c.name === "omc").handler({ args });
-  return { config, logs, toolSets, joins: () => joins, tool, pre, command };
+  const prompt = async (sessionId = "s1") =>
+    (await config.hooks.onUserPromptSubmitted({ prompt: "fix it", workingDirectory: project }, { sessionId }))
+      ?.additionalContext;
+  return { config, logs, toolSets, joins: () => joins, tool, pre, command, prompt };
 }
 
 test("joins exactly once and registers tools, hook, and /omc", async () => {
@@ -64,6 +67,7 @@ test("joins exactly once and registers tools, hook, and /omc", async () => {
   assert.equal(h.joins(), 1);
   assert.deepEqual(h.config.tools.map((t) => t.name), ["read_anchored", "edit_anchored"]);
   assert.equal(typeof h.config.hooks.onPreToolUse, "function");
+  assert.equal(typeof h.config.hooks.onUserPromptSubmitted, "function");
   assert.deepEqual(h.config.commands.map((c) => c.name), ["omc"]);
 });
 
@@ -174,4 +178,110 @@ test("invalid project config is ignored with a warning", async () => {
   } finally {
     rmSync(join(project, ".github", "omc", "config.json"));
   }
+});
+
+async function withEnv(name, value, fn) {
+  const saved = process.env[name];
+  process.env[name] = value;
+  try {
+    return await fn();
+  } finally {
+    if (saved === undefined) delete process.env[name];
+    else process.env[name] = saved;
+  }
+}
+
+test("nudge: sent once per session while hashline is active", async () => {
+  const h = await boot();
+  assert.equal(await h.prompt(), NUDGE);
+  assert.match(NUDGE, /read_anchored/);
+  assert.match(NUDGE, /not available/, "keeps the fallback sentence");
+  assert.equal(await h.prompt(), undefined, "later prompts add nothing");
+  assert.equal(await h.prompt("s2"), NUDGE, "a new session gets its own nudge");
+});
+
+test("nudge: absent when hashline, nudge, or omc is disabled by env", async () => {
+  for (const [name, value] of [
+    ["OMC_DISABLE_FEATURES", "hashline"],
+    ["OMC_DISABLE_FEATURES", "nudge"],
+    ["OMC_DISABLE_FEATURES", "all"],
+    ["OMC_DISABLE", "1"],
+  ]) {
+    await withEnv(name, value, async () => {
+      const h = await boot();
+      assert.equal(await h.prompt(), undefined, `${name}=${value}`);
+      await h.command("on hashline");
+      await h.command("on nudge");
+      assert.equal(await h.prompt(), undefined, `/omc on cannot override ${name}=${value}`);
+    });
+  }
+});
+
+test("nudge: absent when project config turns hashline or nudge off", async () => {
+  for (const features of [{ hashline: false }, { nudge: false }]) {
+    writeFileSync(join(project, ".github", "omc", "config.json"), JSON.stringify({ features }));
+    try {
+      const h = await boot();
+      assert.equal(await h.prompt(), undefined, JSON.stringify(features));
+    } finally {
+      rmSync(join(project, ".github", "omc", "config.json"));
+    }
+  }
+});
+
+test("nudge: /omc off before the first prompt sends nothing; off after it sends a retraction", async () => {
+  for (const off of ["off", "off hashline", "off nudge"]) {
+    const h = await boot();
+    await h.command(off);
+    assert.equal(await h.prompt(), undefined, `/omc ${off}`);
+  }
+
+  const h = await boot();
+  assert.equal(await h.prompt(), NUDGE);
+  await h.command("off hashline");
+  assert.equal(await h.prompt(), NUDGE_OFF);
+  assert.equal(await h.prompt(), undefined, "retraction is sent once");
+  await h.command("on hashline");
+  assert.equal(await h.prompt(), NUDGE, "guidance returns when turned back on");
+});
+
+test("nudge: absent when the hashline circuit breaker has tripped; retracted if already sent", async () => {
+  const boom = {
+    get path() {
+      throw new Error("boom");
+    },
+  };
+  const trip = async (h) => {
+    for (let i = 0; i < 3; i++) {
+      const r = await h.tool("read_anchored").handler(boom, {});
+      assert.match(r.textResultForLlm, /internal error/);
+    }
+    assert.ok(h.logs.some((l) => /"hashline" is off/.test(l.message)));
+  };
+
+  const fresh = await boot();
+  await trip(fresh);
+  assert.equal(await fresh.prompt(), undefined, "never sent after a trip");
+
+  const h = await boot();
+  assert.equal(await h.prompt(), NUDGE);
+  await trip(h);
+  assert.equal(await h.prompt(), NUDGE_OFF, "retraction after the breaker trips");
+  assert.equal(await h.prompt(), undefined);
+});
+
+test("nudge: not sent when the anchored tools were not registered at join", async () => {
+  const userConfig = join(home, "omc", "config.json");
+  mkdirSync(join(home, "omc"), { recursive: true });
+  writeFileSync(userConfig, JSON.stringify({ features: { hashline: false } }));
+  let h;
+  try {
+    h = await boot({ rejectSetTools: true });
+    assert.deepEqual(h.config.tools, []);
+    assert.equal(await h.prompt(), undefined);
+  } finally {
+    rmSync(userConfig);
+  }
+  await h.command("reload");
+  assert.equal(await h.prompt(), undefined, "hashline is on again, but the tools are not listed");
 });

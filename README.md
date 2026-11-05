@@ -6,7 +6,7 @@ oh-my-copilot is a GitHub Copilot CLI plugin that brings ideas from [oh-my-pi](h
 
 It adds three things to Copilot:
 
-- **Hash-anchored editing.** `read_anchored` shows each line as `LINE:HASH|content`. `edit_anchored` then edits by anchor, for example `12:ab`, instead of retyping the old text. If the file changed since it was read, the edit is rejected and nothing is written.
+- **Hash-anchored editing.** `read_anchored` shows each line as `LINE:HASH|content`. `edit_anchored` then edits by anchor, for example `12:ab`, instead of retyping the old text. If the file changed since it was read, the edit is rejected and nothing is written. The plugin tells the model to prefer these tools, so you do not have to.
 - **Tool-call rules.** Regex rules in `rules.json` run before every tool call. A rule can deny the call, ask the user, or add a note for the model.
 - **A `/omc` command.** It shows status and turns features on or off for the current session.
 
@@ -53,33 +53,29 @@ copilot --experimental --plugin-dir /path/to/oh-my-copilot/plugin
 Then try it:
 
 1. Run `/omc status`.
-2. Ask: "Create `notes.txt` with three lines, then use `read_anchored` and `edit_anchored` to change the second line."
+2. Ask: "Create `notes.txt` with three lines, then change the second line." Copilot should edit it with `read_anchored` and `edit_anchored`.
 3. Optional: copy [examples/rules.json](examples/rules.json) to `.github/omc/rules.json`, and ask Copilot to run `git push --force`. The `confirm-force-push` rule stops and asks you first.
 4. Run `/omc off rules`, and repeat step 3. Copilot no longer asks because of the rule.
 
 For a one-shot run, use `copilot --experimental --plugin-dir … -p "…" --allow-all-tools`.
 
-Copilot keeps using its built-in tools unless you ask for the anchored ones. See [Make Copilot use the anchored tools](#make-copilot-use-the-anchored-tools).
+See [How Copilot picks the anchored tools](#how-copilot-picks-the-anchored-tools).
 
-## Make Copilot use the anchored tools
+## How Copilot picks the anchored tools
 
-The plugin adds two tools: **`read_anchored`** and **`edit_anchored`**. The models do not choose them on their own. In the [benchmark](docs/benchmark.md), neither model used them without being told. When told, edits were about 20–25% faster and used 37–46% fewer output tokens.
+The plugin adds two tools: **`read_anchored`** and **`edit_anchored`**. On their own, the models ignore them: in the [benchmark](docs/benchmark.md), neither model used them without being told. When told, edits were about 20–25% faster and used 37–46% fewer output tokens.
 
-For one request, add a sentence to your prompt:
-
-```text
-Use the read_anchored and edit_anchored tools to read and edit files.
-```
-
-For every session, put this in `~/.copilot/copilot-instructions.md` (all repositories) or `.github/copilot-instructions.md` (one repository):
+So the plugin tells them. On the first prompt of each session, it adds this note as hidden context (the `nudge` feature):
 
 ```text
-Use `read_anchored` and `edit_anchored` to read and edit existing text files, instead of `view` and `edit`. Read the file with `read_anchored` first, then edit it with `edit_anchored` using the `LINE:HASH` anchors it returns. If an anchored edit is rejected as stale, read the file again. If these tools are not available, use `view` and `edit` as usual. Use `create` only for new files.
+Use `read_anchored` and `edit_anchored` to read and edit existing text files, instead of `view` and `edit`. Read the file with `read_anchored` first, then edit it with `edit_anchored` using the `LINE:HASH` anchors it returns. If an anchored edit is rejected as stale, read the file again. If these tools are not available or report that they are turned off, use `view` and `edit` as usual. Use `create` only for new files.
 ```
 
-The sentence "If these tools are not available…" keeps the fallback working. With the plugin switched off (`OMC_DISABLE=1`) and these instructions still in place, the models used the built-in tools as normal.
+- **It costs about 100 tokens once per session.** The note stays in the conversation, so later prompts add nothing.
+- **It follows the kill switches.** No note is sent while `hashline` or `nudge` is off, from any source: `OMC_DISABLE`, `OMC_DISABLE_FEATURES`, a config file, `/omc off`, or the circuit breaker. If you turn it off after the note was sent, the next prompt tells the model to go back to the built-in tools. `/omc on` sends the note again.
+- **It is checked.** In a [small live check](docs/benchmark.md#spot-check-the-plugins-own-nudge), 3 of 3 runs used the anchored tools with no hint in the prompt, and a run with `OMC_DISABLE=1` used the built-in tools.
 
-The instructions file was tested in 8 runs, only in the personal location (`~/.copilot`). The repository file is listed as an instruction source by `copilot instruction list`, but it has not been run end to end. See [the spot check](docs/benchmark.md#spot-check-nudging-with-an-instructions-file).
+To keep the anchored tools but stop the note, use `/omc off nudge`, `OMC_DISABLE_FEATURES=nudge`, or `{"features": {"nudge": false}}`. Then you can still ask for the tools in a prompt (for example, "Use the read_anchored and edit_anchored tools to read and edit files."), or put the text above in `~/.copilot/copilot-instructions.md` or `.github/copilot-instructions.md`. The sentence "If these tools are not available…" keeps that fallback working when the plugin is off.
 
 ## Turn it off
 
@@ -87,7 +83,7 @@ You can return to plain Copilot without uninstalling anything:
 
 | When | Do this |
 |---|---|
-| Right now, this session only | `/omc off`, or `/omc off rules` / `/omc off hashline` for one feature |
+| Right now, this session only | `/omc off`, or `/omc off <feature>` for one feature (`hashline`, `nudge`, `rules`) |
 | Next launch only | Start Copilot with `OMC_DISABLE=1`, or `OMC_DISABLE_FEATURES=rules` |
 | Every session | `copilot plugin disable oh-my-copilot` |
 | Every session, keeping the plugin enabled | Add `"extensions": {"disabledExtensions": ["plugin:oh-my-copilot:omc"]}` to `~/.copilot/settings.json` |
@@ -112,7 +108,7 @@ oh-my-copilot reads two optional files from each of two places. Project files ta
 
 It looks for the project folder from the session's working directory upward, and stops at the repository root. Edits to these files take effect on the next tool call. `/omc reload` re-reads them and clears any `/omc` overrides.
 
-`config.json` accepts `enabled`, `features.hashline`, `features.rules`, and `circuitBreakerThreshold`. See [examples/config.json](examples/config.json).
+`config.json` accepts `enabled`, `features.hashline`, `features.nudge`, `features.rules`, and `circuitBreakerThreshold`. `nudge` only has an effect while `hashline` is on. See [examples/config.json](examples/config.json).
 
 ### Rules
 

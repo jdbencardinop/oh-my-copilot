@@ -2,6 +2,7 @@
   "enabled": true,
   "features": {
     "hashline": true,
+    "nudge": true,
     "rules": true
   },
   "circuitBreakerThreshold": 3

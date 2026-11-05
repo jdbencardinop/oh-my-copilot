@@ -13,7 +13,7 @@ Each cell is stock → oh-my-copilot, averaged over 18 runs per arm (6 tasks × 
 
 Three caveats:
 
-1. **Models do not pick the tools on their own.** Without a hint in the prompt, neither model used the anchored tools in any of 12 runs, and the results matched stock Copilot. Something has to steer the model. A personal instructions file did in a small [spot check](#spot-check-nudging-with-an-instructions-file), and the README shows the text to use.
+1. **Models do not pick the tools on their own.** Without a hint in the prompt, neither model used the anchored tools in any of 12 runs, and the results matched stock Copilot. Something has to steer the model. A personal instructions file did in a small [spot check](#spot-check-nudging-with-an-instructions-file). The plugin now sends the same guidance itself, and it worked in a [smaller check](#spot-check-the-plugins-own-nudge). The timings above were measured before that, with the guidance in the prompt.
 2. **Most of the saving comes from batching.** Copilot's `edit` changes one unique match per call, so Haiku spent 6–9 calls on the rename and call-site tasks. `edit_anchored` did each of those in one call. On single-line fixes, the two arms were about even.
 3. **Fresh input goes up.** Anchored output adds a `LINE:HASH|` prefix to every line, and the plugin adds two tool schemas. Cached input falls by more than fresh input rises, so the credit cost still went down.
 
@@ -58,10 +58,11 @@ A run passes when the edited file equals `after`. Trailing whitespace is ignored
 | `stock` | No | "Use the view and edit tools" |
 | `omc` | Yes | "Use the read_anchored and edit_anchored tools" |
 | `omc-nohint` | Yes | None |
+| `omc-nudge` | Yes | None, but the plugin's own nudge is on |
 | `omc-instructions` | Yes | None, but a personal `copilot-instructions.md` tells the model to use the anchored tools |
 | `omc-off-instructions` | Yes, switched off with `OMC_DISABLE=1` | None, with the same instructions file |
 
-The two instruction arms appear only in the [spot check](#spot-check-nudging-with-an-instructions-file).
+The results below were recorded before the plugin had its own nudge. The runner now switches the nudge off (`OMC_DISABLE_FEATURES=nudge`) in `omc`, `omc-nohint` and `omc-instructions`, so those arms still measure the same thing. `omc-nudge` has not been run through the runner yet. The two instruction arms appear only in the [spot check](#spot-check-nudging-with-an-instructions-file).
 
 Each run starts a fresh, non-interactive Copilot session with `--output-format json`. It uses its own `COPILOT_HOME` and a fresh git repository that holds only the task file. Built-in MCP servers and user hooks are off. Runs are shuffled and execute up to 4 at a time.
 
@@ -125,7 +126,7 @@ This check asks two questions:
 1. Can an instructions file make the models use the anchored tools without a prompt hint?
 2. Does Copilot still work normally when the plugin is off but the instructions still mention its tools?
 
-The instructions are the text in the [README](../README.md#make-copilot-use-the-anchored-tools), placed in the run's personal Copilot home. Each model ran 2 tasks (`restore-negation` and `many-callsites`) once per arm: 8 runs, about 21 AI credits. This is a check, not a measurement. The sample is too small to compare speed or cost.
+The instructions are the text in [`bench/run.mjs`](../bench/run.mjs) (`INSTRUCTIONS`), placed in the run's personal Copilot home. Each model ran 2 tasks (`restore-negation` and `many-callsites`) once per arm: 8 runs, about 21 AI credits. This is a check, not a measurement. The sample is too small to compare speed or cost.
 
 | Arm | Model | Pass | Runs using the anchored tools | Edit tools used |
 |---|---|---|---|---|
@@ -138,6 +139,24 @@ The instructions are the text in the [README](../README.md#make-copilot-use-the-
 - **The fallback held.** With the plugin switched off and the same instructions in place, all 4 runs used the built-in tools and passed. None recorded a failed tool call.
 
 Not tested: the repository-level `.github/copilot-instructions.md`, other tasks, and longer sessions.
+
+### Spot check: the plugin's own nudge
+
+The plugin now adds the same guidance as hidden context on the first prompt of each session, so no instructions file is needed (see the [README](../README.md#how-copilot-picks-the-anchored-tools)). The wording adds one phrase to the fallback sentence: "or report that they are turned off".
+
+This was a quick live check outside the runner: one small edit (two one-line changes in a 12-line `cart.js`), with no hint in the prompt and no instructions file. Each run used a fresh Copilot home and repository. 4 runs, about 2 AI credits.
+
+| Setup | Model | Correct edit | Nudge in the prompt | Tool calls |
+|---|---|---|---|---|
+| Plugin on | claude-haiku-4.5 | 2/2 | 2/2 | each run: `bash` (find the file), `read_anchored`, `edit_anchored` |
+| Plugin on | gpt-6.1-sol | 1/1 | 1/1 | `glob`, 2 × `bash`, `read_anchored`, `edit_anchored` |
+| `OMC_DISABLE=1` | claude-haiku-4.5 | 1/1 | 0/1 | `glob`, 2 × `view`, 2 × `edit` |
+
+- **The nudge worked.** All 3 runs with the plugin on edited with `edit_anchored` in one call, after one `read_anchored`. None used `view` or `edit`.
+- **Off means stock.** With `OMC_DISABLE=1`, no guidance was sent, the anchored tools were not listed, and the model used the built-in tools.
+- **Where it shows up.** In `--output-format json`, the note appears in the `user.message` event's `transformedContent`, inside a `<system_reminder>` block.
+
+Not tested yet: the six benchmark tasks (`--arms omc-nudge`), interactive sessions, and long sessions where the note may be compacted away.
 
 ## Rerun it
 
@@ -154,13 +173,16 @@ node bench/run.mjs --models claude-haiku-4.5,gpt-6.1-sol --arms omc-nohint --out
 # The instructions spot check (about 21 credits)
 node bench/run.mjs --models claude-haiku-4.5,gpt-6.1-sol --arms omc-instructions,omc-off-instructions --tasks restore-negation,many-callsites --out bench/results/instructions.jsonl
 
+# The plugin's own nudge, all six tasks (not run yet)
+node bench/run.mjs --models claude-haiku-4.5,gpt-6.1-sol --arms omc-nudge --out bench/results/nudge.jsonl
+
 # Tables
 node bench/report.mjs bench/results/main.jsonl bench/results/nohint.jsonl
 ```
 
 `run.mjs` options:
 
-- `--models`, `--arms` and `--tasks` take comma-separated lists. The arms are `stock`, `omc`, `omc-nohint`, `omc-instructions` and `omc-off-instructions`;
+- `--models`, `--arms` and `--tasks` take comma-separated lists. The arms are `stock`, `omc`, `omc-nohint`, `omc-nudge`, `omc-instructions` and `omc-off-instructions`;
 - `--reps`, `--concurrency` and `--timeout` (seconds) take numbers;
 - `--keep` leaves each run's scratch folder in place for inspection.
 
@@ -168,7 +190,7 @@ The raw results are in [`bench/results/`](../bench/results), one JSON object per
 
 ## What to try next
 
-- **Ship the nudge with the plugin.** The instructions file works, but each user must create it. Look into a skill, a prompt hook, or instructions provided by the plugin itself. Then run all six tasks on `omc-instructions`; the spot check used two.
+- **Measure the plugin's nudge.** It now ships with the plugin, but was checked on one small edit only. Run all six tasks on `omc-nudge` and compare with `omc`.
 - **Add harder or larger tasks,** such as several files, long files, or vague bug descriptions, so that accuracy can differ.
 - **Test weaker models** when they are available, because OMP saw its largest gains there.
 - **Make anchor errors easier to fix.** For example, when the model passes `HASH|content`, find the line by its hash and suggest the full anchor.

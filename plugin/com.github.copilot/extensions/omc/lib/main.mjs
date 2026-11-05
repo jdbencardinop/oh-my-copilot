@@ -14,6 +14,19 @@ export const EXTENSION_ID = "plugin:oh-my-copilot:omc";
 const MAX_READ_LINES = 2000;
 const MAX_READ_CHARS = 200_000;
 
+// Hidden context added to a prompt so the model picks the anchored tools
+// without a user-written instructions file. It is the instructions-file text
+// from the benchmark spot check, plus "or report that they are turned off".
+export const NUDGE =
+  "Use `read_anchored` and `edit_anchored` to read and edit existing text files, instead of `view` and `edit`. " +
+  "Read the file with `read_anchored` first, then edit it with `edit_anchored` using the `LINE:HASH` anchors it returns. " +
+  "If an anchored edit is rejected as stale, read the file again. " +
+  "If these tools are not available or report that they are turned off, use `view` and `edit` as usual. " +
+  "Use `create` only for new files.";
+export const NUDGE_OFF =
+  "oh-my-copilot: ignore the earlier guidance about `read_anchored` and `edit_anchored`. " +
+  "Use Copilot's built-in tools (`view`, `edit`, `create`) as usual.";
+
 class UserError extends Error {}
 
 const failure = (text) => ({ textResultForLlm: text, resultType: "failure", error: text });
@@ -298,6 +311,27 @@ export async function start(joinSession) {
     }
   }
 
+  // ---- nudge ---------------------------------------------------------------
+
+  // The guidance is sent once per session as prompt context and stays in the
+  // conversation, so later prompts add nothing. If the anchored tools are
+  // switched off after that, the next prompt carries a one-line retraction;
+  // switching them back on sends the guidance again.
+  const nudged = new Map();
+  const nudgeWanted = () => registered && active("hashline") && active("nudge");
+  const nudgeContext = breaker.wrap(
+    "nudge",
+    async (_input, invocation) => {
+      const id = invocation?.sessionId ?? "";
+      const sent = nudged.get(id) === true;
+      const want = nudgeWanted();
+      if (want === sent) return undefined;
+      nudged.set(id, want);
+      return { additionalContext: want ? NUDGE : NUDGE_OFF };
+    },
+    undefined,
+  );
+
   // ---- /omc command --------------------------------------------------------
 
   const statusText = () => {
@@ -391,6 +425,16 @@ export async function start(joinSession) {
           return await evaluate(input);
         } catch (err) {
           warnOnce(`rules hook error: ${err?.message ?? err}`);
+          return undefined;
+        }
+      },
+      onUserPromptSubmitted: async (input, invocation) => {
+        try {
+          if (input?.workingDirectory) cwd = input.workingDirectory;
+          void syncTools();
+          return await nudgeContext(input, invocation);
+        } catch (err) {
+          warnOnce(`nudge hook error: ${err?.message ?? err}`);
           return undefined;
         }
       },

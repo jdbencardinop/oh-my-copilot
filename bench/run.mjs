@@ -30,11 +30,16 @@ export const INSTRUCTIONS =
   "If an anchored edit is rejected as stale, read the file again. " +
   "If these tools are not available, use `view` and `edit` as usual. Use `create` only for new files.\n";
 
+// The plugin's own nudge is switched off in the arms that predate it, so they
+// keep measuring what they did when they were recorded.
+const NO_NUDGE = { OMC_DISABLE_FEATURES: "nudge" };
+
 export const ARMS = {
   stock: { plugin: false, hint: "Use the view and edit tools to read and edit files." },
-  omc: { plugin: true, hint: "Use the read_anchored and edit_anchored tools to read and edit files." },
-  "omc-nohint": { plugin: true, hint: "" },
-  "omc-instructions": { plugin: true, hint: "", instructions: INSTRUCTIONS },
+  omc: { plugin: true, hint: "Use the read_anchored and edit_anchored tools to read and edit files.", env: NO_NUDGE },
+  "omc-nohint": { plugin: true, hint: "", env: NO_NUDGE },
+  "omc-nudge": { plugin: true, hint: "" },
+  "omc-instructions": { plugin: true, hint: "", instructions: INSTRUCTIONS, env: NO_NUDGE },
   // The plugin is loaded but switched off, while the instructions still mention its tools.
   "omc-off-instructions": { plugin: true, hint: "", instructions: INSTRUCTIONS, env: { OMC_DISABLE: "1" } },
 };
