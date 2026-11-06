@@ -23,7 +23,7 @@ flagged uncertainties, live in [`research/`](research/):
 | [02 — Native harnesses](research/02-native-harnesses.md) | Built-in capabilities of 14 harnesses versus Copilot |
 | [03 — Open-source projects](research/03-oss-projects.md) | Reusable tools: MCP servers, hooks, benchmarks |
 | [04 — Orchestrators](research/04-orchestrators.md) | Apps that run and coordinate several harnesses |
-| [05 — Superagent and EGM](research/05-superagent-and-egm.md) | DeepSeek's dsh-superagent and Google's Elephant-Goldfish Model, mapped to OMC's layer |
+| [05 — Superagent and EGM](research/05-superagent-and-egm.md) | DeepSeek's dsh-superagent, Google's Elephant-Goldfish Model, and Microsoft's TokenEconomizer, mapped to OMC's layer |
 
 ## How to read these reports
 
@@ -54,7 +54,9 @@ flagged uncertainties, live in [`research/`](research/):
   context-rich agent and reviews it with zero-context subagents; it already ships an
   experimental Copilot CLI adapter. OMC should integrate with it rather than copy it. DeepSeek's
   dsh-superagent is mostly an orchestrator, but its "minimize human attention" prompts fit OMC
-  as an opt-in rule pack. See [report 05](research/05-superagent-and-egm.md).
+  as an opt-in rule pack. Microsoft's TokenEconomizer is a Copilot plugin in our layer: its loop
+  guard and tool pruning overlap OMC's stream rules and per-model profiles, so OMC should coexist
+  with it and borrow its methods. See [report 05](research/05-superagent-and-egm.md).
 - **Many orchestrators run the user's own CLI in a git worktree.** OMC may work unchanged,
   but plugin loading, permissions, and interactive-only features need compatibility checks.
 
@@ -190,3 +192,6 @@ These are proposals, not decisions.
    docs and code. See [report 05](research/05-superagent-and-egm.md#recommended-additions).
 8. **Low-attention rule pack and dry-run stream rules.** Opt-in prompts from dsh-superagent
    (ask once, stop at named scope limits, honest delivery) and a log-only mode for stream rules.
+9. **Coexist with TokenEconomizer.** Test it beside OMC in a disposable profile, borrow its
+   "redirect once, then tell the person" loop policy for stream rules, and its unused-tool
+   evidence for per-model tool profiles.

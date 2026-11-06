@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Superagent and EGM | OMC research</title><style>
+<title>Superagent, EGM and TokenEconomizer | OMC research</title><style>
 :root{color-scheme:light dark;--background:light-dark(#f7f8fb,#11151d);--foreground:light-dark(#202c40,#e3e9f4);--muted:light-dark(#52617a,#acb9cc);--card:light-dark(#fff,#192231);--border:light-dark(#d5ddea,#344158);--primary:light-dark(#234db6,#9bbaff);--radius:12px;--font-sans:system-ui,sans-serif;--font-mono:ui-monospace,monospace}
 *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}
 body{margin:0;background:var(--background);color:var(--foreground);font:17px/1.7 var(--font-sans)}
@@ -27,13 +27,14 @@ hr{border:0;border-top:1px solid var(--border);margin:32px 0}img{max-width:100%}
 @media print{aside,.skip,.meta{display:none}.layout{display:block;padding:0}body{font-size:11pt;background:white;color:black}.table-scroll{max-height:none;overflow:visible}table{font-size:8pt}th{position:static}a{color:inherit}h2,h3{break-after:avoid}}
 </style></head>
 <body><a class="skip" href="#content">Skip to report</a><div class="layout">
-<aside><strong>Oh-my-copilot research</strong><nav aria-label="Reports"><a href="index.html">Landscape overview</a><a href="omp-ecosystem.html">OMP and enhancement layers</a><a href="native-harnesses.html">Native harness capabilities</a><a href="oss-projects.html">Open-source tools to study</a><a href="orchestrators.html">Managers and orchestrators</a><a href="superagent-and-egm.html" aria-current="page">Superagent and EGM</a></nav>
-<details open><summary>On this page</summary><ol class="toc"><li><a href="#summary">Summary</a></li><li><a href="#evidence-and-limits">Evidence and limits</a></li><li><a href="#dsh-superagent-in-brief">dsh-superagent in brief</a></li><li><a href="#egm-in-brief">EGM in brief</a></li><li><a href="#mapping-to-omc">Mapping to OMC</a></li><li><a href="#recommended-additions">Recommended additions</a></li><li><a href="#not-recommended">Not recommended</a></li></ol></details></aside>
+<aside><strong>Oh-my-copilot research</strong><nav aria-label="Reports"><a href="index.html">Landscape overview</a><a href="omp-ecosystem.html">OMP and enhancement layers</a><a href="native-harnesses.html">Native harness capabilities</a><a href="oss-projects.html">Open-source tools to study</a><a href="orchestrators.html">Managers and orchestrators</a><a href="superagent-and-egm.html" aria-current="page">Superagent, EGM and TokenEconomizer</a></nav>
+<details open><summary>On this page</summary><ol class="toc"><li><a href="#summary">Summary</a></li><li><a href="#evidence-and-limits">Evidence and limits</a></li><li><a href="#dsh-superagent-in-brief">dsh-superagent in brief</a></li><li><a href="#egm-in-brief">EGM in brief</a></li><li><a href="#tokeneconomizer-in-brief">TokenEconomizer in brief</a></li><li><a href="#mapping-to-omc">Mapping to OMC</a></li><li><a href="#recommended-additions">Recommended additions</a></li><li><a href="#not-recommended">Not recommended</a></li></ol></details></aside>
 <main id="content" tabindex="-1"><p class="meta">Research snapshot: November 2026 · <a href="../research/05-superagent-and-egm.md">Markdown source</a></p>
-<article><h1 id="05--deepseek-superagent-and-googles-elephant-goldfish-model">05 — DeepSeek superagent and Google&#39;s Elephant-Goldfish Model</h1>
+<article><h1 id="05--deepseek-superagent-googles-elephant-goldfish-model-and-microsofts-tokeneconomizer">05 — DeepSeek superagent, Google&#39;s Elephant-Goldfish Model, and Microsoft&#39;s TokenEconomizer</h1>
 <p>This report covers two projects the user asked to add: DeepSeek&#39;s
 <a href="https://github.com/deepseek-ai/dsh-superagent-prototype">dsh-superagent-prototype</a> and Google&#39;s
-<a href="https://github.com/google/elephant-goldfish-model">elephant-goldfish-model</a> (EGM). For each one,
+<a href="https://github.com/google/elephant-goldfish-model">elephant-goldfish-model</a> (EGM), and Microsoft&#39;s
+<a href="https://github.com/microsoft/TokenEconomizer">TokenEconomizer</a>. For each one,
 it answers three questions:</p>
 <ol>
 <li>What does OMC already have?</li>
@@ -52,33 +53,45 @@ GitHub and Feishu, decides which requests to take, opens tickets, and runs one w
 ticket. That is orchestrator or service work, close to T3 Code or Copilot&#39;s cloud agent. Its
 prompt rules, however, carry over well: ask for attention only when needed, stop at defined
 scope limits, report delivery honestly, and keep a person&#39;s pause in force.</li>
-<li><strong>OMC already covers part of both.</strong> The <code>reviewer</code> agent is a fresh-context reviewer, rules
+<li><strong>TokenEconomizer is in our layer and overlaps the most.</strong> It is a Copilot CLI plugin built on
+hooks that cuts cost by learning across a repository&#39;s sessions. Its loop guard, learned repo
+facts, and tool pruning sit next to OMC&#39;s stream rules, rules, and deferred per-model tool
+profiles. OMC should <strong>coexist with it and borrow its methods</strong>, not rebuild it.</li>
+<li><strong>OMC already covers part of all three.</strong> The <code>reviewer</code> agent is a fresh-context reviewer, rules
 give the model written policy, and the commit skill and anchored edits support delivery. What OMC lacks:
 design-stage review, a drift check from docs to code, and a &quot;low-attention&quot; working style.</li>
 </ul>
 <h2 id="evidence-and-limits">Evidence and limits</h2>
 <ul>
-<li>Both repositories were read at their default branch on 2026-11-06. dsh-superagent:
+<li><p>Both repositories were read at their default branch on 2026-11-06. dsh-superagent:
 MIT, about 20.2k stars, created 2026-10-31, last pushed 2026-11-03. EGM: Apache-2.0,
-about 13k stars, created 2026-09-13, pushed 2026-11-06.</li>
-<li><strong>The video transcripts could not be read.</strong> YouTube asked this machine to sign in
+about 13k stars, created 2026-09-13, pushed 2026-11-06.</p>
+</li>
+<li><p><strong>The video transcripts could not be read.</strong> YouTube asked this machine to sign in
 (&quot;confirm you&#39;re not a bot&quot;), and the transcript service blocked its IP. Only the titles were
-confirmed, through YouTube&#39;s oEmbed endpoint. Both videos are by AI LABS:<ul>
+confirmed, through YouTube&#39;s oEmbed endpoint. Both videos are by AI LABS:</p>
+<ul>
 <li><a href="https://www.youtube.com/watch?v=3DklR44DHnM">3DklR44DHnM</a> — &quot;Deepseek Just Released The
 Greatest Claude Code Workflow Ever&quot;.</li>
 <li><a href="https://www.youtube.com/watch?v=xxf6D9jynFw">xxf6D9jynFw</a> — &quot;EGM: Google&#39;s New Way To Use
 Claude Code Is Insane&quot;.</li>
 </ul>
 </li>
-<li><strong>Secondary write-ups of the EGM video</strong> (<a href="https://daily.dev/posts/egm-google-s-new-way-to-plan-with-claude-code-is-insane-wnpdgfh5l">daily.dev</a>,
+<li><p><strong>Secondary write-ups of the EGM video</strong> (<a href="https://daily.dev/posts/egm-google-s-new-way-to-plan-with-claude-code-is-insane-wnpdgfh5l">daily.dev</a>,
 <a href="https://www.ai.joaoqueiros.com/blog/elephant-goldfish-model-claude-code-spec-review-ai-labs">ai.joaoqueiros.com</a>)
 match the repository. The video&#39;s stages are bootstrap, brainstorm, draft, a review of up to
 five rounds, and a drift check. In the video&#39;s demo, the drift check found a real bug: the
 code allowed deleting a sold product that the spec said should only be hidden. The video calls
-EGM overkill for small fixes.</li>
-<li><strong>No reliable summary of the DeepSeek video was found.</strong> Search results described DeepSeek&#39;s
+EGM overkill for small fixes.</p>
+</li>
+<li><p><strong>No reliable summary of the DeepSeek video was found.</strong> Search results described DeepSeek&#39;s
 model API in general. Per the user, the video recreates the superagent workflow by hand inside
-Claude Code. The analysis here therefore relies on the repository.</li>
+Claude Code. The analysis here therefore relies on the repository.</p>
+</li>
+<li><p><strong>TokenEconomizer</strong> was read at its default branch on 2026-11-06: Apache-2.0, Python,
+about 4.9k stars, created 2026-10-13, pushed 2026-11-06. It is a UC Berkeley and Microsoft
+Research project. Its cost results come from its own paper and were not reproduced here.</p>
+</li>
 </ul>
 <h2 id="dsh-superagent-in-brief">dsh-superagent in brief</h2>
 <p>dsh-superagent is a research prototype that runs as a plugin inside <strong>DeepSeek Harness (DSH)</strong>.
@@ -141,6 +154,49 @@ each persona to a native profile, such as <code>egm:egm-design</code>. Reviewers
 using a disposable <code>COPILOT_HOME</code>, without calling a model.</li>
 <li>Its guide notes that <code>copilot plugin install</code> from a local path is unverified, and that a
 separate context window does not prove instructions or memory are isolated.</li>
+</ul>
+<h2 id="tokeneconomizer-in-brief">TokenEconomizer in brief</h2>
+<p>TokenEconomizer (&quot;experience-driven black-box cost control for coding agents&quot;) makes an agent
+cheaper in repositories you use often. It does not change the agent. It learns from earlier
+sessions in the same repository and uses that to cut waste in later ones.
+(<a href="https://github.com/microsoft/TokenEconomizer/blob/main/README.md">README</a>,
+<a href="https://github.com/microsoft/TokenEconomizer/blob/main/docs/PLUGIN.md">plugin guide</a>)</p>
+<ul>
+<li><strong>Micro-skills (off by default).</strong> It learns repository facts, such as &quot;use <code>python -m pytest</code>
+here&quot; or &quot;run this build step first&quot;. Facts come from failures that repeat across sessions and
+from a model that reviews recent sessions every 3 sessions. A fact is injected at session start
+once three sessions confirm it, and dropped when later sessions contradict it.</li>
+<li><strong>Tool pruning (on).</strong> Tools unused over 10 prompts across 2 sessions, or over 5 sessions, are
+left out of later sessions through the agent&#39;s own settings. One command restores them.</li>
+<li><strong>Loop guard (on).</strong> When a turn keeps hitting the same failures, a judge model checks whether
+it is stuck. At 0.7 confidence or more, it adds one redirect note per turn. If the turn is still
+stuck, it tells the person how to stop it; it never stops a turn itself.</li>
+<li><strong>Cost as billed.</strong> It counts cached tokens at cache prices and includes its own model calls
+in a per-session ledger, shown by <code>status</code>.</li>
+<li><strong>Reported results.</strong> On 277 SWE-Bench tasks across six repositories, mean cost fell 18.4–30.9%
+for five agent and model combinations, and Pass@1 rose in four of five. These are the authors&#39;
+numbers.</li>
+<li><strong>Hosts.</strong> Claude Code, Codex, Copilot CLI and Pi are supported; opencode, Cursor Agent and
+Hermes Agent are experimental. One Python core sits behind a thin adapter per host.</li>
+</ul>
+<h3 id="tokeneconomizer-on-copilot-cli-today">TokenEconomizer on Copilot CLI today</h3>
+<ul>
+<li><strong>Install:</strong> <code>copilot plugin marketplace add &lt;absolute clone path&gt;</code>, then
+<code>copilot plugin install tokeneconomizer@tokeneconomizer</code>. Tested on Copilot CLI 1.0.83 to
+1.0.102; OMC runs 1.0.105, which is untested.</li>
+<li><strong>Hooks:</strong> <code>SessionStart</code>, <code>UserPromptSubmit</code>, <code>PostToolUse</code>, <code>PostToolUseFailure</code>, <code>Stop</code> and
+<code>SessionEnd</code>, all calling one Python script. Facts enter as <code>additionalContext</code>.</li>
+<li><strong>Tool pruning is coarse on Copilot.</strong> Copilot has no persistent per-tool filter:
+<code>--excluded-tools</code> is a launch flag, and <code>permissions.deny</code> refuses a call but still sends the
+tool&#39;s schema. The only working lever was <code>disabledMcpServers</code> in the repository&#39;s
+<code>.github/copilot/settings.local.json</code>, which removes a whole MCP server, such as the built-in
+GitHub server. It applies only in a trusted folder.</li>
+<li><strong>Its own model calls</strong> run through <code>copilot -p</code>, with the cheapest capable model.</li>
+<li><strong>It cannot stop a Copilot turn:</strong> Copilot ignores <code>continue: false</code> from hooks.</li>
+<li><strong>State</strong> lives in <code>~/.tokeneconomizer</code>, outside <code>COPILOT_HOME</code>. A disposable test must also set
+<code>TOKENECONOMIZER_HOME</code>.</li>
+<li><strong>Evidence is thin for Copilot:</strong> the real-model checks used one model, Claude Haiku 4.5, over
+BYOK.</li>
 </ul>
 <h2 id="mapping-to-omc">Mapping to OMC</h2>
 <p>The table lists each idea and its fit. &quot;Our layer&quot; means an in-session Copilot CLI plugin:
@@ -247,6 +303,48 @@ skills, agent files, extension tools, and hooks.</p>
 <td><strong>Bring in</strong> to packaging item 2</td>
 </tr>
 <tr>
+<td>Learned repository facts (micro-skills)</td>
+<td>TE</td>
+<td>Partial: static rules; Copilot has native memory</td>
+<td>Ours</td>
+<td><strong>Coexist.</strong> Do not rebuild; check it does not clash with OMC rules</td>
+</tr>
+<tr>
+<td>Loop guard: judge, one redirect, then notify</td>
+<td>TE</td>
+<td>Partial: stream rules match patterns and retry</td>
+<td>Ours (hooks)</td>
+<td><strong>Borrow</strong> its failure-repeat signal and &quot;redirect once, then tell the person&quot; policy for stream rules</td>
+</tr>
+<tr>
+<td>Tool pruning from usage evidence</td>
+<td>TE</td>
+<td>None; per-model profiles deferred (item 10)</td>
+<td>Ours</td>
+<td><strong>Borrow</strong> its evidence thresholds and restore command for item 10; note Copilot only allows whole MCP servers off</td>
+</tr>
+<tr>
+<td>Billed-cost ledger with cache pricing</td>
+<td>TE</td>
+<td>Benchmark measures credits</td>
+<td>Ours (bench)</td>
+<td><strong>Borrow</strong> cache-aware cost accounting in reports</td>
+</tr>
+<tr>
+<td>Benchmark arms with baselines (Serena, repomap, RTK)</td>
+<td>TE</td>
+<td>Stock vs. plugin arms</td>
+<td>Ours (bench)</td>
+<td>Consider; its SWE-Bench and Web-Bench runner is a reference design</td>
+</tr>
+<tr>
+<td>One core with thin per-host adapters</td>
+<td>TE, EGM</td>
+<td>Copilot only</td>
+<td>Ours</td>
+<td>Note for packaging; not needed now</td>
+</tr>
+<tr>
 <td>Listening to GitHub and chat, admission, tickets</td>
 <td>dsh</td>
 <td>None</td>
@@ -283,12 +381,21 @@ question, stop at named scope limits, do not call a draft ready, and keep a pers
 <li><strong>Dry-run mode for stream rules.</strong> Log matches without aborting so users can tune patterns
 safely.</li>
 <li><strong>Offline discovery test in CI</strong>, following EGM&#39;s SDK RPC probe. Use it for packaging.</li>
+<li><strong>Test TokenEconomizer next to OMC</strong> in a disposable <code>COPILOT_HOME</code> with its own
+<code>TOKENECONOMIZER_HOME</code>. Check that both plugins&#39; prompt and session-start context coexist, and
+that its MCP pruning does not touch OMC. If it works, recommend it rather than build cost control.</li>
+<li><strong>Loop-guard ideas for stream rules.</strong> Add a &quot;same failure repeated&quot; trigger and a
+&quot;redirect once, then tell the person&quot; limit.</li>
+<li><strong>Evidence-based defaults for per-model tool profiles</strong> (item 10), using TokenEconomizer&#39;s
+unused-tool thresholds and restore command.</li>
 </ol>
 <h2 id="not-recommended">Not recommended</h2>
 <ul>
 <li><strong>Rebuilding dsh-superagent inside OMC.</strong> Admission, tickets, and multi-session routing need a
 long-running process and Source connectors. That belongs in an orchestrator. OMC can make
 sessions behave better when an orchestrator runs them.</li>
+<li><strong>Rebuilding TokenEconomizer&#39;s cost control.</strong> It already supports Copilot and is backed by a
+paper. OMC should not ship a second session-learning system that injects competing context.</li>
 <li><strong>Forking EGM&#39;s skills.</strong> EGM keeps one skill text for every harness and is still evolving.
 Copying it would create drift. OMC should integrate with it and fill gaps.</li>
 </ul>

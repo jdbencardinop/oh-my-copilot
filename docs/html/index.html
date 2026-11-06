@@ -27,7 +27,7 @@ hr{border:0;border-top:1px solid var(--border);margin:32px 0}img{max-width:100%}
 @media print{aside,.skip,.meta{display:none}.layout{display:block;padding:0}body{font-size:11pt;background:white;color:black}.table-scroll{max-height:none;overflow:visible}table{font-size:8pt}th{position:static}a{color:inherit}h2,h3{break-after:avoid}}
 </style></head>
 <body><a class="skip" href="#content">Skip to report</a><div class="layout">
-<aside><strong>Oh-my-copilot research</strong><nav aria-label="Reports"><a href="index.html" aria-current="page">Landscape overview</a><a href="omp-ecosystem.html">OMP and enhancement layers</a><a href="native-harnesses.html">Native harness capabilities</a><a href="oss-projects.html">Open-source tools to study</a><a href="orchestrators.html">Managers and orchestrators</a><a href="superagent-and-egm.html">Superagent and EGM</a></nav>
+<aside><strong>Oh-my-copilot research</strong><nav aria-label="Reports"><a href="index.html" aria-current="page">Landscape overview</a><a href="omp-ecosystem.html">OMP and enhancement layers</a><a href="native-harnesses.html">Native harness capabilities</a><a href="oss-projects.html">Open-source tools to study</a><a href="orchestrators.html">Managers and orchestrators</a><a href="superagent-and-egm.html">Superagent, EGM and TokenEconomizer</a></nav>
 <details open><summary>On this page</summary><ol class="toc"><li><a href="#how-to-read-these-reports">How to read these reports</a></li><li><a href="#key-findings">Key findings</a></li><li><a href="#what-the-star-count-warning-meant">What the star-count warning meant</a></li><li><a href="#ast-grep-and-go-language-support">ast-grep and Go language support</a></li><li><a href="#what-base-copilot-cli-lacks">What base Copilot CLI lacks</a></li><li><a href="#omp-style-layers-for-other-harnesses">OMP-style layers for other harnesses</a></li><li><a href="#reuse-candidates-for-the-roadmap">Reuse candidates for the roadmap</a></li><li><a href="#orchestrators">Orchestrators</a></li><li><a href="#candidate-additions-to-the-roadmap">Candidate additions to the roadmap</a></li></ol></details></aside>
 <main id="content" tabindex="-1"><p class="meta">Research snapshot: November 2026 · <a href="../landscape.md">Markdown source</a></p>
 <article><h1 id="agent-harness-landscape">Agent harness landscape</h1>
@@ -71,7 +71,7 @@ flagged uncertainties, live in <a href="../research"><code>research/</code></a>:
 </tr>
 <tr>
 <td><a href="superagent-and-egm.html">05 — Superagent and EGM</a></td>
-<td>DeepSeek&#39;s dsh-superagent and Google&#39;s Elephant-Goldfish Model, mapped to OMC&#39;s layer</td>
+<td>DeepSeek&#39;s dsh-superagent, Google&#39;s Elephant-Goldfish Model, and Microsoft&#39;s TokenEconomizer, mapped to OMC&#39;s layer</td>
 </tr>
 </tbody></table>
 </div><h2 id="how-to-read-these-reports">How to read these reports</h2>
@@ -103,7 +103,9 @@ or URL-scheme reads.</li>
 context-rich agent and reviews it with zero-context subagents; it already ships an
 experimental Copilot CLI adapter. OMC should integrate with it rather than copy it. DeepSeek&#39;s
 dsh-superagent is mostly an orchestrator, but its &quot;minimize human attention&quot; prompts fit OMC
-as an opt-in rule pack. See <a href="superagent-and-egm.html">report 05</a>.</li>
+as an opt-in rule pack. Microsoft&#39;s TokenEconomizer is a Copilot plugin in our layer: its loop
+guard and tool pruning overlap OMC&#39;s stream rules and per-model profiles, so OMC should coexist
+with it and borrow its methods. See <a href="superagent-and-egm.html">report 05</a>.</li>
 <li><strong>Many orchestrators run the user&#39;s own CLI in a git worktree.</strong> OMC may work unchanged,
 but plugin loading, permissions, and interactive-only features need compatibility checks.</li>
 </ul>
@@ -398,6 +400,9 @@ status.</li>
 docs and code. See <a href="superagent-and-egm.html#recommended-additions">report 05</a>.</li>
 <li><strong>Low-attention rule pack and dry-run stream rules.</strong> Opt-in prompts from dsh-superagent
 (ask once, stop at named scope limits, honest delivery) and a log-only mode for stream rules.</li>
+<li><strong>Coexist with TokenEconomizer.</strong> Test it beside OMC in a disposable profile, borrow its
+&quot;redirect once, then tell the person&quot; loop policy for stream rules, and its unused-tool
+evidence for per-model tool profiles.</li>
 </ol>
 </article><footer>Documentation claims are not compatibility tests. Source links and uncertainty labels are preserved from the Markdown reports. Rebuild with <code>npm run docs:html</code>.</footer>
 </main></div></body></html>
