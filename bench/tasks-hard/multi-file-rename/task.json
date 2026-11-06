@@ -1,0 +1,5 @@
+{
+  "id": "multi-file-rename",
+  "check": "check.mjs",
+  "prompt": "Rename the exported function `loadConfig` (declared in `config.mjs`) to `resolveConfig` across the whole project: its declaration, every import and call in `env.mjs`, `server.mjs` and `cli.mjs`, the re-export in `index.mjs`, and the mention of it in the doc comment in `validate.mjs`. Do not rename `loadConfigSchema` or anything else, and change nothing else."
+}

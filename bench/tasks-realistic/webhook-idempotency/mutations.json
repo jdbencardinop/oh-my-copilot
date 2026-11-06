@@ -1,0 +1,20 @@
+[
+  {
+    "id": "non-atomic-transactions",
+    "file": "src/store.mjs",
+    "from": "const previous = this.queues.get(tenantId) ?? Promise.resolve();",
+    "to": "const previous = Promise.resolve();"
+  },
+  {
+    "id": "conflicting-event-accepted",
+    "file": "src/credit.mjs",
+    "from": "if (prior.accountId !== accountId || prior.amountCents !== amountCents) {",
+    "to": "if (false) {"
+  },
+  {
+    "id": "unsafe-balance-accepted",
+    "file": "src/credit.mjs",
+    "from": "if (!Number.isSafeInteger(updated)) throw new RangeError(\"balance exceeds safe integer range\");",
+    "to": ""
+  }
+]

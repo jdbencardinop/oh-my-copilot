@@ -1,0 +1,7 @@
+{
+  "id": "chunked-json-feed",
+  "check": "check.mjs",
+  "allowTests": true,
+  "visibleTest": ["node", "--test", "test/records.test.mjs"],
+  "prompt": "The order feed drops its last record and sometimes corrupts non-ASCII text when a proxy splits the response into small chunks. Fix the existing `readRecords(chunks)` async generator without changing its API. The input is an async or sync iterable of Uint8Array byte chunks containing UTF-8 newline-delimited JSON values. Handle arbitrary byte boundaries, LF and CRLF, blank lines, and a final nonblank line without a newline. Yield each JSON value as soon as its line is complete; do not wait for the full input. Invalid UTF-8 must reject, and malformed JSON must throw an error identifying its 1-based line number, counting blank lines. Propagate source errors. Keep the existing order adapter working. Run existing tests with `node --test test/*.test.mjs`."
+}

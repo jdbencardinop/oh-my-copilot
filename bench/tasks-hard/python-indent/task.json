@@ -1,0 +1,5 @@
+{
+  "id": "python-indent",
+  "check": "check.py",
+  "prompt": "Make two changes to the `allocate` function in `allocate.py`:\n1. Wrap the line `qty = int(item[\"qty\"])` in a `try`/`except (TypeError, ValueError)`. In the `except` branch, append `f\"{sku}: bad quantity {item['qty']!r}\"` to `errors` and then `continue` with the next item.\n2. Add an `elif qty > 0:` branch to the `if need > 0:` statement. It must append the tuple `(sku, warehouse[\"name\"], shelf[\"id\"])` to `surplus`.\nKeep the indentation consistent (4 spaces per level) and change nothing else."
+}

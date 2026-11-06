@@ -1,0 +1,5 @@
+{
+  "id": "vague-bug-js",
+  "check": "check.mjs",
+  "prompt": "Customers report that the checkout in this cart project (`cart.mjs`, `coupons.mjs`, `pricing.mjs`) can show a negative total. Example: a cart with one $12.00 item, the 25% `SPRING25` promotion and the `TENOFF` coupon ($10 off) shows a receipt with `TENOFF -$10.00`, tax `-$0.08` and total `-$1.08`. A discount must never take the order below $0.00: in this example TENOFF should only take off the $9.00 that is left, so tax and total are $0.00, and the discount lines on the receipt must still add up to the order's total discount. Find and fix the cause. Promotions, coupon rules and everything else must keep working as before."
+}

@@ -1,0 +1,5 @@
+{
+  "id": "extract-helper",
+  "check": "check.mjs",
+  "prompt": "In `validators.mjs`, `validateCustomer`, `validateOrder`, `validateProduct` and `validateShipment` each repeat the same loop that reports missing required fields. Extract it into a new exported function `requiredFieldErrors(record, fields, prefix)` in the same file that returns an array with the message `${prefix}.${field} is required` for every field in `fields` that is `undefined`, `null` or a blank string, in the order of `fields`. Replace the loop in all four validators with a call to it. Every validator must return exactly the same problems, in the same order, as before. Change nothing else."
+}

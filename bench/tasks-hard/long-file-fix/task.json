@@ -1,0 +1,5 @@
+{
+  "id": "long-file-fix",
+  "check": "check.mjs",
+  "prompt": "`percentile(values, p)` in `measure.mjs` returns wrong results: `percentile([10, 20, 30, 40], 50)` returns 30 instead of 25, and `percentile([10, 20, 30, 40], 100)` returns NaN instead of 40. As its doc comment says, it should interpolate linearly between the closest ranks (Excel PERCENTILE.INC / NumPy's default method). Fix the bug in `percentile`. Change nothing else in the file."
+}

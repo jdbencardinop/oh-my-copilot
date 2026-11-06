@@ -1,0 +1,6 @@
+{
+  "id": "conflict-multi-file",
+  "setup": "setup.sh",
+  "check": "check.mjs",
+  "prompt": "A merge of branch `feature/suspend` into the current branch is in progress, with conflicts in `limits.mjs`, `users.mjs` and `teams.mjs`. Resolve them by editing the files:\n- `limits.mjs`: keep both changes (`DEFAULT_LIMIT` 50 and `MAX_LIMIT` 200).\n- `users.mjs`, in `listUsers`: keep the current branch's line (sorted by name; suspended users stay listed) and drop the incoming one.\n- `teams.mjs`, in `listTeams`: take the incoming branch's line (suspended teams are hidden, no sorting) and drop the current one.\n- `users.mjs`, in `getUser`: combine both sides: throw `NotFoundError` when the user is missing (incoming), and return `{ ...present(user), email: user.email }` otherwise (current).\nKeep every change that merged without conflicts. Remove all conflict markers. Do not run git commands."
+}

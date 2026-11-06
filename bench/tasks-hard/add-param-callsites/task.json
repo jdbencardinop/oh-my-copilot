@@ -1,0 +1,5 @@
+{
+  "id": "add-param-callsites",
+  "check": "check.mjs",
+  "prompt": "In `money.mjs`, `formatPrice(minor)` always formats in USD. Give it a required second parameter so its signature becomes `formatPrice(minor, currency)`, where `currency` is an ISO code such as \"EUR\", and make it return `formatMinor(minor, currency)`. Do not give `currency` a default value. Then update every call of `formatPrice` so it passes the right currency:\n- `invoice.mjs`: in `invoiceLines` and `invoiceTotal` pass `invoice.currency`; in `overdueNotice` pass `settings.billingCurrency`.\n- `cart.mjs`: in `cartSummary` and `freeShippingHint` pass `cart.currency`; in `shippingLabel` pass `region.currency`.\n- `receipt.mjs`: in `receiptPayment` pass `p.currency` for each payment line and `order.currency` for the `Paid:` line; in `receiptRefund` pass `refund.currency`. Do not use `locale` for the currency.\nChange nothing else."
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "timestamp-only-boundary",
+    "file": "src/repository.py",
+    "from": "(record[\"created_at\"], record[\"id\"]) < after",
+    "to": "record[\"created_at\"] < after[0]"
+  },
+  {
+    "id": "cross-tenant-cursor",
+    "file": "src/cursor.py",
+    "from": "or value[0] != tenant_id",
+    "to": "or False"
+  },
+  {
+    "id": "no-tenant-filter",
+    "file": "src/repository.py",
+    "from": "[record for record in records if record[\"tenant_id\"] == tenant_id]",
+    "to": "list(records)"
+  }
+]

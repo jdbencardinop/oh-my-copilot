@@ -1,0 +1,20 @@
+[
+  {
+    "id": "drop-final-record",
+    "file": "src/read-records.mjs",
+    "from": "if (pending.length) {",
+    "to": "if (false && pending.length) {"
+  },
+  {
+    "id": "accept-invalid-utf8",
+    "file": "src/read-records.mjs",
+    "from": "new TextDecoder(\"utf-8\", { fatal: true })",
+    "to": "new TextDecoder(\"utf-8\")"
+  },
+  {
+    "id": "missing-line-number",
+    "file": "src/read-records.mjs",
+    "from": "throw new SyntaxError(`invalid JSON on line ${lineNumber}: ${error.message}`);",
+    "to": "throw error;"
+  }
+]

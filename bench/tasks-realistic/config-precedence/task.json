@@ -1,0 +1,7 @@
+{
+  "id": "config-precedence",
+  "check": "check.mjs",
+  "allowTests": true,
+  "visibleTest": ["node", "--test", "test/config.test.mjs"],
+  "prompt": "The application's settings lose nested defaults, and `CACHE_ENABLED=false` still enables caching. Fix `buildConfig({ project, env, overrides })` while preserving its API. Apply defaults, then project, environment, and overrides in that order. Recursively merge plain objects; arrays and null replace the earlier value, while an undefined object property inherits it. Explicit false, zero, empty strings, and empty arrays are values. Never mutate the inputs or shared defaults, and returned nested data must be independent across calls. Config data is JSON-compatible except for undefined object properties; own keys such as `__proto__` must not alter object prototypes. Environment variables `CACHE_ENABLED` accept true, false, 1, or 0 case-insensitively; `CACHE_TTL_SECONDS` and `HTTP_TIMEOUT_MS` accept nonnegative safe integer decimal strings. Trim surrounding whitespace, accept zero, and throw for any present invalid value. An undefined environment value is treated as absent; unrecognized environment variables are ignored. Run existing tests with `node --test test/*.test.mjs`."
+}

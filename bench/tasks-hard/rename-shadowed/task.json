@@ -1,0 +1,5 @@
+{
+  "id": "rename-shadowed",
+  "check": "check.mjs",
+  "prompt": "In `jobs.mjs`, rename the local variable `count` to `retryCount` inside the `runWithRetry` function only, including its uses in the nested `attempt` closure. Several other functions in the file have their own local variable or parameter named `count`; leave all of them unchanged. Change nothing else."
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "false-parses-as-true",
+    "file": "src/parse-env.mjs",
+    "from": "if (normalized === \"false\" || normalized === \"0\") return false;",
+    "to": "if (normalized === \"false\" || normalized === \"0\") return true;"
+  },
+  {
+    "id": "shallow-object-merge",
+    "file": "src/config.mjs",
+    "from": "merge(isObject(existing) ? existing : {}, value)",
+    "to": "merge({}, value)"
+  },
+  {
+    "id": "ignore-null",
+    "file": "src/config.mjs",
+    "from": "if (value === undefined) continue;",
+    "to": "if (value === undefined || value === null) continue;"
+  }
+]

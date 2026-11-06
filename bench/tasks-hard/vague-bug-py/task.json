@@ -1,0 +1,5 @@
+{
+  "id": "vague-bug-py",
+  "check": "check.py",
+  "prompt": "The paged sales report in this project (`report.py` with its helpers in `paginate.py` and `formatting.py`) sometimes drops a sale: the grand total on the last page includes it, but its row is not printed on any page. For example, with 11 sales and 5 sales per page the report has 2 pages and the 11th sale never appears, while 10 or 12 sales print correctly. Find and fix the cause so that every sale is printed exactly once, on the right number of pages, with correct \"page X of Y\" headers."
+}

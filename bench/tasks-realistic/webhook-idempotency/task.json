@@ -1,0 +1,7 @@
+{
+  "id": "webhook-idempotency",
+  "check": "check.mjs",
+  "allowTests": true,
+  "visibleTest": ["node", "--test", "test/credit.test.mjs"],
+  "prompt": "The in-memory credit webhook sometimes applies the same event twice or loses credits when requests overlap. Fix the service without changing its exported API. Each (tenantId, eventId) identifies one credit; an exact retry returns status `duplicate`, but the same event ID with a different accountId or amountCents must reject with an error whose `code` is `EVENT_CONFLICT`. IDs must be nonempty strings and amountCents a positive safe integer. Each successful response has `{ status: 'applied'|'duplicate', balance }`, with the account's current balance. Reject a credit that would make the balance unsafe, without changing state. Concurrent events for one tenant must be atomic, including rollback when beforeCommit rejects; after a failure, later retries must work. Different tenants must not block each other or share event IDs. beforeCommit is an injected asynchronous storage hook, not a notification to move after the commit. The store is in-memory only; distributed persistence is outside scope. Run existing tests with `node --test test/*.test.mjs`."
+}

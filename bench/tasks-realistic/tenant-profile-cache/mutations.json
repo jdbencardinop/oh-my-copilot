@@ -1,0 +1,20 @@
+[
+  {
+    "id": "shared-mutable-result",
+    "file": "src/cache.mjs",
+    "from": "return structuredClone(await entry.promise);",
+    "to": "return await entry.promise;"
+  },
+  {
+    "id": "stale-failure-evicts-refresh",
+    "file": "src/cache.mjs",
+    "from": "if (entries.get(key) === entry) entries.delete(key);",
+    "to": "entries.delete(key);"
+  },
+  {
+    "id": "missing-tenant-key",
+    "file": "src/cache.mjs",
+    "from": "JSON.stringify([tenantId, userId, locale])",
+    "to": "JSON.stringify([userId, locale])"
+  }
+]

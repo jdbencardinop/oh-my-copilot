@@ -1,0 +1,5 @@
+{
+  "id": "yaml-multidoc",
+  "check": "check.mjs",
+  "prompt": "`shop.yaml` holds several Kubernetes documents; Deployments and Services share names. Make these changes and nothing else:\n- In the Deployment named `payments-worker`: set `replicas` to 5, change the image tag to `1.9.0`, set the `LOG_LEVEL` env value to `debug`, and set the memory limit (under `limits`, not `requests`) to `1Gi`.\n- In the Service named `orders-api`: change `type` to `LoadBalancer` and the `http` port's `port` to 443 (keep `targetPort` as it is).\nEvery other document, including the Service named `payments-worker` and the Deployment named `orders-api`, must stay exactly as it is."
+}

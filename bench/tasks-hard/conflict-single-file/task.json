@@ -1,0 +1,6 @@
+{
+  "id": "conflict-single-file",
+  "setup": "setup.sh",
+  "check": "check.mjs",
+  "prompt": "A merge of branch `feature/levels` into the current branch is in progress and `logger.mjs` has three conflicts. Resolve them by editing the file:\n1. `LEVELS`: keep both new levels, so the array is `[\"trace\", \"debug\", \"info\", \"warn\", \"error\", \"fatal\"]`.\n2. The `.map(...)` that formats extra fields in `format`: keep the current branch's version (the one that quotes string values containing whitespace) and drop the incoming one.\n3. The default `level` in `createLogger`: take the incoming branch's version (`\"warn\"`), without the `LOG_LEVEL` environment variable.\nKeep every change that merged without conflicts. Remove all conflict markers. Do not run git commands."
+}

@@ -1,0 +1,7 @@
+{
+  "id": "cursor-feed",
+  "check": "check.py",
+  "allowTests": true,
+  "visibleTest": ["python3", "-m", "unittest", "discover", "-s", "test"],
+  "prompt": "The activity feed sometimes skips entries when several have the same timestamp. Fix cursor pagination while preserving the `read_feed(records, *, tenant_id, page_size, cursor=None)` API. Records have a string tenant_id, a nonempty string id unique within that tenant, and an integer created_at; return only the requested tenant, ordered by `(created_at, id)` descending. Each next page must start strictly after the last returned item in that ordering. Return an opaque next_cursor only when another item exists; no compatibility with old cursors is required. Invalid cursors, cursors issued for another tenant, and page sizes other than integers from 1 through 50 must raise ValueError (booleans are not valid sizes). Do not mutate the supplied records. It is not a snapshot: a later page may include newly inserted older records, but must not repeat newer records. Run existing tests with `python3 -m unittest discover -s test`."
+}

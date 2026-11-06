@@ -1,0 +1,5 @@
+{
+  "id": "long-file-multi-edit",
+  "check": "check.py",
+  "prompt": "Make three changes to `recordkit.py`:\n1. `slugify` (near the start of the file): runs of non-alphanumeric characters must become a single hyphen, so `slugify(\"Hello,  World!!\")` returns `\"hello-world\"` instead of `\"hello---world\"`. Also add an optional keyword parameter `max_length: int | None = None`; when it is given, cut the slug to at most `max_length` characters and remove any hyphen left at the end of the cut slug.\n2. `parse_duration` (in the parsing helpers in the middle of the file): also accept a `d` unit for days (86400 seconds), so `\"2d3h\"` is 183600, and raise `ValueError` for an empty or whitespace-only string instead of returning 0.\n3. `format_bytes` (in the formatting helpers at the end of the file): add a keyword parameter `binary: bool = False`. When it is true, divide by 1024 instead of 1000 and use the units B, KiB, MiB, GiB, TiB, so `format_bytes(1536, binary=True)` is `\"1.5 KiB\"`. The default output must not change.\nDo not change anything else in the file."
+}

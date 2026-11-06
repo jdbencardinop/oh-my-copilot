@@ -1,0 +1,7 @@
+{
+  "id": "tenant-profile-cache",
+  "check": "check.mjs",
+  "allowTests": true,
+  "visibleTest": ["node", "--test", "test/profiles.test.mjs"],
+  "prompt": "The profile service sometimes returns another tenant's or language's profile, and a refresh can bring back stale data. Fix the existing cache and keep the public makeProfiles(loadProfile) API. Cache lookups by the complete (tenantId, userId, locale) tuple, and share a single pending load for concurrent identical lookups. A rejected load must be retriable. invalidate(tenantId, userId) must evict every locale for exactly that tenant and user, including pending loads, without evicting other tenants or users. A pending load started before invalidation must never reinsert stale data or remove a newer load if it fails. Each get call must return independent nested data so callers cannot mutate the cache or each other's results. Profiles contain JSON-compatible data; identifiers and locales are strings and can contain punctuation. The existing test can be run with `node --test test/*.test.mjs`."
+}
