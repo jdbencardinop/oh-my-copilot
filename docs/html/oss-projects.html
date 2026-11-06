@@ -38,8 +38,10 @@ counts and clarifies licensing. Serena&#39;s <a href="https://github.com/oraios/
 specifies MIT for SolidLSP and GPL-3.0-or-later for the application; <code>NOASSERTION</code> in the
 original tables is GitHub detector metadata, not a license. The
 <a href="https://github.com/ast-grep/ast-grep-mcp">ast-grep MCP README</a> calls the server experimental
-and describes structural search and analysis. Rewrite support and integration safety still
-require validation; the original &quot;near-zero integration risk&quot; recommendation is too strong.
+and documents four search and analysis tools, with no rewrite tool. Structural rewrites
+would need a separate OMC tool; the original &quot;near-zero integration risk&quot; recommendation is
+too strong. Zen&#39;s LICENSE file contains Apache-2.0 text, though GitHub metadata also shows
+<code>NOASSERTION</code>; the repository now redirects to <code>BeehiveInnovations/pal-mcp-server</code>.
 Go&#39;s <code>gopls</code> is the user&#39;s priority for native LSP presets, separate from Serena.</p>
 </blockquote>
 <h2 id="1-edit-tools-anchoredhashline-edits-apply_patch-fuzzy-matchers-fast-apply-edit-format-benchmarks">1. Edit tools: anchored/hashline edits, apply_patch, fuzzy matchers, fast-apply, edit-format benchmarks</h2>
@@ -145,12 +147,12 @@ Go&#39;s <code>gopls</code> is the user&#39;s priority for native LSP presets, s
 <tbody><tr>
 <td>ast-grep/ast-grep-mcp</td>
 <td><a href="https://github.com/ast-grep/ast-grep-mcp">https://github.com/ast-grep/ast-grep-mcp</a></td>
-<td>Official MCP server exposing ast-grep&#39;s AST pattern search/lint/rewrite across ~20+ languages</td>
-<td>Wraps <code>ast-grep</code> CLI; exposes <code>dump_syntax_tree</code>, rule-based scan/test, structural rewrite with explicit-apply gating</td>
+<td>Official, experimental MCP server for ast-grep structural code <strong>search</strong> (no rewrite tool documented)</td>
+<td>Wraps the <code>ast-grep</code> CLI; README documents four tools: <code>dump_syntax_tree</code>, <code>test_match_code_rule</code>, <code>find_code</code>, <code>find_code_by_rule</code></td>
 <td>Python</td>
 <td>MIT</td>
 <td>489★, pushed 2026-11-05 (very active)</td>
-<td>Yes — standard MCP server, directly pluggable into Copilot CLI&#39;s <code>.github/copilot/mcp.json</code> or equivalent; best starting point for the &quot;ast-grep structural editing&quot; pending idea</td>
+<td>Yes for search — standard MCP server usable from Copilot CLI&#39;s MCP config. Structural rewrites would need OMC&#39;s own tool (for example, calling <code>ast-grep --rewrite</code>) with preview and explicit acceptance</td>
 </tr>
 <tr>
 <td>thrawn01/mcp-ast-grep</td>
@@ -188,9 +190,9 @@ Go&#39;s <code>gopls</code> is the user&#39;s priority for native LSP presets, s
 <td>&quot;IDE for your agent&quot;: semantic, symbol-level code retrieval/editing via LSP, exposed as MCP server</td>
 <td>Spins up language servers per project (30+ languages), exposes <code>find_symbol</code>, <code>find_referencing_symbols</code>, <code>replace_symbol_body</code>, <code>insert_before/after_symbol</code> etc. instead of raw line edits</td>
 <td>Python</td>
-<td>NOASSERTION (check repo LICENSE file; not simple MIT/Apache)</td>
+<td>MIT for SolidLSP, GPL-3.0-or-later for the Serena application (per LICENSE; GitHub metadata shows <code>NOASSERTION</code>)</td>
 <td>31,138★, pushed 2026-10-28 (very active, most popular project in this category)</td>
-<td>Most relevant OSS project for &quot;LSP presets&quot; and symbol-level structural editing pending ideas. MCP-based, so directly usable from Copilot CLI. License is NOASSERTION — needs legal check before any code reuse (not just usage)</td>
+<td>Most relevant OSS project for &quot;LSP presets&quot; and symbol-level structural editing pending ideas. MCP-based, so directly usable from Copilot CLI. Its GPL-3.0-or-later application license matters if code is vendored; running it as an external MCP server avoids that question. Go&#39;s <code>gopls</code> presets do not depend on Serena</td>
 </tr>
 <tr>
 <td>zilliztech/claude-context</td>
@@ -386,9 +388,9 @@ Go&#39;s <code>gopls</code> is the user&#39;s priority for native LSP presets, s
 <td>Lets Claude Code / Gemini CLI / Codex CLI orchestrate consults with Gemini, O3, Grok, OpenRouter, Ollama, Azure, custom models — &quot;working as one&quot;</td>
 <td>MCP server with specialized workflow tools (code review, debug, planning, pre-commit, security audit) that route sub-tasks to whichever configured model is best suited; maintains cross-model conversation continuity</td>
 <td>Python</td>
-<td>NOASSERTION (check license before reuse)</td>
+<td>LICENSE file contains Apache-2.0 text; GitHub metadata shows <code>NOASSERTION</code>. Repo now redirects to <code>BeehiveInnovations/pal-mcp-server</code></td>
 <td>11,824★, pushed 2025-12-15 (star count high but no commits in ~11 months — momentum may have stalled)</td>
-<td><strong>Closest direct OSS match to OMC&#39;s &quot;advisor (second model reviewing each turn)&quot; pending idea.</strong> Its &quot;expert mode routing&quot; and multi-model aggregation pattern is exactly the architecture to study; the NOASSERTION license and apparent recent inactivity (last push Dec 2025) are both worth flagging</td>
+<td><strong>Closest direct OSS match to OMC&#39;s &quot;advisor (second model reviewing each turn)&quot; pending idea.</strong> Its &quot;expert mode routing&quot; and multi-model aggregation pattern is exactly the architecture to study; its apparent inactivity (last push Dec 2025) is worth flagging</td>
 </tr>
 </tbody></table>
 </div><p><strong>Gap:</strong> Did not find an academic paper or OSS project specifically named &quot;PAL&quot; matching the described consult-another-model pattern in this search pass — the query returned mostly tangential or irrelevant results. <strong>[unverified / gap]</strong> Recommend a targeted follow-up search for &quot;PAL: Program-aided language models&quot; (a different, unrelated concept from NLP literature) to rule out confusion, and a direct GitHub code search for <code>&quot;second opinion&quot; &quot;another model&quot;</code> across MCP server repos if the main agent wants more candidates.</p>
@@ -571,14 +573,14 @@ Go&#39;s <code>gopls</code> is the user&#39;s priority for native LSP presets, s
 </div><hr>
 <h2 id="top-10-projects-to-study-or-integrate-ranked">Top 10 Projects to Study or Integrate (Ranked)</h2>
 <ol>
-<li><strong>ast-grep/ast-grep-mcp</strong> (<a href="https://github.com/ast-grep/ast-grep-mcp">https://github.com/ast-grep/ast-grep-mcp</a>) — MIT, 489★, actively maintained, official MCP server directly satisfying the &quot;ast-grep structural editing&quot; pending idea with near-zero integration risk (standard MCP server, drop into Copilot CLI&#39;s MCP config).</li>
+<li><strong>ast-grep/ast-grep-mcp</strong> (<a href="https://github.com/ast-grep/ast-grep-mcp">https://github.com/ast-grep/ast-grep-mcp</a>) — MIT, 489★, actively maintained, official but experimental MCP server covering the <em>search</em> half of the &quot;ast-grep structural editing&quot; idea (standard MCP server for Copilot CLI&#39;s MCP config). It documents no rewrite tool, so structural edits need a separate OMC tool with preview and acceptance.</li>
 <li><strong>harbor-framework/harbor</strong> + <strong>Terminal-Bench 2.0</strong> (<a href="https://github.com/harbor-framework/harbor">https://github.com/harbor-framework/harbor</a>) — Apache-2.0, 6,835★, purpose-built for exactly OMC&#39;s &quot;compare stock vs. plugin across models&quot; benchmarking need; adopting its agent/model/task abstraction could save significant harness-engineering effort and buys credibility via a recognized public benchmark.</li>
-<li><strong>oraios/serena</strong> (<a href="https://github.com/oraios/serena">https://github.com/oraios/serena</a>) — 31,138★, the most mature LSP-based semantic editing MCP available; highest-value reference for both &quot;LSP presets&quot; and symbol-level editing beyond line-anchored hashline edits, but check the NOASSERTION license carefully before any code reuse (usage as an external MCP tool is lower-risk than vendoring code).</li>
+<li><strong>oraios/serena</strong> (<a href="https://github.com/oraios/serena">https://github.com/oraios/serena</a>) — 31,138★, the most mature LSP-based semantic editing MCP available; highest-value reference for both &quot;LSP presets&quot; and symbol-level editing beyond line-anchored hashline edits, the Serena application is GPL-3.0-or-later (SolidLSP is MIT), so prefer running it as an external MCP server over vendoring code.</li>
 <li><strong>debugmcp/mcp-debugger</strong> (<a href="https://github.com/debugmcp/mcp-debugger">https://github.com/debugmcp/mcp-debugger</a>) — MIT, pushed same day as this research, 7-language DAP-over-MCP debugger; best-positioned existing OSS project to either adopt directly or use as the architectural template for OMC&#39;s own DAP debugger feature.</li>
 <li><strong>GowayLee/cchooks</strong> (<a href="https://github.com/GowayLee/cchooks">https://github.com/GowayLee/cchooks</a>) — MIT, small and simple (131★), the cleanest example of a typed hook SDK for pre/post tool rules; directly informs ergonomic API design for OMC&#39;s own rules engine even if not reused as a dependency (OMC likely isn&#39;t Python).</li>
 <li><strong>sst/opencode</strong> (<a href="https://github.com/sst/opencode">https://github.com/sst/opencode</a>) — MIT, 224,861★, the largest-scale proof that per-model prompt/tool profiles work in production; study its prompt-asset-per-provider architecture as the primary template for OMC&#39;s &quot;per-model tool profiles&quot; pending idea.</li>
 <li><strong>intellectronica/ruler</strong> (<a href="https://github.com/intellectronica/ruler">https://github.com/intellectronica/ruler</a>) and <strong>dyoshikawa/rulesync</strong> (<a href="https://github.com/dyoshikawa/rulesync">https://github.com/dyoshikawa/rulesync</a>) — both MIT, 2,961★ / 1,585★ respectively, both actively maintained; study both before finalizing OMC&#39;s Cursor/Cline/Windsurf rule-import design since they&#39;ve already solved the N-tool rule-format fanout problem (note: these are canonical→N <em>sync</em> tools, while OMC&#39;s feature is more of an N→1 <em>import</em>; the schemas they use for each target format are still directly useful).</li>
-<li><strong>BeehiveInnovations/zen-mcp-server</strong> (<a href="https://github.com/BeehiveInnovations/zen-mcp-server">https://github.com/BeehiveInnovations/zen-mcp-server</a>) — 11,824★, the closest existing OSS match for OMC&#39;s &quot;advisor&quot; pending idea (multi-model consult/second-opinion with context continuity); caveat that it appears to have had no commits since Dec 2025 and uses a NOASSERTION license — treat as a design reference more than a dependency.</li>
+<li><strong>BeehiveInnovations/zen-mcp-server</strong> (<a href="https://github.com/BeehiveInnovations/zen-mcp-server">https://github.com/BeehiveInnovations/zen-mcp-server</a>) — 11,824★, the closest existing OSS match for OMC&#39;s &quot;advisor&quot; pending idea (multi-model consult/second-opinion with context continuity); caveat that it appears to have had no commits since Dec 2025 (repo renamed to <code>pal-mcp-server</code>; its LICENSE file contains Apache-2.0 text) — treat as a design reference more than a dependency.</li>
 <li><strong>zilliztech/claude-context</strong> (<a href="https://github.com/zilliztech/claude-context">https://github.com/zilliztech/claude-context</a>) — MIT, 12,673★, production-grade semantic code search MCP; relevant if OMC wants a heavier semantic-search feature beyond Aider-style repo maps, at the cost of requiring a vector DB + embedding API key as external infra.</li>
 <li><strong>Aider-AI/aider</strong> repo map + edit-formats (<a href="https://github.com/Aider-AI/aider">https://github.com/Aider-AI/aider</a>) — Apache-2.0, 49,979★, the single richest reference project in this entire report: its tree-sitter+PageRank repo-map is a low-infra alternative to vector-DB semantic search, its per-model edit-format selection directly parallels OMC&#39;s per-model tool-profile idea, and its public leaderboard (<a href="https://aider.chat/docs/leaderboards/edit.html">https://aider.chat/docs/leaderboards/edit.html</a>) is a ready-made template for reporting OMC&#39;s own benchmark results.</li>
 </ol>

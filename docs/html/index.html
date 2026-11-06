@@ -130,9 +130,10 @@ Other counts in the detailed reports were not independently rechecked during syn
 <h2 id="ast-grep-and-go-language-support">ast-grep and Go language support</h2>
 <p><strong>ast-grep searches code structure; ripgrep searches text.</strong> It parses code into an abstract
 syntax tree (AST), so a pattern such as <code>console.log($ARG)</code> can match a call despite formatting
-differences. It can also rewrite matches. <code>ast-grep-mcp</code> exposes those operations to an agent
-through the Model Context Protocol (MCP). For OMC, search can come first; broad rewrites should
-have a preview and explicit acceptance.</p>
+differences. The ast-grep CLI can also rewrite matches. <code>ast-grep-mcp</code> is an experimental
+Model Context Protocol (MCP) server that exposes only the search side: four tools for syntax
+trees, rule testing, and pattern or rule search. For OMC, search can come first. Rewrites
+would need a separate OMC tool with a preview and explicit acceptance.</p>
 <p><strong>Go&#39;s language server is <code>gopls</code></strong>, maintained by the Go project, rather than <code>golang-pls</code>.
 Language Server Protocol (LSP) presets would supply Copilot&#39;s existing LSP integration with
 the server command and language/file mappings. They are configuration, not another agent.
@@ -269,7 +270,7 @@ tool layer without a fork, through Copilot&#39;s extension SDK, hooks, and MCP.<
 <tbody><tr>
 <td>Structural editing (item 6)</td>
 <td><a href="https://github.com/ast-grep/ast-grep-mcp"><code>ast-grep-mcp</code></a> (MIT, experimental)</td>
-<td>Start with its documented search/analysis tools; validate rewrite support separately, with preview and acceptance</td>
+<td>Search only; it documents no rewrite tool. Rewrites need an OMC tool with preview and acceptance</td>
 </tr>
 <tr>
 <td>Debugger</td>
@@ -283,8 +284,8 @@ tool layer without a fork, through Copilot&#39;s extension SDK, hooks, and MCP.<
 </tr>
 <tr>
 <td>Advisor (item 8)</td>
-<td>OMP advisor; <a href="https://github.com/BeehiveInnovations/zen-mcp-server">zen-mcp-server</a></td>
-<td>Zen appears inactive since December 2025 and its license is unclear; treat as a design reference</td>
+<td>OMP advisor; <a href="https://github.com/BeehiveInnovations/pal-mcp-server">zen-mcp-server</a> (now <code>pal-mcp-server</code>)</td>
+<td>Appears inactive since December 2025; its LICENSE file contains Apache-2.0 text. Treat as a design reference</td>
 </tr>
 <tr>
 <td>Per-model tool profiles (item 10)</td>
@@ -366,7 +367,7 @@ as a known caveat.</li>
 <li><strong>Anchored-edit recovery.</strong> When an anchor is stale, return the current lines in the error.
 Consider tree-sitter block operations, as PI-Desktop&#39;s ADR describes. This extends the
 existing &quot;anchor errors&quot; gap.</li>
-<li><strong>ast-grep through MCP</strong>, with stage-then-accept rewrites.</li>
+<li><strong>ast-grep search through <code>ast-grep-mcp</code></strong>, plus a separate OMC rewrite tool with stage-then-accept rewrites.</li>
 <li><strong>Isolate the anchored-edit effect</strong> in our benchmark, and consider running Terminal-Bench
 through Harbor.</li>
 <li><strong>To-do tool and symbol map.</strong> Both are small native-parity tools that Copilot lacks.</li>
