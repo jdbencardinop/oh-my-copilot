@@ -259,3 +259,18 @@ test("hunks.mjs stage is all or nothing", () =>
     assert.throws(() => run("stage", ...ids), /broken|clean filter|locked\.txt/);
     assert.deepEqual(staged(), []);
   }));
+
+test("the marketplace manifest points at the plugin and matches its manifest", () => {
+  const root = fileURLToPath(new URL("../", import.meta.url));
+  const market = JSON.parse(readFileSync(join(root, ".github/plugin/marketplace.json"), "utf8"));
+  const manifest = JSON.parse(readFileSync(join(plugin, "plugin.json"), "utf8"));
+  assert.equal(market.name, "oh-my-copilot");
+  assert.equal(market.plugins.length, 1);
+  const [entry] = market.plugins;
+  assert.equal(entry.name, manifest.name);
+  assert.equal(entry.version, manifest.version);
+  assert.equal(entry.description, manifest.description);
+  assert.equal(market.metadata.version, manifest.version);
+  assert.equal(typeof entry.source, "string");
+  assert.ok(existsSync(join(root, entry.source, "plugin.json")), `${entry.source}/plugin.json is missing`);
+});

@@ -1,0 +1,22 @@
+{
+  "name": "oh-my-copilot",
+  "metadata": {
+    "description": "OMP-style harness upgrades for GitHub Copilot CLI.",
+    "version": "0.1.0"
+  },
+  "owner": {
+    "name": "jdbencardinop",
+    "url": "https://github.com/jdbencardinop"
+  },
+  "plugins": [
+    {
+      "name": "oh-my-copilot",
+      "description": "Hash-anchored edits, pattern and stream rules, conflict tools, a commit-splitting skill and a reviewer agent, with layered kill switches.",
+      "version": "0.1.0",
+      "repository": "https://github.com/jdbencardinop/oh-my-copilot",
+      "homepage": "https://github.com/jdbencardinop/oh-my-copilot",
+      "keywords": ["copilot-cli", "extension", "hashline", "rules"],
+      "source": "./plugin"
+    }
+  ]
+}

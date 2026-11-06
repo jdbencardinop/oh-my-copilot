@@ -26,20 +26,34 @@ Run it from this checkout:
 copilot --experimental --plugin-dir ./plugin
 ```
 
-Or install it, then start Copilot with `--experimental`. You can also set `"experimental": true` in `~/.copilot/settings.json` instead of passing the flag.
+Or [install it from the marketplace](#install-from-the-marketplace), then start Copilot with `--experimental`. You can also set `"experimental": true` in `~/.copilot/settings.json` instead of passing the flag.
 
 > [!WARNING]
 > `--experimental` is not limited to one session. Copilot saves it as `"experimental": true` in the profile's `settings.json`, so every later session that uses the same profile also runs with experimental features on. That includes apps that embed Copilot, such as T3 Code, which can then fail with `extensionSdkPath is required` or fail to resume sessions. To keep it contained, run with a separate profile (see [Test it without touching your setup](#test-it-without-touching-your-setup)), for example `COPILOT_HOME=~/.copilot-omc copilot --experimental …`. To undo it, set `"experimental": false` in `~/.copilot/settings.json`.
 
-```bash
-copilot plugin install ./plugin
-```
+### Install from the marketplace
 
-Copilot warns that installing from a local path is deprecated. It still works in 1.0.105.
+This repository is also a Copilot plugin marketplace. Its catalog is [`.github/plugin/marketplace.json`](.github/plugin/marketplace.json).
 
-Type `/omc status` inside Copilot to confirm that the plugin is active.
+1. Add the marketplace:
 
-With `--plugin-dir`, code changes take effect the next time you start Copilot. An installed plugin is a copy, so run `copilot plugin install ./plugin` again after changing the code.
+   ```bash
+   copilot plugin marketplace add jdbencardinop/oh-my-copilot
+   ```
+
+   To use a local checkout instead, pass its absolute path, such as `copilot plugin marketplace add "$PWD"`. Copilot can read a relative path as a GitHub `owner/repo`.
+
+2. Install the plugin:
+
+   ```bash
+   copilot plugin install oh-my-copilot@oh-my-copilot
+   ```
+
+3. Start Copilot with `--experimental`, and type `/omc status` to confirm that the plugin is active.
+
+To get a newer version, run `copilot plugin marketplace update oh-my-copilot`, then `copilot plugin update oh-my-copilot@oh-my-copilot`. A plugin installed from a local marketplace loads straight from your checkout, so code changes take effect the next time you start Copilot.
+
+`copilot plugin install ./plugin` also still works, but Copilot warns that installing from a local path is deprecated, and it installs a copy that you must reinstall after each change.
 
 ### Test it without touching your setup
 
@@ -355,11 +369,23 @@ To persist a Cline-only selection, put this in `.github/omc/config.json` or your
 npm test
 ```
 
-The tests use only Node's built-in test runner. They need Node 20 or later and no dependencies.
+The tests use Node's built-in test runner and need Node 20 or later. They do not need Copilot CLI.
+
+To check that Copilot CLI really discovers the plugin, run the offline discovery probe:
+
+```bash
+npm run test:discovery
+```
+
+It starts Copilot headless in a throwaway `COPILOT_HOME`, loads `./plugin`, and checks for the `reviewer` agent, the `commit` skill, the `omc` extension and its four tools. It needs no sign-in and makes no model calls: the model provider is a local server that rejects every request, and the probe fails if that server is called at all. If Copilot CLI is not installed, the probe skips; pass `-- --require` to make that a failure. Set `COPILOT_BIN` to test a specific Copilot binary.
+
+CI runs `npm test` on Node 20, 22 and 24, and the discovery probe against the latest Copilot CLI. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 | Path | Contents |
 |---|---|
 | `plugin/plugin.json` | Plugin manifest (Agent Plugins 1.0) |
+| `.github/plugin/marketplace.json` | Marketplace catalog; its version and description must match `plugin.json` |
+| `scripts/discovery-probe.mjs` | Offline check that Copilot CLI discovers the plugin's agent, skill, extension and tools |
 | `plugin/com.github.copilot/extensions/omc/extension.mjs` | Entry point. It checks `OMC_DISABLE`, then loads the features. |
 | `plugin/com.github.copilot/extensions/omc/lib/` | Feature code: `main.mjs` wires everything into the session; the other modules are pure logic |
 | `plugin/skills/commit/` | The `commit` skill and its staging helper, `scripts/hunks.mjs` |
