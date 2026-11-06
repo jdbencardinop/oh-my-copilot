@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Landscape overview | OMC research</title><style>
+:root{color-scheme:light dark;--background:light-dark(#f7f8fb,#11151d);--foreground:light-dark(#202c40,#e3e9f4);--muted:light-dark(#52617a,#acb9cc);--card:light-dark(#fff,#192231);--border:light-dark(#d5ddea,#344158);--primary:light-dark(#234db6,#9bbaff);--radius:12px;--font-sans:system-ui,sans-serif;--font-mono:ui-monospace,monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:var(--background);color:var(--foreground);font:17px/1.7 var(--font-sans)}
+a{color:var(--primary);text-underline-offset:3px}a:hover{text-decoration-thickness:2px}
+a:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--primary);outline-offset:3px}
+.skip{position:absolute;left:12px;top:-80px;background:var(--card);padding:10px;z-index:2}.skip:focus{top:12px}
+.layout{display:grid;grid-template-columns:255px minmax(0,1fr);gap:38px;max-width:1600px;margin:auto;padding:30px}
+aside{position:sticky;top:24px;align-self:start;max-height:calc(100dvh - 48px);overflow:auto;font-size:14px}
+aside strong{display:block;margin-bottom:12px}nav a{display:block;padding:7px 10px;border-radius:6px}
+nav a[aria-current=page]{background:var(--card);font-weight:700}
+summary{cursor:pointer;font-weight:650;margin-top:24px}ol.toc{padding-left:22px}.toc li{margin:7px 0}
+main{min-width:0}article{max-width:1100px}.meta{color:var(--muted);font-size:14px}
+h1,h2,h3,h4{line-height:1.25;scroll-margin-top:24px}h1{font-size:clamp(30px,4vw,46px);margin:18px 0 24px}
+h2{font-size:27px;margin:50px 0 18px;border-bottom:1px solid var(--border);padding-bottom:10px}
+h3{font-size:22px;margin-top:32px}p,ul,ol{max-width:85ch}li{margin:7px 0}
+blockquote{border-left:4px solid var(--primary);margin:24px 0;padding:12px 20px;background:var(--card);border-radius:0 var(--radius) var(--radius) 0}
+blockquote p{margin:8px 0}code{font:0.88em var(--font-mono);overflow-wrap:anywhere;background:var(--card);padding:2px 5px;border-radius:4px}
+pre{background:var(--card);padding:18px;border:1px solid var(--border);border-radius:var(--radius);overflow:auto}pre code{padding:0;white-space:pre}
+.table-scroll{overflow:auto;max-height:75dvh;border:1px solid var(--border);border-radius:var(--radius);margin:24px 0}
+table{border-collapse:collapse;min-width:100%;font-size:14px;line-height:1.55}th,td{text-align:left;vertical-align:top;padding:12px 14px;border-bottom:1px solid var(--border);min-width:155px}
+th{position:sticky;top:0;background:var(--card);z-index:1}tr:last-child td{border-bottom:0}td p{margin:0}
+hr{border:0;border-top:1px solid var(--border);margin:32px 0}img{max-width:100%}footer{margin-top:50px;padding:24px 0;border-top:1px solid var(--border);font-size:14px;color:var(--muted)}
+@media(max-width:850px){.layout{grid-template-columns:minmax(0,1fr);padding:18px;gap:12px}aside{position:static;max-height:none}nav{display:flex;flex-wrap:wrap;gap:4px}aside details{margin-bottom:20px}h2{font-size:24px}}
+@media print{aside,.skip,.meta{display:none}.layout{display:block;padding:0}body{font-size:11pt;background:white;color:black}.table-scroll{max-height:none;overflow:visible}table{font-size:8pt}th{position:static}a{color:inherit}h2,h3{break-after:avoid}}
+</style></head>
+<body><a class="skip" href="#content">Skip to report</a><div class="layout">
+<aside><strong>Oh-my-copilot research</strong><nav aria-label="Reports"><a href="index.html" aria-current="page">Landscape overview</a><a href="omp-ecosystem.html">OMP and enhancement layers</a><a href="native-harnesses.html">Native harness capabilities</a><a href="oss-projects.html">Open-source tools to study</a><a href="orchestrators.html">Managers and orchestrators</a></nav>
+<details open><summary>On this page</summary><ol class="toc"><li><a href="#key-findings">Key findings</a></li><li><a href="#what-the-star-count-warning-meant">What the star-count warning meant</a></li><li><a href="#ast-grep-and-go-language-support">ast-grep and Go language support</a></li><li><a href="#what-base-copilot-cli-lacks">What base Copilot CLI lacks</a></li><li><a href="#omp-style-layers-for-other-harnesses">OMP-style layers for other harnesses</a></li><li><a href="#reuse-candidates-for-the-roadmap">Reuse candidates for the roadmap</a></li><li><a href="#orchestrators">Orchestrators</a></li><li><a href="#candidate-additions-to-the-roadmap">Candidate additions to the roadmap</a></li></ol></details></aside>
+<main id="content" tabindex="-1"><p class="meta">Research snapshot: November 2026 · <a href="../landscape.md">Markdown source</a></p>
+<article><h1 id="agent-harness-landscape">Agent harness landscape</h1>
+<p>This document compares oh-my-copilot (OMC) with OMP, with other coding-agent harnesses, and with
+the tools that manage them. It answers three questions:</p>
+<ol>
+<li>What do other harnesses do natively that base Copilot CLI does not?</li>
+<li>Who else builds OMP-style layers, and how?</li>
+<li>Which open-source projects can OMC reuse or learn from?</li>
+</ol>
+<p>The research ran in November 2026. Read the <a href="index.html">HTML edition</a> for section
+navigation, readable tables, and links between reports.
+The HTML files open locally without a server or external assets. Markdown is the source of
+truth; regenerate all five HTML pages with <code>npm ci</code> followed by <code>npm run docs:html</code>.</p>
+<p>The reports are a research snapshot, not an installed-version compatibility test. They mix
+primary documentation with explicitly flagged secondary evidence. A missing feature means it
+was not found in the reviewed sources, not that it cannot exist. Full reports, with sources and
+flagged uncertainties, live in <a href="../research"><code>research/</code></a>:</p>
+<div class="table-scroll" role="region" aria-label="Comparison table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Report</th>
+<th>Scope</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="omp-ecosystem.html">01 — OMP ecosystem</a></td>
+<td>OMP, Pi, and &quot;oh-my-*&quot; layers for other harnesses</td>
+</tr>
+<tr>
+<td><a href="native-harnesses.html">02 — Native harnesses</a></td>
+<td>Built-in capabilities of 14 harnesses versus Copilot</td>
+</tr>
+<tr>
+<td><a href="oss-projects.html">03 — Open-source projects</a></td>
+<td>Reusable tools: MCP servers, hooks, benchmarks</td>
+</tr>
+<tr>
+<td><a href="orchestrators.html">04 — Orchestrators</a></td>
+<td>Apps that run and coordinate several harnesses</td>
+</tr>
+</tbody></table>
+</div><h2 id="key-findings">Key findings</h2>
+<ul>
+<li><strong>Anchored editing deserves an isolated benchmark.</strong> OMP&#39;s own benchmark reports hashline edits beating
+patch formats on 14 of 16 models. Two unrelated projects, gptme and PI-Desktop, adopted the
+design and credit OMP by name. This does not establish a win for OMC: our existing benchmark
+compares the whole plugin, not anchored editing alone.</li>
+<li><strong>Structural editing has a reuse candidate.</strong> The reviewed base harnesses did not document
+built-in ast-grep tools; OMP does ship them. The <code>ast-grep-mcp</code> project offers a route to
+structural search without building a new parser.</li>
+<li><strong>Copilot CLI is competitive on many native features.</strong> It ships LSP-first search, an ACP
+server, cross-session memory, <code>/fleet</code> subagents, plugins, and blocking <code>preToolUse</code> hooks. Its
+main gaps are a to-do tool, a richer hook taxonomy, staged edit recovery, a repository symbol
+map, and a debugger.</li>
+<li><strong>OMC&#39;s in-session layers are rare.</strong> Most &quot;oh-my-*&quot; projects add agent teams and prompts.
+OMP is the only one found that adds tools such as a stream interrupt, an advisor, a debugger,
+or URL-scheme reads.</li>
+<li><strong>Many orchestrators run the user&#39;s own CLI in a git worktree.</strong> OMC may work unchanged,
+but plugin loading, permissions, and interactive-only features need compatibility checks.</li>
+</ul>
+<h2 id="what-the-star-count-warning-meant">What the star-count warning meant</h2>
+<p>The initial reports flagged large counts for young projects as a reason to double-check the
+numbers. That was a verification caveat, not evidence of fake stars or inflated adoption.
+Direct GitHub API checks on 2026-11-06 confirmed these counts:</p>
+<div class="table-scroll" role="region" aria-label="Comparison table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Repository</th>
+<th align="right">Stars</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://api.github.com/repos/can1357/oh-my-pi">can1357/oh-my-pi</a></td>
+<td align="right">37,986</td>
+</tr>
+<tr>
+<td><a href="https://api.github.com/repos/pingdotgg/t3code">pingdotgg/t3code</a></td>
+<td align="right">48,645</td>
+</tr>
+<tr>
+<td><a href="https://api.github.com/repos/stablyai/orca">stablyai/orca</a></td>
+<td align="right">116,976</td>
+</tr>
+<tr>
+<td><a href="https://api.github.com/repos/herdrdev/herdr">herdrdev/herdr</a></td>
+<td align="right">48,353</td>
+</tr>
+<tr>
+<td><a href="https://api.github.com/repos/oraios/serena">oraios/serena</a></td>
+<td align="right">31,138</td>
+</tr>
+<tr>
+<td><a href="https://api.github.com/repos/ast-grep/ast-grep-mcp">ast-grep/ast-grep-mcp</a></td>
+<td align="right">489</td>
+</tr>
+</tbody></table>
+</div><p>These are popularity snapshots, not measurements of active users, quality, or OMC compatibility.
+Other counts in the detailed reports were not independently rechecked during synthesis.</p>
+<h2 id="ast-grep-and-go-language-support">ast-grep and Go language support</h2>
+<p><strong>ast-grep searches code structure; ripgrep searches text.</strong> It parses code into an abstract
+syntax tree (AST), so a pattern such as <code>console.log($ARG)</code> can match a call despite formatting
+differences. It can also rewrite matches. <code>ast-grep-mcp</code> exposes those operations to an agent
+through the Model Context Protocol (MCP). For OMC, search can come first; broad rewrites should
+have a preview and explicit acceptance.</p>
+<p><strong>Go&#39;s language server is <code>gopls</code></strong>, maintained by the Go project, rather than <code>golang-pls</code>.
+Language Server Protocol (LSP) presets would supply Copilot&#39;s existing LSP integration with
+the server command and language/file mappings. They are configuration, not another agent.
+Go with <code>gopls</code> is the user&#39;s priority; installation checks, configuration compatibility,
+and Go workspace behavior still need validation before shipping a preset.
+See the <a href="https://go.dev/gopls/">official gopls documentation</a>.</p>
+<p>Serena is an optional symbol-editing MCP server, not a prerequisite for <code>gopls</code>.
+Its <a href="https://github.com/oraios/serena/blob/main/LICENSE">license file</a> specifies MIT for
+SolidLSP and GPL-3.0-or-later for the Serena application. GitHub&#39;s <code>NOASSERTION</code> metadata
+means its license detector did not assign a single SPDX license; it is not itself a license.
+The earlier detailed report&#39;s licensing uncertainty is superseded by this source check.</p>
+<h2 id="what-base-copilot-cli-lacks">What base Copilot CLI lacks</h2>
+<p>The native-harness report ranks these by likely value to OMC. &quot;Who has it&quot; lists the best
+reference implementation.</p>
+<div class="table-scroll" role="region" aria-label="Comparison table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Gap</th>
+<th>Who has it</th>
+<th>How they do it</th>
+<th>OMC fit</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Explicit to-do tool</td>
+<td>Claude Code, Gemini CLI, VS Code</td>
+<td>Typed task tools (<code>TaskCreate</code>, <code>write_todos</code>)</td>
+<td>Small custom tool</td>
+</tr>
+<tr>
+<td>Richer hook events</td>
+<td>Claude Code (~30 events), Cursor</td>
+<td>Pre/post compact, subagent start/stop, session events</td>
+<td>Upstream request; OMC can only use the hooks Copilot exposes</td>
+</tr>
+<tr>
+<td>Staged edit recovery</td>
+<td>Gemini CLI (fuzzy, Levenshtein, then LLM repair), Cline</td>
+<td>Fallback chain inside the edit tool</td>
+<td>Extend <code>edit_anchored</code> recovery</td>
+</tr>
+<tr>
+<td>Repository symbol map</td>
+<td>Aider (tree-sitter plus PageRank), Cline</td>
+<td>Ranked signatures injected as context</td>
+<td>Candidate tool; no vector database needed</td>
+</tr>
+<tr>
+<td>Side-effect-free review mode</td>
+<td>Codex, Cursor Bugbot</td>
+<td>Review runs without touching the tree</td>
+<td>OMC reviewer agent partly covers this</td>
+</tr>
+<tr>
+<td>Debugger</td>
+<td>OMP only (DAP: lldb-dap, dlv, debugpy)</td>
+<td><code>debug</code> tool over DAP</td>
+<td>Use <code>mcp-debugger</code> or <code>mcp-dap-server</code></td>
+</tr>
+<tr>
+<td>Notebook editing</td>
+<td>Claude Code, VS Code</td>
+<td><code>NotebookEdit</code>, notebook tool set</td>
+<td>Low priority for a CLI</td>
+</tr>
+<tr>
+<td>Per-model edit formats or prompts</td>
+<td>Aider, OpenCode, Cline</td>
+<td>Format or prompt selected by model family</td>
+<td>Matches roadmap item 10</td>
+</tr>
+</tbody></table>
+</div><p>Copilot leads in some areas: automatic LSP-first search, a native ACP server
+(<code>copilot --acp</code>), Copilot Memory, <code>/fleet</code>, and the cloud agent&#39;s configurable network firewall.
+VS Code agent mode also ships native notebook and browser tools.</p>
+<h2 id="omp-style-layers-for-other-harnesses">OMP-style layers for other harnesses</h2>
+<div class="table-scroll" role="region" aria-label="Comparison table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Project</th>
+<th>Harness</th>
+<th>What it adds</th>
+<th>Mechanism</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://github.com/can1357/oh-my-pi">oh-my-pi</a></td>
+<td>Pi (fork)</td>
+<td>Hashline, LSP writes, DAP, stream rules, advisor, ast-grep, URL schemes, eval, commit splitting</td>
+<td>Rust core rewrite plus TypeScript shell</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Yeachan-Heo/oh-my-claudecode">oh-my-claudecode</a></td>
+<td>Claude Code</td>
+<td>Parallel agent teams, multi-model routing, autopilot modes</td>
+<td>Plugin marketplace plus npm CLI</td>
+</tr>
+<tr>
+<td>oh-my-codex</td>
+<td>Codex CLI</td>
+<td>Hooks, agent teams, HUD</td>
+<td>Codex plugins and hooks</td>
+</tr>
+<tr>
+<td>oh-my-opencode (&quot;Sisyphus&quot;)</td>
+<td>OpenCode</td>
+<td>Orchestrator with specialist subagents, LSP and AST tools</td>
+<td>Config and plugins; fragmented forks with mixed licenses</td>
+</tr>
+<tr>
+<td><a href="https://github.com/SuperClaude-Org/SuperClaude_Framework">SuperClaude</a></td>
+<td>Claude Code</td>
+<td>Commands, personas, methodologies</td>
+<td>Prompts and config only</td>
+</tr>
+<tr>
+<td><a href="https://github.com/wshobson/agents">wshobson/agents</a></td>
+<td>Seven harnesses, including Copilot and Pi</td>
+<td>Agents, skills and commands written once</td>
+<td>Markdown source plus per-harness generators, checked in CI</td>
+</tr>
+</tbody></table>
+</div><p>OMP differs from the others because it forks the harness and adds new tools. OMC reaches a similar
+tool layer without a fork, through Copilot&#39;s extension SDK, hooks, and MCP.</p>
+<h2 id="reuse-candidates-for-the-roadmap">Reuse candidates for the roadmap</h2>
+<div class="table-scroll" role="region" aria-label="Comparison table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Roadmap item</th>
+<th>Reuse or study</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Structural editing (item 6)</td>
+<td><a href="https://github.com/ast-grep/ast-grep-mcp"><code>ast-grep-mcp</code></a> (MIT, experimental)</td>
+<td>Start with its documented search/analysis tools; validate rewrite support separately, with preview and acceptance</td>
+</tr>
+<tr>
+<td>Debugger</td>
+<td><a href="https://github.com/debugmcp/mcp-debugger"><code>mcp-debugger</code></a> (MIT), <code>go-delve/mcp-dap-server</code></td>
+<td>Ship as MCP presets before writing a custom tool</td>
+</tr>
+<tr>
+<td>LSP presets</td>
+<td><a href="https://go.dev/gopls/">gopls</a>, Copilot&#39;s native LSP configuration</td>
+<td>Go first. Serena is a separate optional MCP approach, not required for native LSP presets</td>
+</tr>
+<tr>
+<td>Advisor (item 8)</td>
+<td>OMP advisor; <a href="https://github.com/BeehiveInnovations/zen-mcp-server">zen-mcp-server</a></td>
+<td>Zen appears inactive since December 2025 and its license is unclear; treat as a design reference</td>
+</tr>
+<tr>
+<td>Per-model tool profiles (item 10)</td>
+<td><a href="https://github.com/sst/opencode">OpenCode</a> per-provider prompts; Aider edit formats</td>
+<td>Both select behavior by model family in production</td>
+</tr>
+<tr>
+<td>More rule imports (item 3)</td>
+<td><a href="https://github.com/intellectronica/ruler">ruler</a>, <a href="https://github.com/dyoshikawa/rulesync">rulesync</a></td>
+<td>They export one source to many formats; their per-format schemas still help OMC import</td>
+</tr>
+<tr>
+<td><code>read_uri</code></td>
+<td>OMP URL schemes (<code>pr://</code>, <code>issue://</code>, <code>conflict://</code>, <code>agent://</code>)</td>
+<td>Existing read tools work on non-file resources</td>
+</tr>
+<tr>
+<td>Benchmarks</td>
+<td><a href="https://github.com/harbor-framework/harbor">Harbor</a> plus Terminal-Bench 2.0</td>
+<td>Built to compare agent setups on the same model; public results would be more credible</td>
+</tr>
+</tbody></table>
+</div><h2 id="orchestrators">Orchestrators</h2>
+<p>Orchestrators sit one layer above harnesses. Most spawn the user&#39;s authenticated CLI in a git
+worktree. Some use the Agent Client Protocol (ACP), a JSON-RPC protocol that lets any client drive
+any agent.</p>
+<div class="table-scroll" role="region" aria-label="Comparison table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>What it is</th>
+<th>Copilot CLI support</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://github.com/stablyai/orca">Orca</a> (StablyAI)</td>
+<td>Desktop and mobile orchestrator with coordinator and worker worktrees</td>
+<td>&quot;Any agent&quot;; not confirmed by name</td>
+</tr>
+<tr>
+<td><a href="https://github.com/pingdotgg/t3code">T3 Code upstream</a></td>
+<td>Open-source control surface for multiple harnesses</td>
+<td>Copilot not confirmed in the upstream sources reviewed</td>
+</tr>
+<tr>
+<td><a href="https://github.com/tesseracode/t3code">T3 Code fork</a></td>
+<td>The user&#39;s fork used for this session</td>
+<td>Copilot support comes from this fork; it is not evidence of upstream support</td>
+</tr>
+<tr>
+<td><a href="https://github.com/herdrdev/herdr">herdr</a></td>
+<td>Rust, agent-aware terminal multiplexer</td>
+<td>Yes, with state detection</td>
+</tr>
+<tr>
+<td><a href="https://www.superlogical.com/rex">Rex</a> (beta)</td>
+<td>Mitchell Hashimoto&#39;s terminal with an agent &quot;Activity Mode&quot; built on the OSC 7501 status protocol</td>
+<td>No native status reporting</td>
+</tr>
+<tr>
+<td>Others</td>
+<td>Conductor, Claude Squad, vibe-kanban, Nimbalyst, CCManager, Happy, Zed&#39;s agent panel</td>
+<td>Copilot confirmed in vibe-kanban, CCManager, Nimbalyst (alpha), and Zed via ACP</td>
+</tr>
+</tbody></table>
+</div><p>Implications for OMC:</p>
+<ul>
+<li><strong>Key state by worktree path.</strong> Several Copilot instances may run in sibling worktrees of the same
+repository.</li>
+<li><strong>Test OMC under <code>copilot --acp</code>.</strong> ACP sessions may skip interactive-only paths.</li>
+<li><strong>Consider emitting OSC 7501 status.</strong> Rex and similar tools could then show whether a Copilot
+session is working, waiting, or failed. This is cheap but optional.</li>
+<li><strong>Container-based orchestrators</strong> such as Sculptor may not mount <code>COPILOT_HOME</code>. Document this
+as a known caveat.</li>
+</ul>
+<h2 id="candidate-additions-to-the-roadmap">Candidate additions to the roadmap</h2>
+<p>These are proposals, not decisions.</p>
+<ol>
+<li><strong>Anchored-edit recovery.</strong> When an anchor is stale, return the current lines in the error.
+Consider tree-sitter block operations, as PI-Desktop&#39;s ADR describes. This extends the
+existing &quot;anchor errors&quot; gap.</li>
+<li><strong>ast-grep through MCP</strong>, with stage-then-accept rewrites.</li>
+<li><strong>Isolate the anchored-edit effect</strong> in our benchmark, and consider running Terminal-Bench
+through Harbor.</li>
+<li><strong>To-do tool and symbol map.</strong> Both are small native-parity tools that Copilot lacks.</li>
+<li><strong>Debugger MCP and native LSP presets.</strong> Prioritize Go with <code>gopls</code> for LSP configuration;
+use MCP where the native harness lacks a capability.</li>
+<li><strong>Orchestrator readiness:</strong> worktree-keyed state, an ACP-mode test, and optional OSC 7501
+status.</li>
+</ol>
+</article><footer>Documentation claims are not compatibility tests. Source links and uncertainty labels are preserved from the Markdown reports. Rebuild with <code>npm run docs:html</code>.</footer>
+</main></div></body></html>

@@ -143,7 +143,7 @@ Use a plugin with an extension at its core. None of the options is enough alone.
 | Subagents | Built in | Use native subagents; add custom agents |
 | Plan mode | Built in | Native |
 | Review with a verdict | Built in (`/review`) | **Done**: `reviewer` agent with a P0 to P3 rubric and a `VERDICT:` line |
-| LSP | Built-in config | Ship `lsp.json` presets |
+| LSP | Built-in config | Ship `lsp.json` presets; prioritize Go with `gopls` (user preference), validating server installation and Go workspace behavior |
 | Debugger (DAP) | Missing | MCP server |
 | `ast_edit`, `ast_grep` | Missing | MCP server or an extension tool wrapping ast-grep |
 | `eval` kernels | Missing (shell only) | MCP server |
@@ -243,6 +243,8 @@ The plugin lives in [`plugin/`](../plugin). It contains one extension, `omc`, wi
 - **Replacing the built-in edit tool.** `overridesBuiltInTool` exists, but the anchored tools are kept separate to avoid breaking Copilot's own editing.
 
 ## Roadmap
+
+For how other harnesses, OMP-style layers, and orchestrators compare, and for reuse candidates, see the [agent harness landscape](landscape.md).
 
 1. **Ship the nudge with the plugin.** Done: the `nudge` feature sends the guidance through `onUserPromptSubmitted`, once per session, and only while the anchored tools are on. A plugin skill was rejected because the model loads it only on demand and the kill switches cannot turn it off. `onSessionStart` was not used because the extension may join after the session starts. A system message from the extension could not be withdrawn mid-session. All 36 runs across the six benchmark tasks passed and used anchored tools without a prompt hint; see [benchmark results](benchmark.md#full-benchmark-the-plugins-own-nudge). Next: interleave stock and nudge runs on the same CLI version and add harder tasks.
 2. **Package for distribution.** A marketplace manifest, install docs, and a CI job that runs `npm test`.

@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Open-source tools to study | OMC research</title><style>
+:root{color-scheme:light dark;--background:light-dark(#f7f8fb,#11151d);--foreground:light-dark(#202c40,#e3e9f4);--muted:light-dark(#52617a,#acb9cc);--card:light-dark(#fff,#192231);--border:light-dark(#d5ddea,#344158);--primary:light-dark(#234db6,#9bbaff);--radius:12px;--font-sans:system-ui,sans-serif;--font-mono:ui-monospace,monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:var(--background);color:var(--foreground);font:17px/1.7 var(--font-sans)}
+a{color:var(--primary);text-underline-offset:3px}a:hover{text-decoration-thickness:2px}
+a:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--primary);outline-offset:3px}
+.skip{position:absolute;left:12px;top:-80px;background:var(--card);padding:10px;z-index:2}.skip:focus{top:12px}
+.layout{display:grid;grid-template-columns:255px minmax(0,1fr);gap:38px;max-width:1600px;margin:auto;padding:30px}
+aside{position:sticky;top:24px;align-self:start;max-height:calc(100dvh - 48px);overflow:auto;font-size:14px}
+aside strong{display:block;margin-bottom:12px}nav a{display:block;padding:7px 10px;border-radius:6px}
+nav a[aria-current=page]{background:var(--card);font-weight:700}
+summary{cursor:pointer;font-weight:650;margin-top:24px}ol.toc{padding-left:22px}.toc li{margin:7px 0}
+main{min-width:0}article{max-width:1100px}.meta{color:var(--muted);font-size:14px}
+h1,h2,h3,h4{line-height:1.25;scroll-margin-top:24px}h1{font-size:clamp(30px,4vw,46px);margin:18px 0 24px}
+h2{font-size:27px;margin:50px 0 18px;border-bottom:1px solid var(--border);padding-bottom:10px}
+h3{font-size:22px;margin-top:32px}p,ul,ol{max-width:85ch}li{margin:7px 0}
+blockquote{border-left:4px solid var(--primary);margin:24px 0;padding:12px 20px;background:var(--card);border-radius:0 var(--radius) var(--radius) 0}
+blockquote p{margin:8px 0}code{font:0.88em var(--font-mono);overflow-wrap:anywhere;background:var(--card);padding:2px 5px;border-radius:4px}
+pre{background:var(--card);padding:18px;border:1px solid var(--border);border-radius:var(--radius);overflow:auto}pre code{padding:0;white-space:pre}
+.table-scroll{overflow:auto;max-height:75dvh;border:1px solid var(--border);border-radius:var(--radius);margin:24px 0}
+table{border-collapse:collapse;min-width:100%;font-size:14px;line-height:1.55}th,td{text-align:left;vertical-align:top;padding:12px 14px;border-bottom:1px solid var(--border);min-width:155px}
+th{position:sticky;top:0;background:var(--card);z-index:1}tr:last-child td{border-bottom:0}td p{margin:0}
+hr{border:0;border-top:1px solid var(--border);margin:32px 0}img{max-width:100%}footer{margin-top:50px;padding:24px 0;border-top:1px solid var(--border);font-size:14px;color:var(--muted)}
+@media(max-width:850px){.layout{grid-template-columns:minmax(0,1fr);padding:18px;gap:12px}aside{position:static;max-height:none}nav{display:flex;flex-wrap:wrap;gap:4px}aside details{margin-bottom:20px}h2{font-size:24px}}
+@media print{aside,.skip,.meta{display:none}.layout{display:block;padding:0}body{font-size:11pt;background:white;color:black}.table-scroll{max-height:none;overflow:visible}table{font-size:8pt}th{position:static}a{color:inherit}h2,h3{break-after:avoid}}
+</style></head>
+<body><a class="skip" href="#content">Skip to report</a><div class="layout">
+<aside><strong>Oh-my-copilot research</strong><nav aria-label="Reports"><a href="index.html">Landscape overview</a><a href="omp-ecosystem.html">OMP and enhancement layers</a><a href="native-harnesses.html">Native harness capabilities</a><a href="oss-projects.html" aria-current="page">Open-source tools to study</a><a href="orchestrators.html">Managers and orchestrators</a></nav>
+<details open><summary>On this page</summary><ol class="toc"><li><a href="#1-edit-tools-anchoredhashline-edits-apply_patch-fuzzy-matchers-fast-apply-edit-format-benchmarks">1. Edit tools: anchored/hashline edits, apply_patch, fuzzy matchers, fast-apply, edit-format benchmarks</a></li><li><a href="#2-structural-code-tools-exposed-to-agents-ast-grep-serenalsp-code-indexing-mcps-repo-maps">2. Structural code tools exposed to agents: ast-grep, Serena/LSP, code indexing MCPs, repo maps</a></li><li><a href="#3-debuggerrepl-tools-for-agents-dap-jupytereval-mcps">3. Debugger/REPL tools for agents (DAP, Jupyter/eval MCPs)</a></li><li><a href="#4-rulesguardrails-engines-hooks-rule-format-converters">4. Rules/guardrails engines, hooks, rule-format converters</a></li><li><a href="#5-advisor--second-opinion--multi-model-patterns">5. Advisor / second-opinion / multi-model patterns</a></li><li><a href="#6-context-and-memory-tools-compaction-memory-banks">6. Context and memory tools (compaction, memory banks)</a></li><li><a href="#7-agent-benchmarking-harnesses-comparing-harnessesplugins-on-the-same-model">7. Agent benchmarking harnesses (comparing harnesses/plugins on the same model)</a></li><li><a href="#8-per-model-toolprompt-tuning">8. Per-model tool/prompt tuning</a></li><li><a href="#top-10-projects-to-study-or-integrate-ranked">Top 10 Projects to Study or Integrate (Ranked)</a></li><li><a href="#sources">Sources</a></li></ol></details></aside>
+<main id="content" tabindex="-1"><p class="meta">Research snapshot: November 2026 · <a href="../research/03-oss-projects.md">Markdown source</a></p>
+<article><h1 id="03--oss-projects-for-agent-tooling-techniques-thread-3-of-4">03 — OSS Projects for Agent Tooling Techniques (Thread 3 of 4)</h1>
+<p>*Research date: 2026-11-06. Star counts/activity pulled live via GitHub API on this date — treat as a snapshot, not stable. Some search-engine summaries could not be independently cross-checked against primary source files; those claims are marked <strong>[unverified]</strong>.*</p>
+<blockquote>
+<p><strong>Source-check updates:</strong> the <a href="index.html">synthesis</a> independently rechecks six star
+counts and clarifies licensing. Serena&#39;s <a href="https://github.com/oraios/serena/blob/main/LICENSE">LICENSE</a>
+specifies MIT for SolidLSP and GPL-3.0-or-later for the application; <code>NOASSERTION</code> in the
+original tables is GitHub detector metadata, not a license. The
+<a href="https://github.com/ast-grep/ast-grep-mcp">ast-grep MCP README</a> calls the server experimental
+and describes structural search and analysis. Rewrite support and integration safety still
+require validation; the original &quot;near-zero integration risk&quot; recommendation is too strong.
+Go&#39;s <code>gopls</code> is the user&#39;s priority for native LSP presets, separate from Serena.</p>
+</blockquote>
+<h2 id="1-edit-tools-anchoredhashline-edits-apply_patch-fuzzy-matchers-fast-apply-edit-format-benchmarks">1. Edit tools: anchored/hashline edits, apply_patch, fuzzy matchers, fast-apply, edit-format benchmarks</h2>
+<div class="table-scroll" role="region" aria-label="Comparison table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Project</th>
+<th>URL</th>
+<th>What it does</th>
+<th>Mechanism</th>
+<th>Lang</th>
+<th>License</th>
+<th>Stars/Activity</th>
+<th>OMC relevance</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>OpenAI Codex <code>apply_patch</code></td>
+<td><a href="https://github.com/openai/codex">https://github.com/openai/codex</a> (apply-patch crate under <code>codex-rs/apply-patch</code>)</td>
+<td>Canonical structured patch tool: <code>*** Begin Patch *** / Add File / Update File / Delete File *** End Patch</code>, context-matched hunks</td>
+<td>Custom patch grammar, context-line matching before mutation, sandboxed apply</td>
+<td>Rust</td>
+<td>Apache-2.0</td>
+<td>133,391★, pushed today (very active)</td>
+<td>Directly comparable to OMC&#39;s hashline anchored edits — study context-matching/ambiguity-rejection logic</td>
+</tr>
+<tr>
+<td>tokenring-ai/apply-patch</td>
+<td><a href="https://github.com/tokenring-ai/apply-patch">https://github.com/tokenring-ai/apply-patch</a></td>
+<td>TypeScript port of OpenAI&#39;s apply_patch for JS/Node agent stacks</td>
+<td>Same patch grammar ported from Rust</td>
+<td>TypeScript</td>
+<td>Apache-2.0</td>
+<td>3★, pushed 2025-10-01</td>
+<td>Easiest-to-read reference impl since OMC/plugin ecosystem is likely Node-based</td>
+</tr>
+<tr>
+<td>Aider-AI/aider edit formats</td>
+<td><a href="https://aider.chat/docs/more/edit-formats.html">https://aider.chat/docs/more/edit-formats.html</a>, source: <a href="https://github.com/Aider-AI/aider">https://github.com/Aider-AI/aider</a></td>
+<td>Multiple interchangeable edit formats (<code>whole</code>, <code>diff</code> SEARCH/REPLACE, <code>diff-fenced</code>, <code>udiff</code>) selected per-model</td>
+<td>Format chosen based on which models reliably emit it; applies via search/replace or whole-file write</td>
+<td>Python</td>
+<td>Apache-2.0</td>
+<td>49,979★, pushed 2026-05-22</td>
+<td>Directly informs &quot;per-model tool profiles&quot; pending idea — Aider already picks edit format per model family</td>
+</tr>
+<tr>
+<td>Aider-AI/aider leaderboard</td>
+<td><a href="https://aider.chat/docs/leaderboards/edit.html">https://aider.chat/docs/leaderboards/edit.html</a></td>
+<td>Tracks both task-pass-rate AND &quot;correct edit format&quot; compliance per model</td>
+<td>Automated Exercism-based eval harness scoring format conformance separately from correctness</td>
+<td>Python</td>
+<td>Apache-2.0</td>
+<td>(same repo)</td>
+<td>Template for OMC&#39;s benchmark harness — separate &quot;did it edit correctly&quot; from &quot;did it solve the task&quot;</td>
+</tr>
+<tr>
+<td>Diff-XYZ benchmark (JetBrains Research)</td>
+<td><a href="https://arxiv.org/abs/2510.12487">https://arxiv.org/abs/2510.12487</a>, dataset: <a href="https://huggingface.co/datasets/JetBrains-Research/diff-xyz">https://huggingface.co/datasets/JetBrains-Research/diff-xyz</a></td>
+<td>Benchmarks LLMs on Apply / Anti-apply / Diff-generation using real commit triples</td>
+<td>Supervised eval over ⟨old_code, new_code, diff⟩ triples from CommitPackFT</td>
+<td>Python (eval scripts)</td>
+<td>Unclear/research release</td>
+<td>Published 2026 (arXiv)</td>
+<td>Finding: search-replace format works best for large models, format choice matters less for small models — relevant to OMC hashline-edit vs diff-format decision</td>
+</tr>
+<tr>
+<td>alexmelges/harnesskit</td>
+<td><a href="https://github.com/alexmelges/harnesskit">https://github.com/alexmelges/harnesskit</a></td>
+<td>&quot;Fuzzy edit tool for LLM coding agents — never fail a str_replace again&quot;</td>
+<td>Cascading match strategy: exact → whitespace-normalized → difflib similarity → line-fuzzy</td>
+<td>Python</td>
+<td>MIT</td>
+<td>1★ (very small/new) <strong>[low confidence on maturity]</strong></td>
+<td>Small reference for fuzzy str_replace fallback chains that OMC&#39;s hashline tool could adopt as a last-resort fallback</td>
+</tr>
+<tr>
+<td>Morph Fast Apply</td>
+<td><a href="https://docs.morphllm.com">https://docs.morphllm.com</a>, demos: <a href="https://github.com/morphllm/morph-demos">https://github.com/morphllm/morph-demos</a></td>
+<td>Hosted fast-apply model that merges an edit snippet (with <code>// ... existing code ...</code> markers) into a full file in one model call, ~10,500 tok/s, ~98% claimed accuracy</td>
+<td>Specialized small model trained specifically for &quot;apply this diff-like instruction to this file,&quot; not a diff algorithm</td>
+<td>Hosted API + OSS SDK/demos</td>
+<td>Demos repo license unknown</td>
+<td>N/A (commercial API)</td>
+<td>Represents an alternative architecture to deterministic hashline matching: offload &quot;fuzzy apply&quot; to a dedicated small model instead of string matching. Relevant to OMC&#39;s edit-tool robustness strategy, but introduces an external paid dependency — note as an option, not a drop-in OSS component</td>
+</tr>
+</tbody></table>
+</div><p><strong>Gaps:</strong> Could not find a maintained, widely-starred standalone OSS &quot;hashline&quot; (stable per-line anchor ID) implementation distinct from line-number or content-hash diffing — this appears to be a relatively novel/OMP-specific design; no close OSS analog found besides Codex&#39;s context-line matching and Aider&#39;s SEARCH/REPLACE blocks.</p>
+<h2 id="2-structural-code-tools-exposed-to-agents-ast-grep-serenalsp-code-indexing-mcps-repo-maps">2. Structural code tools exposed to agents: ast-grep, Serena/LSP, code indexing MCPs, repo maps</h2>
+<div class="table-scroll" role="region" aria-label="Comparison table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Project</th>
+<th>URL</th>
+<th>What it does</th>
+<th>Mechanism</th>
+<th>Lang</th>
+<th>License</th>
+<th>Stars/Activity</th>
+<th>OMC relevance / Copilot-CLI usable?</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ast-grep/ast-grep-mcp</td>
+<td><a href="https://github.com/ast-grep/ast-grep-mcp">https://github.com/ast-grep/ast-grep-mcp</a></td>
+<td>Official MCP server exposing ast-grep&#39;s AST pattern search/lint/rewrite across ~20+ languages</td>
+<td>Wraps <code>ast-grep</code> CLI; exposes <code>dump_syntax_tree</code>, rule-based scan/test, structural rewrite with explicit-apply gating</td>
+<td>Python</td>
+<td>MIT</td>
+<td>489★, pushed 2026-11-05 (very active)</td>
+<td>Yes — standard MCP server, directly pluggable into Copilot CLI&#39;s <code>.github/copilot/mcp.json</code> or equivalent; best starting point for the &quot;ast-grep structural editing&quot; pending idea</td>
+</tr>
+<tr>
+<td>thrawn01/mcp-ast-grep</td>
+<td><a href="https://github.com/thrawn01/mcp-ast-grep">https://github.com/thrawn01/mcp-ast-grep</a></td>
+<td>Alternative/earlier MCP wrapper over ast-grep</td>
+<td>Similar wrapping approach</td>
+<td>Go (per search summary) <strong>[unverified — not directly fetched]</strong></td>
+<td>Unknown</td>
+<td>Unknown</td>
+<td>Secondary reference implementation; compare tool surface differences vs. the official one</td>
+</tr>
+<tr>
+<td>GodSpeedAI/ast-grep-mcp-rs</td>
+<td><a href="https://github.com/GodSpeedAI/ast-grep-mcp-rs">https://github.com/GodSpeedAI/ast-grep-mcp-rs</a></td>
+<td>Rust reimplementation of ast-grep MCP server</td>
+<td>Native Rust binding to ast-grep core (no CLI shellout)</td>
+<td>Rust</td>
+<td>MIT</td>
+<td>1★, pushed 2026-03-13</td>
+<td>Low adoption but relevant if OMC wants a fast, dependency-free native binary rather than Python/Node</td>
+</tr>
+<tr>
+<td>spiritledsoftware/ast-grep-mcp</td>
+<td><a href="https://github.com/spiritledsoftware/ast-grep-mcp">https://github.com/spiritledsoftware/ast-grep-mcp</a></td>
+<td>Node.js-based ast-grep MCP server</td>
+<td>CLI wrapper</td>
+<td>TypeScript</td>
+<td>MIT</td>
+<td>1★, pushed 2026-08-17</td>
+<td>TypeScript reference, matches likely OMC plugin stack</td>
+</tr>
+<tr>
+<td>oraios/serena</td>
+<td><a href="https://github.com/oraios/serena">https://github.com/oraios/serena</a></td>
+<td>&quot;IDE for your agent&quot;: semantic, symbol-level code retrieval/editing via LSP, exposed as MCP server</td>
+<td>Spins up language servers per project (30+ languages), exposes <code>find_symbol</code>, <code>find_referencing_symbols</code>, <code>replace_symbol_body</code>, <code>insert_before/after_symbol</code> etc. instead of raw line edits</td>
+<td>Python</td>
+<td>NOASSERTION (check repo LICENSE file; not simple MIT/Apache)</td>
+<td>31,138★, pushed 2026-10-28 (very active, most popular project in this category)</td>
+<td>Most relevant OSS project for &quot;LSP presets&quot; and symbol-level structural editing pending ideas. MCP-based, so directly usable from Copilot CLI. License is NOASSERTION — needs legal check before any code reuse (not just usage)</td>
+</tr>
+<tr>
+<td>zilliztech/claude-context</td>
+<td><a href="https://github.com/zilliztech/claude-context">https://github.com/zilliztech/claude-context</a></td>
+<td>MCP server for whole-codebase semantic code search (&quot;make entire codebase the context&quot;)</td>
+<td>AST-aware chunking (tree-sitter) + Merkle-tree incremental indexing + hybrid BM25/dense-vector search in Milvus/Zilliz Cloud; multi-provider embeddings (OpenAI/Voyage/Gemini/Ollama)</td>
+<td>TypeScript</td>
+<td>MIT</td>
+<td>12,673★, pushed 2026-07-14</td>
+<td>Directly matches OMC&#39;s &quot;code indexing/semantic search MCP&quot; need; requires external vector DB (Milvus/Zilliz) and embedding API key — adds infra dependency. Usable today as an MCP server for Copilot CLI</td>
+</tr>
+<tr>
+<td>Aider-AI/aider repo map</td>
+<td><a href="https://github.com/Aider-AI/aider/blob/main/aider/repomap.py">https://github.com/Aider-AI/aider/blob/main/aider/repomap.py</a> ; docs: <a href="https://aider.chat/docs/repomap.html">https://aider.chat/docs/repomap.html</a></td>
+<td>Builds a compact, token-budgeted map of the repo (top-level classes/functions/signatures per file) sent to the LLM for context</td>
+<td>Tree-sitter symbol extraction → build symbol graph → personalized PageRank to rank importance (weighted toward currently-open/mentioned files) → binary-search to fit a token budget (default 1024 tokens)</td>
+<td>Python</td>
+<td>Apache-2.0</td>
+<td>49,979★ (same repo as edit formats)</td>
+<td>Best OSS reference for a lightweight, embedding-free &quot;repo map&quot; feature — cheaper and simpler than a vector-DB semantic search MCP; could be ported as a pure prompt-context generator without needing MCP server infra</td>
+</tr>
+<tr>
+<td>mickeyinfoshan/lsp-mcp</td>
+<td><a href="https://github.com/mickeyinfoshan/lsp-mcp">https://github.com/mickeyinfoshan/lsp-mcp</a></td>
+<td>Generic MCP↔LSP bridge; connects any MCP client to any LSP server (Go/TS/JS/Python out of box, extensible)</td>
+<td>Translates MCP tool calls into LSP JSON-RPC, manages LSP server subprocesses, YAML config per language/root</td>
+<td>Unverified (search summary only) <strong>[unverified]</strong></td>
+<td>Unknown</td>
+<td>Unknown</td>
+<td>Candidate for OMC&#39;s &quot;LSP presets&quot; pending idea — generic bridge rather than full semantic-editing layer like Serena</td>
+</tr>
+<tr>
+<td>ProfessioneIT/lsp-mcp-server</td>
+<td><a href="https://github.com/ProfessioneIT/lsp-mcp-server">https://github.com/ProfessioneIT/lsp-mcp-server</a></td>
+<td>Similar LSP↔MCP bridge aimed at Codex/Claude Code clients</td>
+<td>JSON config mapping</td>
+<td>Unverified</td>
+<td>Unknown</td>
+<td>Unknown</td>
+<td>Alternative to Serena if OMC wants only navigation (go-to-def/find-refs/hover) without Serena&#39;s heavier symbol-editing abstraction</td>
+</tr>
+<tr>
+<td>nzrsky/lsp-bridge</td>
+<td><a href="https://github.com/nzrsky/lsp-bridge">https://github.com/nzrsky/lsp-bridge</a></td>
+<td>High-performance LSP↔MCP bridge in Zig; targets Zig/Rust/Go/TS/Python</td>
+<td>Native bridge, performance-focused</td>
+<td>Zig</td>
+<td>Unverified</td>
+<td>Unknown</td>
+<td>Niche; only relevant if performance of the bridge itself becomes a bottleneck</td>
+</tr>
+</tbody></table>
+</div><p><strong>Note on verification:</strong> I directly fetched GitHub API metadata (stars/license/activity) for <code>ast-grep/ast-grep-mcp</code>, <code>oraios/serena</code>, <code>zilliztech/claude-context</code>, <code>GodSpeedAI/ast-grep-mcp-rs</code>, and <code>spiritledsoftware/ast-grep-mcp</code>. The lsp-mcp bridge projects (<code>mickeyinfoshan/lsp-mcp</code>, <code>ProfessioneIT/lsp-mcp-server</code>, <code>nzrsky/lsp-bridge</code>) come from a single AI-generated web search summary and were <strong>not independently verified</strong> against the GitHub API or primary source — recommend the main agent re-verify star counts/license/activity before citing these as authoritative.</p>
+<h2 id="3-debuggerrepl-tools-for-agents-dap-jupytereval-mcps">3. Debugger/REPL tools for agents (DAP, Jupyter/eval MCPs)</h2>
+<div class="table-scroll" role="region" aria-label="Comparison table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Project</th>
+<th>URL</th>
+<th>What it does</th>
+<th>Mechanism</th>
+<th>Lang</th>
+<th>License</th>
+<th>Stars/Activity</th>
+<th>OMC relevance</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>debugmcp/mcp-debugger</td>
+<td><a href="https://github.com/debugmcp/mcp-debugger">https://github.com/debugmcp/mcp-debugger</a></td>
+<td>&quot;Headless, agentic debugger over MCP&quot; — agents can set breakpoints, step, inspect variables in live programs across 7 languages</td>
+<td>MCP server wraps a DAP proxy layer that spawns/manages debug adapters and translates MCP tool calls to DAP requests</td>
+<td>TypeScript</td>
+<td>MIT</td>
+<td>186★, pushed 2026-11-06 (very active, most current of the DAP options)</td>
+<td>Strongest direct match for the &quot;DAP debugger&quot; pending idea; MCP-native, usable from Copilot CLI immediately</td>
+</tr>
+<tr>
+<td>go-delve/mcp-dap-server</td>
+<td><a href="https://github.com/go-delve/mcp-dap-server">https://github.com/go-delve/mcp-dap-server</a></td>
+<td>MCP server to communicate with DAP servers, letting AI agents debug live programs</td>
+<td>Similar DAP-proxy-over-MCP pattern, from the official Delve (Go debugger) org</td>
+<td>Go</td>
+<td>MIT</td>
+<td>106★, pushed 2026-11-03 (active)</td>
+<td>Backed by the Delve team — credible for Go debugging specifically; good complement if OMC needs strong Go support</td>
+</tr>
+<tr>
+<td>KashunCheng/dap_mcp</td>
+<td><a href="https://github.com/KashunCheng/dap_mcp">https://github.com/KashunCheng/dap_mcp</a></td>
+<td>Early/independent MCP server wrapping a debugger via DAP</td>
+<td>DAP bridge</td>
+<td>Python</td>
+<td>AGPL-3.0</td>
+<td>40★, pushed 2025-09-24 (stale relative to the other two)</td>
+<td>AGPL-3.0 license is a blocker for direct code reuse in a possibly-permissive-licensed OMC; use only as a design reference, not as a dependency</td>
+</tr>
+<tr>
+<td>microsoft/debug-adapter-protocol (spec)</td>
+<td><a href="https://microsoft.github.io/debug-adapter-protocol/">https://microsoft.github.io/debug-adapter-protocol/</a></td>
+<td>The DAP specification itself</td>
+<td>JSON-RPC-style protocol spec, not a library</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>Primary spec any DAP MCP bridge must implement against; useful for evaluating correctness/completeness of the above three servers</td>
+</tr>
+<tr>
+<td>LLDB + MCP</td>
+<td><a href="https://lldb.llvm.org/use/mcp.html">https://lldb.llvm.org/use/mcp.html</a></td>
+<td>LLVM&#39;s own LLDB debugger ships first-party MCP support</td>
+<td>Native LLDB MCP integration (not a 3rd-party bridge)</td>
+<td>C++</td>
+<td>Apache-2.0 (LLVM)</td>
+<td>N/A (part of LLVM)</td>
+<td>Worth noting as a precedent that major debugger projects are adding first-class MCP support, validating the DAP-MCP investment</td>
+</tr>
+</tbody></table>
+</div><p><strong>Gap:</strong> No widely-used Jupyter/eval-kernel-as-MCP project surfaced distinctly in this pass beyond generic &quot;code execution sandbox&quot; MCP servers (e.g., e2b.dev-style sandboxes), which were out of scope for this specific search round; flagging as a follow-up search for the main agent if &quot;eval kernels&quot; pending idea needs deeper coverage.</p>
+<h2 id="4-rulesguardrails-engines-hooks-rule-format-converters">4. Rules/guardrails engines, hooks, rule-format converters</h2>
+<div class="table-scroll" role="region" aria-label="Comparison table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Project</th>
+<th>URL</th>
+<th>What it does</th>
+<th>Mechanism</th>
+<th>Lang</th>
+<th>License</th>
+<th>Stars/Activity</th>
+<th>OMC relevance</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>GowayLee/cchooks</td>
+<td><a href="https://github.com/GowayLee/cchooks">https://github.com/GowayLee/cchooks</a></td>
+<td>Python SDK for writing Claude Code hooks (PreToolUse, PostToolUse, SessionStart/End, etc.) without manual JSON parsing</td>
+<td><code>create_context()</code> returns typed context objects; hooks call <code>exit_success()</code>/<code>exit_deny(reason)</code></td>
+<td>Python</td>
+<td>MIT</td>
+<td>131★, pushed 2026-04-08</td>
+<td>Directly maps to OMC&#39;s &quot;pre/post tool rules&quot; feature — a clean reference for ergonomic hook-SDK design (typed context, simple allow/deny API)</td>
+</tr>
+<tr>
+<td>dyoshikawa/rulesync</td>
+<td><a href="https://github.com/dyoshikawa/rulesync">https://github.com/dyoshikawa/rulesync</a></td>
+<td>Single canonical rules file → generates AGENTS.md, CLAUDE.md, <code>.cursor/rules/*.mdc</code>, <code>.github/copilot-instructions.md</code>, GEMINI.md, <code>.windsurfrules</code>, etc.</td>
+<td>CLI with <code>init</code>/<code>sync</code>/<code>status</code>/<code>adopt</code>/<code>add &lt;tool&gt;</code> commands; markdown-based canonical source</td>
+<td>TypeScript</td>
+<td>MIT</td>
+<td>1,585★, pushed 2026-11-06 (very active)</td>
+<td>Directly competes with/validates OMC&#39;s &quot;rule imports (Cursor/Cline/Windsurf)&quot; feature — but rulesync does bidirectional <em>sync</em> (canonical → N targets) rather than one-way import; worth comparing architecture choices</td>
+</tr>
+<tr>
+<td>intellectronica/ruler</td>
+<td><a href="https://github.com/intellectronica/ruler">https://github.com/intellectronica/ruler</a></td>
+<td>&quot;Apply the same rules to all coding agents&quot; — similar sync tool to rulesync</td>
+<td>Canonical rules dir → generates tool-specific config files for many agents</td>
+<td>TypeScript</td>
+<td>MIT</td>
+<td>2,961★, pushed 2026-11-04 (very active, more stars than rulesync)</td>
+<td>Most-starred option in this space; worth comparing its supported-tool list and config schema against rulesync and OMC&#39;s own importer before committing to OMC&#39;s design</td>
+</tr>
+<tr>
+<td>mkreyman/mcp-memory-keeper</td>
+<td><a href="https://github.com/mkreyman/mcp-memory-keeper">https://github.com/mkreyman/mcp-memory-keeper</a></td>
+<td>MCP server for persistent context management in AI coding assistants (adjacent to rules/guardrails via context injection)</td>
+<td>Stores/retrieves structured context across sessions via MCP</td>
+<td>TypeScript</td>
+<td>MIT</td>
+<td>136★, pushed 2026-09-03</td>
+<td>Lower relevance to rules specifically, more relevant to category 6 (memory) — cross-listed here because it&#39;s sometimes used to implement guardrail-like &quot;remember this constraint&quot; behavior</td>
+</tr>
+</tbody></table>
+</div><p><strong>Gap/uncertainty:</strong> I did not find a clearly-documented OSS project implementing &quot;streaming interrupt&quot; or &quot;time-traveling&quot; rule systems analogous to what OMC/OMP describe (i.e., rules that can retroactively interrupt an in-flight streamed response rather than just gate before/after a tool call). This appears to be a relatively novel architecture in OMP/OMC; closest analogs are Claude Code&#39;s own hook system (PreToolUse can block before execution, but nothing found that interrupts mid-stream token generation at the OSS tooling layer). <strong>Recommend the main agent flag this as a potential genuine OMC/OMP differentiator rather than something to &quot;reuse&quot; from elsewhere.</strong></p>
+<h2 id="5-advisor--second-opinion--multi-model-patterns">5. Advisor / second-opinion / multi-model patterns</h2>
+<div class="table-scroll" role="region" aria-label="Comparison table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Project</th>
+<th>URL</th>
+<th>What it does</th>
+<th>Mechanism</th>
+<th>Lang</th>
+<th>License</th>
+<th>Stars/Activity</th>
+<th>OMC relevance</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BeehiveInnovations/zen-mcp-server</td>
+<td><a href="https://github.com/BeehiveInnovations/zen-mcp-server">https://github.com/BeehiveInnovations/zen-mcp-server</a></td>
+<td>Lets Claude Code / Gemini CLI / Codex CLI orchestrate consults with Gemini, O3, Grok, OpenRouter, Ollama, Azure, custom models — &quot;working as one&quot;</td>
+<td>MCP server with specialized workflow tools (code review, debug, planning, pre-commit, security audit) that route sub-tasks to whichever configured model is best suited; maintains cross-model conversation continuity</td>
+<td>Python</td>
+<td>NOASSERTION (check license before reuse)</td>
+<td>11,824★, pushed 2025-12-15 (star count high but no commits in ~11 months — momentum may have stalled)</td>
+<td><strong>Closest direct OSS match to OMC&#39;s &quot;advisor (second model reviewing each turn)&quot; pending idea.</strong> Its &quot;expert mode routing&quot; and multi-model aggregation pattern is exactly the architecture to study; the NOASSERTION license and apparent recent inactivity (last push Dec 2025) are both worth flagging</td>
+</tr>
+</tbody></table>
+</div><p><strong>Gap:</strong> Did not find an academic paper or OSS project specifically named &quot;PAL&quot; matching the described consult-another-model pattern in this search pass — the query returned mostly tangential or irrelevant results. <strong>[unverified / gap]</strong> Recommend a targeted follow-up search for &quot;PAL: Program-aided language models&quot; (a different, unrelated concept from NLP literature) to rule out confusion, and a direct GitHub code search for <code>&quot;second opinion&quot; &quot;another model&quot;</code> across MCP server repos if the main agent wants more candidates.</p>
+<h2 id="6-context-and-memory-tools-compaction-memory-banks">6. Context and memory tools (compaction, memory banks)</h2>
+<div class="table-scroll" role="region" aria-label="Comparison table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Project</th>
+<th>URL</th>
+<th>What it does</th>
+<th>Mechanism</th>
+<th>Lang</th>
+<th>License</th>
+<th>Stars/Activity</th>
+<th>OMC relevance</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>thedotmack/claude-mem</td>
+<td><a href="https://github.com/thedotmack/claude-mem">https://github.com/thedotmack/claude-mem</a></td>
+<td>Persistent memory across Claude Code (and Codex/Gemini/Copilot/OpenCode) sessions; captures session activity, AI-summarizes it, re-injects into future sessions</td>
+<td>Hooks into session-end/compaction events, generates structured summaries (goals, decisions+reasoning, file/deployment state, blockers, corrections, preferences), stores and re-surfaces them automatically</td>
+<td>TypeScript</td>
+<td>Apache-2.0</td>
+<td><strong>113,661★</strong> (anomalously high — flagged below), pushed 2026-11-06 (very active)</td>
+<td>Directly relevant to context/memory needs even though not explicitly in OMC&#39;s pending-ideas list; could inform a future &quot;session continuity&quot; feature</td>
+</tr>
+<tr>
+<td>basicmachines-co/basic-memory</td>
+<td><a href="https://github.com/basicmachines-co/basic-memory">https://github.com/basicmachines-co/basic-memory</a></td>
+<td>&quot;AI conversations that actually remember&quot; — MCP-based persistent memory store using plain Markdown notes with semantic search/relations</td>
+<td>MCP server exposing create/search/read note tools; supports local or hosted-cloud mode (<code>claude mcp add -s user -t http basic-memory-cloud ...</code>)</td>
+<td>Python</td>
+<td>AGPL-3.0</td>
+<td>4,503★, pushed 2026-11-06 (very active)</td>
+<td>AGPL-3.0 — same licensing caution as <code>dap_mcp</code>; usable as an external MCP tool (not code reuse) without triggering copyleft obligations on OMC itself</td>
+</tr>
+<tr>
+<td>edo-ceder/session-memory</td>
+<td><a href="https://github.com/edo-ceder/session-memory">https://github.com/edo-ceder/session-memory</a></td>
+<td>Claude Code plugin specifically targeting &quot;session drift&quot; — captures decisions/state/corrections around compaction events, refreshable manually</td>
+<td>Hooks around the compaction lifecycle</td>
+<td>Shell</td>
+<td>MIT</td>
+<td>0★ (essentially unadopted)</td>
+<td>Low-confidence/unproven, but conceptually matches OMC&#39;s interest in compaction-adjacent behavior; worth reading source for the compaction-hook pattern even with near-zero adoption</td>
+</tr>
+<tr>
+<td>mkreyman/mcp-memory-keeper</td>
+<td><a href="https://github.com/mkreyman/mcp-memory-keeper">https://github.com/mkreyman/mcp-memory-keeper</a></td>
+<td>MCP server for persistent context management in AI coding assistants</td>
+<td>Structured context storage/retrieval via MCP</td>
+<td>TypeScript</td>
+<td>MIT</td>
+<td>136★, pushed 2026-09-03</td>
+<td>Mid-tier adoption alternative to basic-memory without the AGPL license</td>
+</tr>
+</tbody></table>
+</div><p><strong>⚠️ Data-quality flag:</strong> <code>thedotmack/claude-mem</code> returned <strong>113,661 stars</strong> from the GitHub API — this is implausibly high for a niche plugin (more stars than <code>sst/opencode</code> at 224k is at least directionally consistent for a mega-project, but claude-mem having more stars than <code>cline/cline</code> at 71k or <code>Aider-AI/aider</code> at 49k, projects with vastly larger install bases and multi-year histories, is suspicious). <strong>Treat this star count as unverified/possibly a GitHub API caching anomaly or a mismatched repo identity; recommend the main agent re-check this number directly on github.com/thedotmack/claude-mem before citing it in any external-facing material.</strong></p>
+<h2 id="7-agent-benchmarking-harnesses-comparing-harnessesplugins-on-the-same-model">7. Agent benchmarking harnesses (comparing harnesses/plugins on the same model)</h2>
+<div class="table-scroll" role="region" aria-label="Comparison table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Project</th>
+<th>URL</th>
+<th>What it does</th>
+<th>Mechanism</th>
+<th>Lang</th>
+<th>License</th>
+<th>Stars/Activity</th>
+<th>OMC relevance</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>harbor-framework/harbor</td>
+<td><a href="https://github.com/harbor-framework/harbor">https://github.com/harbor-framework/harbor</a></td>
+<td>Official evaluation harness for Terminal-Bench 2.0; framework for evaluating and improving agents</td>
+<td><code>harbor run --dataset terminal-bench@2.0 --agent &lt;agent&gt; --model &lt;model&gt;</code> — holds model constant while swapping agent/tool-config to isolate harness effects; supports parallel eval via Modal/Daytona providers</td>
+<td>Python</td>
+<td>Apache-2.0</td>
+<td>6,835★, pushed 2026-11-06 (very active)</td>
+<td><strong>Most directly relevant harness-comparison project</strong> — exactly the &quot;stock vs plugin across models&quot; comparison pattern OMC&#39;s benchmark harness already does, but at much larger scale/infra. Study its agent-abstraction interface and result/error-taxonomy reporting</td>
+</tr>
+<tr>
+<td>Terminal-Bench 2.0</td>
+<td><a href="https://www.tbench.ai/news/announcement-2-0">https://www.tbench.ai/news/announcement-2-0</a></td>
+<td>The benchmark dataset/suite Harbor runs against — realistic CLI tasks in Docker containers</td>
+<td>Task suite + reference evaluation protocol</td>
+<td>N/A (task definitions)</td>
+<td>Unclear</td>
+<td>Actively maintained (2.0 announced)</td>
+<td>Could be a candidate task-suite for OMC&#39;s own benchmark harness rather than building bespoke tasks from scratch</td>
+</tr>
+<tr>
+<td>princeton-nlp/SWE-bench</td>
+<td><a href="https://github.com/princeton-nlp/SWE-bench">https://github.com/princeton-nlp/SWE-bench</a></td>
+<td>&quot;Can Language Models Resolve Real-world GitHub Issues?&quot; — benchmark harness evaluating patch-resolution against real repo issues/PRs</td>
+<td>Harness clones target repos at a commit, applies model-generated patch, runs the repo&#39;s own test suite to check pass/fail</td>
+<td>Python</td>
+<td>MIT</td>
+<td>6,150★, pushed 2026-09-18 (active)</td>
+<td>The most established, widely-cited harness in this space; many derivative &quot;mini-SWE-bench&quot; / &quot;SWE-bench verified&quot; variants compare harnesses/scaffolds on identical models — good prior art for methodology (holdout test suites, patch application correctness, avoiding leakage) even though it&#39;s not plugin-comparison specific</td>
+</tr>
+<tr>
+<td>Published commentary: &quot;The Harness Effect&quot;</td>
+<td><a href="https://codex.danielvaughan.com/2026/04/19/the-harness-effect-same-model-different-tool-different-score/">https://codex.danielvaughan.com/2026/04/19/the-harness-effect-same-model-different-tool-different-score/</a></td>
+<td>Blog analysis showing the same base model scoring up to 13–16 points differently across agent harnesses on Terminal-Bench</td>
+<td>Comparative analysis across public leaderboard runs</td>
+<td>N/A (article)</td>
+<td>N/A</td>
+<td>Published 2026-04-19</td>
+<td>Directly validates OMC&#39;s benchmarking premise (stock vs. plugin matters) — good citation for OMC&#39;s own README/benchmark docs to justify why the comparison harness exists</td>
+</tr>
+</tbody></table>
+</div><h2 id="8-per-model-toolprompt-tuning">8. Per-model tool/prompt tuning</h2>
+<div class="table-scroll" role="region" aria-label="Comparison table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Project</th>
+<th>URL</th>
+<th>What it does</th>
+<th>Mechanism</th>
+<th>Lang</th>
+<th>License</th>
+<th>Stars/Activity</th>
+<th>OMC relevance</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>sst/opencode</td>
+<td><a href="https://github.com/sst/opencode">https://github.com/sst/opencode</a></td>
+<td>The open-source coding agent itself; internally selects different static system-prompt text per provider/model family</td>
+<td>Discrete prompt asset files per model family (e.g., anthropic-flavored vs. default vs. &quot;beast&quot;-style prompts for reasoning-heavy models), chosen at runtime based on configured provider/model</td>
+<td>TypeScript</td>
+<td>MIT</td>
+<td>224,861★, pushed 2026-11-06 (extremely active, among the largest OSS coding agents)</td>
+<td><strong>Primary reference for OMC&#39;s &quot;per-model tool profiles&quot; pending idea</strong> — proves the pattern at large scale and is itself a strong adoption signal</td>
+</tr>
+<tr>
+<td>optix2000/opencode-provider-system-prompts</td>
+<td><a href="https://github.com/optix2000/opencode-provider-system-prompts">https://github.com/optix2000/opencode-provider-system-prompts</a></td>
+<td>Third-party OpenCode plugin letting users override/replace system prompts per-provider/per-model via YAML-frontmatter-matched markdown rule files with regex model matching</td>
+<td>Plugin hooks into OpenCode&#39;s prompt-construction pipeline</td>
+<td>TypeScript</td>
+<td>None declared (no LICENSE file found)</td>
+<td>0★ (brand new / low adoption) <strong>[low confidence]</strong></td>
+<td>Smaller, more hackable example of exactly the mechanism OMC wants (regex/model-family matched prompt override files) — good as a design reference despite low stars, precisely because it&#39;s simpler to read than OpenCode core</td>
+</tr>
+<tr>
+<td>capyBearista/opencode-plugins (<code>opencode-agent-prompt-inheritance</code>)</td>
+<td><a href="https://github.com/capyBearista/opencode-plugins">https://github.com/capyBearista/opencode-plugins</a></td>
+<td>Maintains a library of vendored provider prompt assets (anthropic.txt, codex.txt, gemini.txt, beast.txt, default.txt) with routing logic, auto-synced from upstream OpenCode via GitHub Action</td>
+<td><code>provider-prompt.ts</code> module selects asset file based on detected model/provider; CI job re-syncs vendored prompts when OpenCode upstream changes</td>
+<td>TypeScript</td>
+<td>MPL-2.0</td>
+<td>8★, pushed 2026-11-02 (active)</td>
+<td>Interesting pattern for OMC to copy: automated CI sync of &quot;known good&quot; per-model prompt text from an upstream source-of-truth, rather than manually hand-maintaining it — directly useful operational idea regardless of star count</td>
+</tr>
+<tr>
+<td>cline/cline + cline/prompts</td>
+<td><a href="https://github.com/cline/cline">https://github.com/cline/cline</a> ; <a href="https://github.com/cline/prompts">https://github.com/cline/prompts</a></td>
+<td>Autonomous coding agent (VS Code/JetBrains/CLI) with a companion community prompts/workflows library (<code>.clinerules/</code>, <code>workflows/</code>)</td>
+<td>XML-tag-based tool invocation format in prompts; Plan/Act mode split; community-contributed <code>.clinerules</code> markdown files define domain-specific behavior overrides</td>
+<td>TypeScript</td>
+<td>Apache-2.0</td>
+<td>71,380★ (cline/cline), pushed 2026-11-06 (very active)</td>
+<td>Less &quot;per-model&quot; specific than OpenCode but a strong reference for (a) XML tool-call prompt conventions and (b) a community rules-library pattern OMC&#39;s rule-import feature could emulate for a Copilot-CLI-native rules marketplace</td>
+</tr>
+<tr>
+<td>x1xhlol/system-prompts-and-models-of-ai-tools</td>
+<td><a href="https://github.com/x1xhlol/system-prompts-and-models-of-ai-tools">https://github.com/x1xhlol/system-prompts-and-models-of-ai-tools</a></td>
+<td>Leaked/collected full system prompts and internal tool definitions from Cursor, Claude Code, Devin, Replit, Windsurf, v0, Manus, and ~20 other commercial agent products</td>
+<td>Raw prompt-text archive, not a library</td>
+<td>N/A (text archive)</td>
+<td>GPL-3.0</td>
+<td>144,509★, pushed 2026-10-12 (very active)</td>
+<td>Extremely high-value raw material for studying how <em>commercial</em> products structure per-model/per-tool system prompts — useful comparative reading for OMC&#39;s prompt design even though it&#39;s not reusable code. GPL-3.0 license means copying prompt text verbatim into OMC could have licensing implications if OMC ships under a different license — treat as reference-only, not copy-paste source</td>
+</tr>
+</tbody></table>
+</div><hr>
+<h2 id="top-10-projects-to-study-or-integrate-ranked">Top 10 Projects to Study or Integrate (Ranked)</h2>
+<ol>
+<li><strong>ast-grep/ast-grep-mcp</strong> (<a href="https://github.com/ast-grep/ast-grep-mcp">https://github.com/ast-grep/ast-grep-mcp</a>) — MIT, 489★, actively maintained, official MCP server directly satisfying the &quot;ast-grep structural editing&quot; pending idea with near-zero integration risk (standard MCP server, drop into Copilot CLI&#39;s MCP config).</li>
+<li><strong>harbor-framework/harbor</strong> + <strong>Terminal-Bench 2.0</strong> (<a href="https://github.com/harbor-framework/harbor">https://github.com/harbor-framework/harbor</a>) — Apache-2.0, 6,835★, purpose-built for exactly OMC&#39;s &quot;compare stock vs. plugin across models&quot; benchmarking need; adopting its agent/model/task abstraction could save significant harness-engineering effort and buys credibility via a recognized public benchmark.</li>
+<li><strong>oraios/serena</strong> (<a href="https://github.com/oraios/serena">https://github.com/oraios/serena</a>) — 31,138★, the most mature LSP-based semantic editing MCP available; highest-value reference for both &quot;LSP presets&quot; and symbol-level editing beyond line-anchored hashline edits, but check the NOASSERTION license carefully before any code reuse (usage as an external MCP tool is lower-risk than vendoring code).</li>
+<li><strong>debugmcp/mcp-debugger</strong> (<a href="https://github.com/debugmcp/mcp-debugger">https://github.com/debugmcp/mcp-debugger</a>) — MIT, pushed same day as this research, 7-language DAP-over-MCP debugger; best-positioned existing OSS project to either adopt directly or use as the architectural template for OMC&#39;s own DAP debugger feature.</li>
+<li><strong>GowayLee/cchooks</strong> (<a href="https://github.com/GowayLee/cchooks">https://github.com/GowayLee/cchooks</a>) — MIT, small and simple (131★), the cleanest example of a typed hook SDK for pre/post tool rules; directly informs ergonomic API design for OMC&#39;s own rules engine even if not reused as a dependency (OMC likely isn&#39;t Python).</li>
+<li><strong>sst/opencode</strong> (<a href="https://github.com/sst/opencode">https://github.com/sst/opencode</a>) — MIT, 224,861★, the largest-scale proof that per-model prompt/tool profiles work in production; study its prompt-asset-per-provider architecture as the primary template for OMC&#39;s &quot;per-model tool profiles&quot; pending idea.</li>
+<li><strong>intellectronica/ruler</strong> (<a href="https://github.com/intellectronica/ruler">https://github.com/intellectronica/ruler</a>) and <strong>dyoshikawa/rulesync</strong> (<a href="https://github.com/dyoshikawa/rulesync">https://github.com/dyoshikawa/rulesync</a>) — both MIT, 2,961★ / 1,585★ respectively, both actively maintained; study both before finalizing OMC&#39;s Cursor/Cline/Windsurf rule-import design since they&#39;ve already solved the N-tool rule-format fanout problem (note: these are canonical→N <em>sync</em> tools, while OMC&#39;s feature is more of an N→1 <em>import</em>; the schemas they use for each target format are still directly useful).</li>
+<li><strong>BeehiveInnovations/zen-mcp-server</strong> (<a href="https://github.com/BeehiveInnovations/zen-mcp-server">https://github.com/BeehiveInnovations/zen-mcp-server</a>) — 11,824★, the closest existing OSS match for OMC&#39;s &quot;advisor&quot; pending idea (multi-model consult/second-opinion with context continuity); caveat that it appears to have had no commits since Dec 2025 and uses a NOASSERTION license — treat as a design reference more than a dependency.</li>
+<li><strong>zilliztech/claude-context</strong> (<a href="https://github.com/zilliztech/claude-context">https://github.com/zilliztech/claude-context</a>) — MIT, 12,673★, production-grade semantic code search MCP; relevant if OMC wants a heavier semantic-search feature beyond Aider-style repo maps, at the cost of requiring a vector DB + embedding API key as external infra.</li>
+<li><strong>Aider-AI/aider</strong> repo map + edit-formats (<a href="https://github.com/Aider-AI/aider">https://github.com/Aider-AI/aider</a>) — Apache-2.0, 49,979★, the single richest reference project in this entire report: its tree-sitter+PageRank repo-map is a low-infra alternative to vector-DB semantic search, its per-model edit-format selection directly parallels OMC&#39;s per-model tool-profile idea, and its public leaderboard (<a href="https://aider.chat/docs/leaderboards/edit.html">https://aider.chat/docs/leaderboards/edit.html</a>) is a ready-made template for reporting OMC&#39;s own benchmark results.</li>
+</ol>
+<hr>
+<h2 id="sources">Sources</h2>
+<ul>
+<li><a href="https://github.com/ast-grep/ast-grep-mcp">https://github.com/ast-grep/ast-grep-mcp</a></li>
+<li><a href="https://github.com/thrawn01/mcp-ast-grep">https://github.com/thrawn01/mcp-ast-grep</a></li>
+<li><a href="https://github.com/GodSpeedAI/ast-grep-mcp-rs">https://github.com/GodSpeedAI/ast-grep-mcp-rs</a></li>
+<li><a href="https://github.com/spiritledsoftware/ast-grep-mcp">https://github.com/spiritledsoftware/ast-grep-mcp</a> (via <a href="https://lobehub.com/mcp/spiritledsoftware-ast-grep-mcp">https://lobehub.com/mcp/spiritledsoftware-ast-grep-mcp</a>)</li>
+<li><a href="https://github.com/isco0819/ast-grep-mcp">https://github.com/isco0819/ast-grep-mcp</a></li>
+<li><a href="https://github.com/oraios/serena">https://github.com/oraios/serena</a></li>
+<li><a href="https://oraios.github.io/serena/">https://oraios.github.io/serena/</a></li>
+<li><a href="https://github.com/zilliztech/claude-context">https://github.com/zilliztech/claude-context</a></li>
+<li><a href="https://www.npmjs.com/package/@zilliz/claude-context-mcp">https://www.npmjs.com/package/@zilliz/claude-context-mcp</a></li>
+<li><a href="https://github.com/mickeyinfoshan/lsp-mcp">https://github.com/mickeyinfoshan/lsp-mcp</a></li>
+<li><a href="https://github.com/ProfessioneIT/lsp-mcp-server">https://github.com/ProfessioneIT/lsp-mcp-server</a></li>
+<li><a href="https://github.com/nzrsky/lsp-bridge">https://github.com/nzrsky/lsp-bridge</a></li>
+<li><a href="https://github.com/openai/codex">https://github.com/openai/codex</a> (apply-patch system)</li>
+<li><a href="https://deepwiki.com/openai/codex/5.4-apply-patch-system">https://deepwiki.com/openai/codex/5.4-apply-patch-system</a></li>
+<li><a href="https://github.com/tokenring-ai/apply-patch">https://github.com/tokenring-ai/apply-patch</a></li>
+<li><a href="https://pypi.org/project/codex-apply-patch/">https://pypi.org/project/codex-apply-patch/</a></li>
+<li><a href="https://github.com/Aider-AI/aider">https://github.com/Aider-AI/aider</a></li>
+<li><a href="https://aider.chat/docs/more/edit-formats.html">https://aider.chat/docs/more/edit-formats.html</a></li>
+<li><a href="https://aider.chat/docs/leaderboards/edit.html">https://aider.chat/docs/leaderboards/edit.html</a></li>
+<li><a href="https://aider.chat/docs/repomap.html">https://aider.chat/docs/repomap.html</a></li>
+<li><a href="https://github.com/Aider-AI/aider/blob/main/aider/repomap.py">https://github.com/Aider-AI/aider/blob/main/aider/repomap.py</a></li>
+<li><a href="https://arxiv.org/abs/2510.12487">https://arxiv.org/abs/2510.12487</a> (Diff-XYZ)</li>
+<li><a href="https://huggingface.co/datasets/JetBrains-Research/diff-xyz">https://huggingface.co/datasets/JetBrains-Research/diff-xyz</a></li>
+<li><a href="https://github.com/alexmelges/harnesskit">https://github.com/alexmelges/harnesskit</a></li>
+<li><a href="https://docs.morphllm.com/docs/quickstart-fast-apply">https://docs.morphllm.com/docs/quickstart-fast-apply</a></li>
+<li><a href="https://github.com/morphllm/morph-demos">https://github.com/morphllm/morph-demos</a></li>
+<li><a href="https://github.com/debugmcp/mcp-debugger">https://github.com/debugmcp/mcp-debugger</a></li>
+<li><a href="https://github.com/go-delve/mcp-dap-server">https://github.com/go-delve/mcp-dap-server</a></li>
+<li><a href="https://github.com/KashunCheng/dap_mcp">https://github.com/KashunCheng/dap_mcp</a></li>
+<li><a href="https://microsoft.github.io/debug-adapter-protocol/">https://microsoft.github.io/debug-adapter-protocol/</a></li>
+<li><a href="https://lldb.llvm.org/use/mcp.html">https://lldb.llvm.org/use/mcp.html</a></li>
+<li><a href="https://github.com/GowayLee/cchooks">https://github.com/GowayLee/cchooks</a></li>
+<li><a href="https://pypi.org/project/cchooks/">https://pypi.org/project/cchooks/</a></li>
+<li><a href="https://github.com/dyoshikawa/rulesync">https://github.com/dyoshikawa/rulesync</a></li>
+<li><a href="https://github.com/intellectronica/ruler">https://github.com/intellectronica/ruler</a></li>
+<li><a href="https://github.com/mkreyman/mcp-memory-keeper">https://github.com/mkreyman/mcp-memory-keeper</a></li>
+<li><a href="https://github.com/BeehiveInnovations/zen-mcp-server">https://github.com/BeehiveInnovations/zen-mcp-server</a></li>
+<li><a href="https://claudelog.com/claude-code-mcps/zen-mcp-server/">https://claudelog.com/claude-code-mcps/zen-mcp-server/</a></li>
+<li><a href="https://github.com/thedotmack/claude-mem">https://github.com/thedotmack/claude-mem</a></li>
+<li><a href="https://docs.claude-mem.ai/introduction">https://docs.claude-mem.ai/introduction</a></li>
+<li><a href="https://github.com/edo-ceder/session-memory">https://github.com/edo-ceder/session-memory</a></li>
+<li><a href="https://github.com/basicmachines-co/basic-memory">https://github.com/basicmachines-co/basic-memory</a></li>
+<li><a href="https://docs.basicmemory.com/integrations/claude-code/">https://docs.basicmemory.com/integrations/claude-code/</a></li>
+<li><a href="https://github.com/harbor-framework/harbor">https://github.com/harbor-framework/harbor</a></li>
+<li><a href="https://www.tbench.ai/news/announcement-2-0">https://www.tbench.ai/news/announcement-2-0</a></li>
+<li><a href="https://arxiv.org/html/2601.11868v1">https://arxiv.org/html/2601.11868v1</a> (Terminal-Bench paper)</li>
+<li><a href="https://github.com/princeton-nlp/SWE-bench">https://github.com/princeton-nlp/SWE-bench</a></li>
+<li><a href="https://codex.danielvaughan.com/2026/04/19/the-harness-effect-same-model-different-tool-different-score/">https://codex.danielvaughan.com/2026/04/19/the-harness-effect-same-model-different-tool-different-score/</a></li>
+<li><a href="https://kimchi.dev/blog/same-model-different-harness-terminal-bench">https://kimchi.dev/blog/same-model-different-harness-terminal-bench</a></li>
+<li><a href="https://github.com/sst/opencode">https://github.com/sst/opencode</a></li>
+<li><a href="https://github.com/optix2000/opencode-provider-system-prompts">https://github.com/optix2000/opencode-provider-system-prompts</a></li>
+<li><a href="https://github.com/capyBearista/opencode-plugins">https://github.com/capyBearista/opencode-plugins</a></li>
+<li><a href="https://deepwiki.com/capyBearista/opencode-plugins/6.2-provider-prompt-assets-and-sync-workflow">https://deepwiki.com/capyBearista/opencode-plugins/6.2-provider-prompt-assets-and-sync-workflow</a></li>
+<li><a href="https://github.com/cline/cline">https://github.com/cline/cline</a></li>
+<li><a href="https://github.com/cline/prompts">https://github.com/cline/prompts</a></li>
+<li><a href="https://github.com/x1xhlol/system-prompts-and-models-of-ai-tools">https://github.com/x1xhlol/system-prompts-and-models-of-ai-tools</a></li>
+</ul>
+</article><footer>Documentation claims are not compatibility tests. Source links and uncertainty labels are preserved from the Markdown reports. Rebuild with <code>npm run docs:html</code>.</footer>
+</main></div></body></html>

@@ -1,0 +1,1095 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Native harness capabilities | OMC research</title><style>
+:root{color-scheme:light dark;--background:light-dark(#f7f8fb,#11151d);--foreground:light-dark(#202c40,#e3e9f4);--muted:light-dark(#52617a,#acb9cc);--card:light-dark(#fff,#192231);--border:light-dark(#d5ddea,#344158);--primary:light-dark(#234db6,#9bbaff);--radius:12px;--font-sans:system-ui,sans-serif;--font-mono:ui-monospace,monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:var(--background);color:var(--foreground);font:17px/1.7 var(--font-sans)}
+a{color:var(--primary);text-underline-offset:3px}a:hover{text-decoration-thickness:2px}
+a:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--primary);outline-offset:3px}
+.skip{position:absolute;left:12px;top:-80px;background:var(--card);padding:10px;z-index:2}.skip:focus{top:12px}
+.layout{display:grid;grid-template-columns:255px minmax(0,1fr);gap:38px;max-width:1600px;margin:auto;padding:30px}
+aside{position:sticky;top:24px;align-self:start;max-height:calc(100dvh - 48px);overflow:auto;font-size:14px}
+aside strong{display:block;margin-bottom:12px}nav a{display:block;padding:7px 10px;border-radius:6px}
+nav a[aria-current=page]{background:var(--card);font-weight:700}
+summary{cursor:pointer;font-weight:650;margin-top:24px}ol.toc{padding-left:22px}.toc li{margin:7px 0}
+main{min-width:0}article{max-width:1100px}.meta{color:var(--muted);font-size:14px}
+h1,h2,h3,h4{line-height:1.25;scroll-margin-top:24px}h1{font-size:clamp(30px,4vw,46px);margin:18px 0 24px}
+h2{font-size:27px;margin:50px 0 18px;border-bottom:1px solid var(--border);padding-bottom:10px}
+h3{font-size:22px;margin-top:32px}p,ul,ol{max-width:85ch}li{margin:7px 0}
+blockquote{border-left:4px solid var(--primary);margin:24px 0;padding:12px 20px;background:var(--card);border-radius:0 var(--radius) var(--radius) 0}
+blockquote p{margin:8px 0}code{font:0.88em var(--font-mono);overflow-wrap:anywhere;background:var(--card);padding:2px 5px;border-radius:4px}
+pre{background:var(--card);padding:18px;border:1px solid var(--border);border-radius:var(--radius);overflow:auto}pre code{padding:0;white-space:pre}
+.table-scroll{overflow:auto;max-height:75dvh;border:1px solid var(--border);border-radius:var(--radius);margin:24px 0}
+table{border-collapse:collapse;min-width:100%;font-size:14px;line-height:1.55}th,td{text-align:left;vertical-align:top;padding:12px 14px;border-bottom:1px solid var(--border);min-width:155px}
+th{position:sticky;top:0;background:var(--card);z-index:1}tr:last-child td{border-bottom:0}td p{margin:0}
+hr{border:0;border-top:1px solid var(--border);margin:32px 0}img{max-width:100%}footer{margin-top:50px;padding:24px 0;border-top:1px solid var(--border);font-size:14px;color:var(--muted)}
+@media(max-width:850px){.layout{grid-template-columns:minmax(0,1fr);padding:18px;gap:12px}aside{position:static;max-height:none}nav{display:flex;flex-wrap:wrap;gap:4px}aside details{margin-bottom:20px}h2{font-size:24px}}
+@media print{aside,.skip,.meta{display:none}.layout{display:block;padding:0}body{font-size:11pt;background:white;color:black}.table-scroll{max-height:none;overflow:visible}table{font-size:8pt}th{position:static}a{color:inherit}h2,h3{break-after:avoid}}
+</style></head>
+<body><a class="skip" href="#content">Skip to report</a><div class="layout">
+<aside><strong>Oh-my-copilot research</strong><nav aria-label="Reports"><a href="index.html">Landscape overview</a><a href="omp-ecosystem.html">OMP and enhancement layers</a><a href="native-harnesses.html" aria-current="page">Native harness capabilities</a><a href="oss-projects.html">Open-source tools to study</a><a href="orchestrators.html">Managers and orchestrators</a></nav>
+<details open><summary>On this page</summary><ol class="toc"><li><a href="#0-methodology--scope-note">0. Methodology &amp; scope note</a></li><li><a href="#1-capability-matrix">1. Capability matrix</a></li><li><a href="#2-per-harness-distinctive-notes">2. Per-harness distinctive notes</a></li><li><a href="#3-what-base-github-copilot-cli-lacks-ranked-by-likely-omc-value">3. What base GitHub Copilot CLI lacks (ranked by likely OMC value)</a></li><li><a href="#4-what-copilot-across-its-three-surfaces-has-that-others-lack">4. What Copilot (across its three surfaces) has that others lack</a></li><li><a href="#5-sources">5. Sources</a></li><li><a href="#6-open-items-for-follow-up-flagged-uncertain-across-this-report">6. Open items for follow-up (flagged uncertain across this report)</a></li></ol></details></aside>
+<main id="content" tabindex="-1"><p class="meta">Research snapshot: November 2026 · <a href="../research/02-native-harnesses.md">Markdown source</a></p>
+<article><h1 id="native-harness-capabilities--comparative-research-report">Native Harness Capabilities — Comparative Research Report</h1>
+<p><strong>Thread 2 of 4 — &quot;oh-my-copilot&quot; (OMC) research project</strong>
+<strong>Date of research: November 2026.</strong> All claims reflect documentation/source snapshots fetched in Nov 2026; several harnesses have undergone major renames/rebuilds since common mid-2025 training-data baselines (noted inline). Unverifiable or weakly-sourced claims are explicitly flagged <strong>[unverified]</strong>.</p>
+<hr>
+<h2 id="0-methodology--scope-note">0. Methodology &amp; scope note</h2>
+<p>This report synthesizes four parallel deep research passes, each fetching official docs/source directly:</p>
+<ol>
+<li>GitHub Copilot CLI, Copilot coding/cloud agent, VS Code Copilot agent mode (and VS Code&#39;s &quot;agent harnesses&quot; concept covering Claude/Codex-in-VS-Code too).</li>
+<li>Claude Code.</li>
+<li>OpenAI Codex CLI and Cursor (IDE agent + <code>cursor-agent</code> CLI + Cloud/Background Agents).</li>
+<li>OpenCode, &quot;pi&quot; (<code>earendil-works/pi</code>), Gemini CLI, Aider, Cline, Roo Code (shut down May 2026 — final-state snapshot), Amp, Factory Droid.</li>
+</ol>
+<p><strong>Important corrections to common assumptions surfaced during research (read first):</strong></p>
+<ul>
+<li><strong>Cursor no longer uses an embeddings-based semantic codebase index.</strong> It ships &quot;Instant Grep,&quot; a proprietary local lexical/regex engine, explicitly marketed as <em>not</em> uploading code or storing embeddings. The old &quot;codebase indexing&quot; docs page now redirects there. — <a href="https://cursor.com/docs/agent/tools/search">cursor.com/docs/agent/tools/search</a></li>
+<li><strong>Aider has no native MCP support</strong> (open feature request Aider-AI/aider#3314) and does <strong>not</strong> auto-detect <code>AGENTS.md</code> (only via generic <code>--read</code>).</li>
+<li><strong>Amp does not natively support ACP</strong> — only a third-party bridge (<code>acp-amp</code>) exists. Amp also no longer gates tool calls behind approval by default (as of Nov 2026); this is a major behavior change from its 2025 <code>amp.permissions</code> model.</li>
+<li><strong>Roo Code was archived/shut down on 2026-05-15.</strong> Findings describe its final shipped state (through v3.53.0); the team&#39;s active successor is a separate product, &quot;Roomote.&quot;</li>
+<li><strong>&quot;ast-grep&quot; has zero evidence of native integration in ANY harness researched</strong> (Copilot family, Claude Code, Codex, Cursor, OpenCode, pi, Gemini CLI, Aider, Cline, Roo, Amp, Factory Droid). Every harness that does structural/non-text code search either uses tree-sitter for a repo-map/symbol-index (Aider, Cline) or relies on LSP/grep instead.</li>
+<li><strong>MCP &quot;server mode&quot;</strong> (the harness itself exposed as an MCP server for other tools to call) is rare: only the GitHub Copilot ecosystem, OpenCode <strong>[unverified]</strong>, and Amp (narrowly, for its &quot;Puck&quot; meta-agent) show any evidence of it. Most harnesses are MCP <strong>clients only</strong>.</li>
+<li>GitHub Copilot&#39;s three surfaces (CLI / cloud coding agent / VS Code agent mode) are materially different products with different capability sets — conflating them is a common error this report avoids by treating them as separate columns where it matters.</li>
+</ul>
+<hr>
+<h2 id="1-capability-matrix">1. Capability matrix</h2>
+<p>Legend: ✅ = native, full; 🟡 = native but partial/limited/varies; ❌ = not natively supported (third-party/add-on only); ❓ = unverified/not found in docs reviewed.</p>
+<div class="table-scroll" role="region" aria-label="Comparison table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Copilot CLI</th>
+<th>Copilot Cloud Agent</th>
+<th>VS Code Copilot (agent mode)</th>
+<th>Claude Code</th>
+<th>Codex CLI</th>
+<th>Cursor (IDE/CLI/Cloud)</th>
+<th>OpenCode</th>
+<th>pi</th>
+<th>Gemini CLI</th>
+<th>Aider</th>
+<th>Cline</th>
+<th>Roo Code (final)</th>
+<th>Amp</th>
+<th>Factory Droid</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Edit format: anchored/context diff (apply_patch-like)</strong></td>
+<td>❓ undocumented</td>
+<td>🟡 example-only <code>str_replace</code></td>
+<td>❓ undocumented</td>
+<td>✅ Edit tool (str_replace, exact match, read-before-edit gate)</td>
+<td>✅ <code>apply_patch</code>/V4A context-anchored diff</td>
+<td>❓ undocumented wire format</td>
+<td>✅ <code>edit</code>(str_replace)+<code>patch</code>(multi-file, GPT-only)</td>
+<td>✅ <code>edit</code>/<code>write</code></td>
+<td>✅ <code>replace</code> (str-replace+multi-stage fuzzy/Levenshtein/LLM recovery)</td>
+<td>✅ <code>diff</code>/<code>diff-fenced</code>/<code>udiff</code>/<code>whole</code> (model-selectable)</td>
+<td>✅ <code>replace_in_file</code> SEARCH/REPLACE + <code>write_to_file</code></td>
+<td>✅ <code>apply_diff</code>/<code>apply_patch</code>/<code>edit</code>/<code>write_to_file</code></td>
+<td>❓ closed-source, undocumented</td>
+<td>🟡 diff-based, undocumented internals</td>
+</tr>
+<tr>
+<td><strong>Whole-file write tool</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅ Write tool</td>
+<td>✅ (<code>Add File</code> in patch)</td>
+<td>✅</td>
+<td>✅ <code>write</code></td>
+<td>✅</td>
+<td>✅ <code>write_file</code></td>
+<td>✅ <code>whole</code> format</td>
+<td>✅ <code>write_to_file</code></td>
+<td>✅ <code>write_to_file</code></td>
+<td>❓</td>
+<td>✅ <code>Create</code></td>
+</tr>
+<tr>
+<td><strong>Multi-file edit in one call</strong></td>
+<td>🟡 implied</td>
+<td>✅ iterative PR commits</td>
+<td>✅ working-set tracked</td>
+<td>🟡 parallel Edit calls, no single multi-file primitive</td>
+<td>✅ one patch, multiple <code>Update File</code> sections</td>
+<td>✅ unlimited tool calls/session</td>
+<td>✅ <code>patch</code> tool (GPT models only)</td>
+<td>🟡 via loop</td>
+<td>🟡 via loop</td>
+<td>✅ multiple tagged blocks per reply</td>
+<td>🟡 via loop</td>
+<td>🟡 via loop</td>
+<td>❓</td>
+<td>❓</td>
+</tr>
+<tr>
+<td><strong>Edit error recovery/retry</strong></td>
+<td>🟡 interrupt-safe write only</td>
+<td>🟡 none documented</td>
+<td>🟡 Autopilot auto-retry</td>
+<td>✅ typed errors (ambiguous/stale/non-UTF8) feed back for re-attempt</td>
+<td>✅ typed <code>InvalidPatchError</code>/<code>InvalidHunkError</code> w/ line numbers</td>
+<td>🟡 undocumented (checkpoints are the rollback, not patch retry)</td>
+<td>✅ v2.2.5 shows nearest-match suggestions</td>
+<td>🟡 context-overflow retry only</td>
+<td>✅ 4-stage fallback incl. Levenshtein+LLM repair</td>
+<td>✅ dedicated troubleshooting doc, format-switch guidance</td>
+<td>✅ reverts on mismatch, falls back to whole-file after 3 fails</td>
+<td>🟡 consecutive-mistake limit (10)</td>
+<td>❓</td>
+<td>❓</td>
+</tr>
+<tr>
+<td><strong>Grep tool</strong></td>
+<td>✅</td>
+<td>✅ (<code>search</code>)</td>
+<td>✅ <code>#search/textSearch</code></td>
+<td>✅ ripgrep-based (Win only by default; else via Bash)</td>
+<td>🟡 via shell tool only, no dedicated tool</td>
+<td>✅ &quot;Instant Grep&quot; (proprietary, local)</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅ <code>grep_search</code> (git grep)</td>
+<td>❌ no dedicated tool</td>
+<td>✅ <code>search_files</code> (ripgrep)</td>
+<td>✅ <code>search_files</code></td>
+<td>❓</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><strong>Glob tool</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅ <code>#search/fileSearch</code></td>
+<td>✅ (Win default; else Bash)</td>
+<td>🟡 via shell</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>❌</td>
+<td>✅</td>
+<td>✅</td>
+<td>❓</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><strong>LSP integration (native, automatic)</strong></td>
+<td>✅ automatic, prefers LSP over text search</td>
+<td>❓ not confirmed</td>
+<td>✅ <code>#search/usages</code>, Problems panel</td>
+<td>✅ LSP tool, auto diagnostics post-edit (needs per-language plugin)</td>
+<td>❌ not found</td>
+<td>❓ not confirmed as named tool</td>
+<td>✅ broad (gopls/rust-analyzer/pyright/etc.)</td>
+<td>❌</td>
+<td>❌ (delegated to <code>codebase_investigator</code> subagent)</td>
+<td>❌</td>
+<td>🟡 optional plugin, SDK/CLI only</td>
+<td>❌</td>
+<td>❓</td>
+<td>🟡 via ACP IDE context only</td>
+</tr>
+<tr>
+<td><strong>Semantic/vector codebase index</strong></td>
+<td>❌ (LSP instead)</td>
+<td>✅ RAG-based semantic search</td>
+<td>✅ <code>#search/codebase</code> (workspace index)</td>
+<td>❌ (Grep/Glob/LSP/subagents instead)</td>
+<td>❌</td>
+<td>❌ (replaced by Instant Grep, explicitly no embeddings)</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌ (subagent-based instead)</td>
+<td>❌ (tree-sitter repo-map instead)</td>
+<td>❌</td>
+<td>✅ tree-sitter→embeddings→Qdrant</td>
+<td>🟡 Task subagent skill</td>
+<td>❌ (AGENTS.md/AutoWiki instead)</td>
+</tr>
+<tr>
+<td><strong>tree-sitter repo-map / symbol index</strong></td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅ signature feature, PageRank-ranked</td>
+<td>✅ <code>list_code_definition_names</code></td>
+<td>✅ (feeds codebase index)</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>ast-grep</strong></td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>Web fetch tool</strong></td>
+<td>✅ <code>web_fetch</code></td>
+<td>❌ &quot;not applicable in cloud&quot;</td>
+<td>✅ <code>#web/fetch</code></td>
+<td>✅ WebFetch (HTML→MD, 2nd-model extraction, caching)</td>
+<td>🟡 via shell/API only</td>
+<td>✅ &quot;Fetch&quot; tool (distinct from Browser)</td>
+<td>✅ <code>webfetch</code></td>
+<td>❌ none</td>
+<td>✅ <code>web_fetch</code> (20 URLs, SSRF-protected)</td>
+<td>🟡 <code>/web</code> scrape-only</td>
+<td>✅ <code>web_fetch</code></td>
+<td>❓</td>
+<td>✅ (Parallel-powered)</td>
+<td>✅ <code>FetchUrl</code></td>
+</tr>
+<tr>
+<td><strong>Web search tool</strong></td>
+<td>✅ <code>web_search</code></td>
+<td>❌</td>
+<td>❌ (requires MS extension)</td>
+<td>✅ WebSearch (server-side, title/URL only)</td>
+<td>✅ <code>web_search</code> (live/cached/indexed modes)</td>
+<td>✅ &quot;Web&quot; tool</td>
+<td>✅ <code>websearch</code></td>
+<td>❌ none</td>
+<td>✅ <code>google_web_search</code> (grounded, cited)</td>
+<td>❌</td>
+<td>✅ <code>web_search</code></td>
+<td>❓</td>
+<td>✅ (Parallel-powered)</td>
+<td>✅ <code>WebSearch</code></td>
+</tr>
+<tr>
+<td><strong>Hooks (lifecycle events)</strong></td>
+<td>✅ incl. blocking <code>preToolUse</code></td>
+<td>❓ not found</td>
+<td>✅ (Preview, shared w/ CLI format)</td>
+<td>✅ ~30 events incl. block/modify</td>
+<td>✅ 13 events, trust-gated</td>
+<td>✅ very granular (agent/tab/app-lifecycle)</td>
+<td>❓ not confirmed</td>
+<td>❓ not core (extension-based)</td>
+<td>✅ JSON stdout, exit-code-2 block</td>
+<td>❌ none</td>
+<td>❓</td>
+<td>❓</td>
+<td>✅ plugin <code>tool.call</code> handlers</td>
+<td>✅ incl. <code>PreToolUse</code></td>
+</tr>
+<tr>
+<td><strong>Plugin system</strong></td>
+<td>✅ &quot;Agent Plugins 1.0&quot; + marketplace</td>
+<td>❌</td>
+<td>✅ Customization Marketplace</td>
+<td>✅ bundles skills/agents/hooks/MCP/mods</td>
+<td>✅ shared w/ ChatGPT, one universal dir</td>
+<td>❓ (skills double as modes)</td>
+<td>✅ npm/git/local</td>
+<td>❌ (extensions are the mechanism)</td>
+<td>✅ Extensions (bundle everything)</td>
+<td>❌</td>
+<td>✅ (SDK/CLI/Desktop)</td>
+<td>✅</td>
+<td>✅ TS/JS plugin system</td>
+<td>✅ incl. Claude-Code-plugin compat</td>
+</tr>
+<tr>
+<td><strong>MCP client</strong></td>
+<td>✅</td>
+<td>✅ (default-on GitHub+Playwright)</td>
+<td>✅ + &quot;Copilot connectors&quot;</td>
+<td>✅ full (resources, tool search)</td>
+<td>✅</td>
+<td>✅ incl. MCP Apps (UI ext.), OAuth</td>
+<td>✅ stdio+HTTP/OAuth</td>
+<td>✅ stdio+HTTP</td>
+<td>✅ stdio/SSE/HTTP</td>
+<td>❌ <strong>not supported</strong></td>
+<td>✅</td>
+<td>✅ (project config wins)</td>
+<td>✅</td>
+<td>✅ incl. built-in registry</td>
+</tr>
+<tr>
+<td><strong>MCP server mode (self as server)</strong></td>
+<td>❓</td>
+<td>❓</td>
+<td>❌</td>
+<td>❌</td>
+<td>❓</td>
+<td>❌</td>
+<td>❓ [unverified]</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❓</td>
+<td>❌</td>
+<td>🟡 (&quot;Puck&quot; only)</td>
+<td>❓</td>
+</tr>
+<tr>
+<td><strong>Skills (SKILL.md / Agent Skills std)</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅ (+ merged w/ slash commands)</td>
+<td>✅ <code>$skill</code> mentions</td>
+<td>✅ (promotable to Custom Modes)</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>❌</td>
+<td>✅</td>
+<td>❓</td>
+<td>✅ (MCP-bundled)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><strong>Subagents</strong></td>
+<td>✅ <code>--fleet</code>, built-ins</td>
+<td>✅ <code>agent</code> tool-kind</td>
+<td>✅ <code>#agent/runSubagent</code>, nesting</td>
+<td>✅ <code>.claude/agents/</code>, Explore/Plan/General built-ins</td>
+<td>✅ default-on</td>
+<td>✅ <code>.cursor/agents/</code>, Explore+Browser built-in</td>
+<td>✅ <code>mode: subagent</code></td>
+<td>🟡 example ext. only, not core</td>
+<td>✅ codebase_investigator, cli_help, browser_agent + A2A remote</td>
+<td>❌</td>
+<td>✅ <code>spawn_agent</code> (CLI/Desktop)</td>
+<td>🟡 Boomerang=sequential only</td>
+<td>✅ Task + Read Thread</td>
+<td>✅ <code>.factory/droids/</code></td>
+</tr>
+<tr>
+<td><strong>Parallel subagents (concurrent)</strong></td>
+<td>✅ fleet</td>
+<td>✅ multi independent sessions</td>
+<td>✅ &quot;independent tasks in parallel&quot;</td>
+<td>🟡 no documented hard cap</td>
+<td>✅ (reduces context rot)</td>
+<td>✅ unlimited (Cloud Agents)</td>
+<td>❓</td>
+<td>❌</td>
+<td>❓</td>
+<td>❌</td>
+<td>❓</td>
+<td>❌ (Boomerang is sequential)</td>
+<td>✅</td>
+<td>✅ Workstreams (beta)</td>
+</tr>
+<tr>
+<td><strong>Background/cloud agent execution</strong></td>
+<td>✅ <code>--cloud</code>, <code>/delegate</code></td>
+<td>✅ inherent design</td>
+<td>✅ Cloud sessions, GitHub Environments</td>
+<td>🟡 background Bash only (Ctrl-B), no full cloud agent</td>
+<td>✅ Codex Cloud (2-phase sandboxed container)</td>
+<td>✅ Cloud Agents, unlimited parallel</td>
+<td>❓</td>
+<td>❌</td>
+<td>❓</td>
+<td>❌</td>
+<td>✅ Cline Cloud Agents</td>
+<td>❌ (shut down)</td>
+<td>✅ &quot;Orbs&quot;</td>
+<td>✅ Droid Computers</td>
+</tr>
+<tr>
+<td><strong>Plan mode</strong></td>
+<td>✅ <code>/plan</code></td>
+<td>🟡 workflow convention</td>
+<td>✅ <code>/plan</code> agent</td>
+<td>✅ native permission mode + Plan subagent</td>
+<td>🟡 <code>/plan</code>+PLANS.md convention <strong>[moderate confidence]</strong></td>
+<td>✅ Shift+Tab, saved plan file</td>
+<td>✅ Tab toggle Plan/Build</td>
+<td>❌ (by design)</td>
+<td>✅ default-on, read-only</td>
+<td>🟡 <code>architect</code> mode (2-model split)</td>
+<td>✅ Plan/Act (signature feature)</td>
+<td>✅ Architect mode</td>
+<td>🟡 folded into Task&#39;s planning skill</td>
+<td>✅ Spec Mode</td>
+</tr>
+<tr>
+<td><strong>Todo list tool</strong></td>
+<td>🟡 plan.md checklist only</td>
+<td>❌ &quot;not applicable&quot;</td>
+<td>✅ <code>#todos</code></td>
+<td>✅ TaskCreate/Get/List/Update (model-gated) + legacy TodoWrite</td>
+<td>🟡 <code>update_plan</code>, became opt-in <strong>[moderate confidence]</strong></td>
+<td>✅ via ACP <code>cursor/update_todos</code></td>
+<td>❓ removed in V2</td>
+<td>❌</td>
+<td>✅ <code>write_todos</code></td>
+<td>❌</td>
+<td>🟡 &quot;Focus Chain&quot; deprecated, no replacement</td>
+<td>✅ <code>update_todo_list</code></td>
+<td>❌ removed Jan 2026</td>
+<td>❓</td>
+</tr>
+<tr>
+<td><strong>Checkpoints/rewind/undo</strong></td>
+<td>✅ auto at compaction, <code>/undo</code>/<code>/rewind</code></td>
+<td>🟡 steering msgs only</td>
+<td>✅ restore checkpoint</td>
+<td>✅ auto per-turn, 100 retained, <code>/rewind</code></td>
+<td>❓ <code>codex resume</code> only, no file-snapshot checkpoint found</td>
+<td>✅ auto before changes, local store</td>
+<td>✅ git-object &quot;Snapshots&quot;, <code>/undo</code>/<code>/redo</code></td>
+<td>❌</td>
+<td>✅ shadow-git + broader <code>/rewind</code> (survives compaction)</td>
+<td>✅ git-based <code>/undo</code></td>
+<td>✅ shadow-git, 3 restore modes</td>
+<td>✅ shadow-git, pre-edit snapshots</td>
+<td>❌ (&quot;Handoff&quot; replaces compaction instead)</td>
+<td>🟡 worktree isolation + <code>--fork</code> only</td>
+</tr>
+<tr>
+<td><strong>Session resume</strong></td>
+<td>✅ <code>/resume</code>, cross-surface</td>
+<td>✅ cross-client continuity</td>
+<td>✅ session list, &quot;Chronicle&quot; search</td>
+<td>✅ <code>--continue</code>/<code>--resume</code>/<code>--from-pr</code></td>
+<td>✅ <code>codex resume</code></td>
+<td>✅ <code>agent ls/resume/--continue</code></td>
+<td>✅ <code>fork</code>/<code>resume</code>/<code>load</code></td>
+<td>✅ <code>/resume</code>,<code>/fork</code>,<code>/clone</code>,<code>/tree</code></td>
+<td>✅ named checkpoints, 30-day retention</td>
+<td>✅ <code>--restore-chat-history</code></td>
+<td>✅ resumable task history</td>
+<td>✅</td>
+<td>✅ Thread (portable/shareable)</td>
+<td>✅ <code>--resume</code>,<code>/tree</code>,<code>/sessions</code></td>
+</tr>
+<tr>
+<td><strong>Review mode (dedicated)</strong></td>
+<td>✅ <code>/review</code>,<code>/security-review</code></td>
+<td>✅ Agent Merge (auto-fix PR)</td>
+<td>✅ per-harness diff UIs</td>
+<td>❓ not found as distinct mode</td>
+<td>✅ dedicated review w/o touching tree</td>
+<td>✅ Agent Review (local) + Bugbot (PR/cloud)</td>
+<td>❓</td>
+<td>❌</td>
+<td>❓</td>
+<td>❌</td>
+<td>❓</td>
+<td>❓</td>
+<td>❓</td>
+<td>✅ (+ Droid Action for PR review)</td>
+</tr>
+<tr>
+<td><strong>BYOK (bring your own API key)</strong></td>
+<td>✅ env vars</td>
+<td>❓ likely unsupported</td>
+<td>✅ Language Models editor</td>
+<td>🟡 via Bedrock/Vertex/Foundry only, not raw 3rd-party key</td>
+<td>✅ custom <code>model_provider</code></td>
+<td>✅ at list price from credit</td>
+<td>✅ <code>/connect</code></td>
+<td>✅ 30+ providers</td>
+<td>❌ Gemini-only</td>
+<td>✅ via litellm, broadest</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅ custom OpenAI/Anthropic-compat endpoints</td>
+</tr>
+<tr>
+<td><strong>Per-agent/session model selection</strong></td>
+<td>✅</td>
+<td>🟡 trigger-time only</td>
+<td>✅ per-harness picker</td>
+<td>✅ <code>/model</code> + aliases</td>
+<td>✅ <code>[agents]</code> config</td>
+<td>✅ picker + per-subagent</td>
+<td>✅</td>
+<td>✅ + llama.cpp local router</td>
+<td>✅ <code>/model</code> + fallback chain</td>
+<td>✅ main/weak/editor split</td>
+<td>✅</td>
+<td>✅ Sticky Models (per-mode)</td>
+<td>✅ &quot;The Dial&quot; (4 fixed bundles)</td>
+<td>✅ per-worker/validator/spec</td>
+</tr>
+<tr>
+<td><strong>Reasoning-effort control</strong></td>
+<td>✅ <code>--effort</code></td>
+<td>✅ dropdown</td>
+<td>✅ &quot;thinking effort&quot; setting</td>
+<td>✅ (effort levels, cache-aware)</td>
+<td>🟡 config key confirmed, flag unconfirmed</td>
+<td>❓ not a distinct named dial</td>
+<td>✅ named &quot;Variants&quot; (#high/#low/#max)</td>
+<td>✅ <code>--thinking</code></td>
+<td>❓ not confirmed</td>
+<td>✅ <code>--reasoning-effort</code>/<code>--thinking-tokens</code></td>
+<td>✅ Extended Thinking toggle + CLI levels</td>
+<td>✅ <code>-r/--reasoning-effort</code></td>
+<td>✅ per-Dial-mode</td>
+<td>✅ granular levels</td>
+</tr>
+<tr>
+<td><strong>Model routing/auto-advisor</strong></td>
+<td>✅ &quot;Copilot Fusion&quot;</td>
+<td>🟡 &quot;Auto&quot; default (GPT-5.3-Codex fallback)</td>
+<td>✅ Copilot Fusion (Single/Cascade/Critique)</td>
+<td>❌</td>
+<td>🟡 &quot;Ultra&quot; preset, not general auto-route</td>
+<td>✅ &quot;Cursor Router&quot; (Teams/Ent)</td>
+<td>❓</td>
+<td>❓</td>
+<td>✅ Auto/Pro routing (3.1)</td>
+<td>❌</td>
+<td>❓</td>
+<td>❓</td>
+<td>❓</td>
+<td>✅ &quot;Factory Router&quot;/Auto Model</td>
+</tr>
+<tr>
+<td><strong>Context compaction (auto)</strong></td>
+<td>✅ 80/90/95% thresholds</td>
+<td>❌ none</td>
+<td>✅ auto-summarize</td>
+<td>✅ auto-compact, documented survivors list</td>
+<td>🟡 <code>/compact</code> <strong>[moderate confidence, secondary sources]</strong></td>
+<td>✅ automatic</td>
+<td>✅ default-on, v2.2.5 improved</td>
+<td>✅ threshold-based + branch summary</td>
+<td>✅ <code>/compress</code> manual + hook</td>
+<td>🟡 soft-limit summarization only</td>
+<td>✅ Auto-Compact, cache-aware</td>
+<td>✅ Context Condensation v2</td>
+<td>✅ automatic</td>
+<td>✅ 250k-token default</td>
+</tr>
+<tr>
+<td><strong>Context window indicator/UI</strong></td>
+<td>✅ <code>/context</code> breakdown</td>
+<td>❓ no ceiling documented</td>
+<td>🟡 7-layer model, no numeric indicator confirmed</td>
+<td>✅ context-window doc/visualization</td>
+<td>❓ not found</td>
+<td>✅ &quot;context ring&quot; + category tray</td>
+<td>❓ not confirmed</td>
+<td>✅ footer usage display</td>
+<td>✅ <code>/stats</code></td>
+<td>✅ <code>/tokens</code></td>
+<td>✅ live token/cost header</td>
+<td>❓</td>
+<td>✅ <code>amp usage</code></td>
+<td>✅ Analytics dashboard</td>
+</tr>
+<tr>
+<td><strong>Prompt caching (documented)</strong></td>
+<td>🟡 inferable from <code>/usage</code> cache counts</td>
+<td>❓</td>
+<td>❓ not confirmed</td>
+<td>✅ explicit, effort-aware</td>
+<td>✅ <code>cached_input_tokens</code> field</td>
+<td>✅ explicit cache write/read pricing</td>
+<td>✅ reuse + &quot;warming&quot;</td>
+<td>✅ <code>cacheWarming</code> setting</td>
+<td>✅ token-caching doc</td>
+<td>✅ very detailed (<code>--cache-prompts</code>)</td>
+<td>✅ cache-aware Auto-Compact</td>
+<td>❓</td>
+<td>❓</td>
+<td>❓ not found</td>
+</tr>
+<tr>
+<td><strong>Cost/token reporting</strong></td>
+<td>✅ <code>/usage</code></td>
+<td>🟡 AI-credits billing, no in-session breakdown</td>
+<td>✅ Status Bar dashboard</td>
+<td>✅ <code>/usage</code></td>
+<td>✅ JSON <code>usage</code> object</td>
+<td>✅ settings + shared dashboard</td>
+<td>❓ not confirmed</td>
+<td>✅</td>
+<td>✅ <code>/stats</code></td>
+<td>🟡 startup line, no <code>/cost</code> confirmed</td>
+<td>✅ live cost in header</td>
+<td>❓</td>
+<td>✅ <code>amp usage</code>/&quot;Explain Usage&quot;</td>
+<td>✅ Analytics API</td>
+</tr>
+<tr>
+<td><strong>Approval/permission modes</strong></td>
+<td>✅ Manual/Assisted/Allow-all</td>
+<td>✅ gov. by design (no self-approve)</td>
+<td>✅ 3-tier + per-harness schemes</td>
+<td>✅ default/acceptEdits/plan/auto/dontAsk/bypass</td>
+<td>✅ on-request/never (OS sandbox-tied)</td>
+<td>✅ Auto-review/Allowlist/Run-Everything</td>
+<td>✅ rule engine w/ wildcards + Policies layer</td>
+<td>❌ no default gating</td>
+<td>✅ default/auto_edit/plan/yolo</td>
+<td>🟡 <code>--yes</code>/<code>--yes-always</code> only</td>
+<td>✅ granular per-capability toggles</td>
+<td>❓</td>
+<td>❌ no gating by default (Nov 2026)</td>
+<td>✅ Autonomy Levels + rules engine</td>
+</tr>
+<tr>
+<td><strong>OS-level sandbox</strong></td>
+<td>✅ &quot;MXC&quot; container (local) + cloud sandbox</td>
+<td>✅ cloud-only sandbox</td>
+<td>✅ Seatbelt/bubblewrap/BaseContainer</td>
+<td>✅ <code>@anthropic-ai/sandbox-runtime</code>, mac/Linux/WSL2 only</td>
+<td>✅ Seatbelt/bubblewrap/Windows sandbox</td>
+<td>🟡 &quot;not a security boundary&quot; (classifier-based) + CLI <code>--sandbox</code> flag</td>
+<td>🟡 explicitly NOT sandboxed by default (permission rules only)</td>
+<td>🟡 opt-in via Docker/Gondolin ext.</td>
+<td>✅ Seatbelt + Docker/Podman</td>
+<td>❌ none (git undo is the safety net)</td>
+<td>❓</td>
+<td>❓</td>
+<td>❌ (Orbs=isolation, not sandbox)</td>
+<td>✅ Seatbelt/bubblewrap+seccomp</td>
+</tr>
+<tr>
+<td><strong>Network firewall/allowlist</strong></td>
+<td>❓</td>
+<td>✅ configurable allowlist</td>
+<td>✅ network restriction option</td>
+<td>🟡 via sandbox-runtime proxy allowlist</td>
+<td>✅ off-by-default, workspace-scoped</td>
+<td>✅ MCP allow/deny controls (enterprise)</td>
+<td>❓</td>
+<td>❓</td>
+<td>✅ policy engine</td>
+<td>❌</td>
+<td>❓</td>
+<td>❓</td>
+<td>❓</td>
+<td>✅ allowlisted network proxy</td>
+</tr>
+<tr>
+<td><strong>Headless/non-interactive mode</strong></td>
+<td>✅ <code>-p</code>, <code>--output-format=json</code></td>
+<td>✅ inherent (async trigger)</td>
+<td>🟡 no confirmed headless for in-editor agent</td>
+<td>✅ <code>-p</code>/<code>--print</code>, <code>--bare</code></td>
+<td>✅ <code>codex exec</code> w/ JSON schema output</td>
+<td>✅ <code>cursor-agent -p</code>, text/json/stream-json</td>
+<td>✅ <code>opencode run</code></td>
+<td>✅ Print/JSON/RPC modes</td>
+<td>✅ <code>-p</code> w/ NDJSON, exit codes</td>
+<td>✅ <code>--message</code>/<code>-m</code></td>
+<td>✅ standalone CLI/TUI</td>
+<td>✅ <code>@roo-code/cli</code></td>
+<td>✅ <code>amp -x</code>/<code>-ox</code></td>
+<td>✅ <code>droid exec</code> (5 output formats)</td>
+</tr>
+<tr>
+<td><strong>SDK (programmatic embedding)</strong></td>
+<td>✅ &quot;GitHub Copilot SDK&quot; (named, undetailed)</td>
+<td>🟡 named, undetailed</td>
+<td>❓</td>
+<td>✅ TS + Python Agent SDK</td>
+<td>✅ <code>@openai/codex-sdk</code> (TS)</td>
+<td>✅ <code>@cursor/agent-sdk</code> (broadest: channels/deploy)</td>
+<td>✅ <code>@opencode-ai/sdk</code> (TS)</td>
+<td>✅ TS SDK (<code>createAgentSession</code>)</td>
+<td>❓</td>
+<td>🟡 unofficial <code>Coder.create()</code></td>
+<td>✅ (SDK/CLI/Desktop)</td>
+<td>❓</td>
+<td>✅ TS + Python SDKs</td>
+<td>✅ TS + Python SDKs</td>
+</tr>
+<tr>
+<td><strong>ACP (Agent Client Protocol)</strong></td>
+<td>✅ <code>copilot --acp</code></td>
+<td>❌</td>
+<td>❌ (own &quot;AHP&quot; instead)</td>
+<td>❓ not official (3rd-party <code>claude-code-acp</code> only)</td>
+<td>❌ not found</td>
+<td>✅ <code>agent acp</code>, rich extensions</td>
+<td>✅ <code>opencode acp</code> (Zed/JetBrains)</td>
+<td>❌ (bespoke RPC instead)</td>
+<td>✅ <code>gemini --acp</code></td>
+<td>❌</td>
+<td>✅ (CLI)</td>
+<td>❓</td>
+<td>❌ (3rd-party bridge only)</td>
+<td>✅ (JetBrains/Zed)</td>
+</tr>
+<tr>
+<td><strong>GitHub Actions/native GitHub integration</strong></td>
+<td>✅ documented Actions pattern</td>
+<td>✅ inherent (issues/PRs/API)</td>
+<td>🟡 migrating cloud-session mechanism</td>
+<td>✅ <code>claude-code-action</code>, <code>@claude</code> mentions</td>
+<td>✅ <code>openai/codex-action</code></td>
+<td>✅ <code>@cursor</code>, Bugbot CI check</td>
+<td>✅ <code>opencode github install</code></td>
+<td>❌ none found</td>
+<td>✅ in-repo workflows + official Action</td>
+<td>❌ none found</td>
+<td>🟡 documented recipe, not Marketplace App</td>
+<td>❓</td>
+<td>✅ App-based, webhook orbs</td>
+<td>✅ Droid Action (multi-VCS)</td>
+</tr>
+<tr>
+<td><strong>LSP-based diagnostics surfaced to agent</strong></td>
+<td>✅ automatic</td>
+<td>❓</td>
+<td>✅ Problems panel integration</td>
+<td>✅ post-edit auto-report</td>
+<td>❌</td>
+<td>❓</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>🟡 optional plugin</td>
+<td>❓</td>
+<td>❓</td>
+<td>🟡 via ACP IDE context</td>
+</tr>
+<tr>
+<td><strong>Debugger integration</strong></td>
+<td>❌</td>
+<td>❌</td>
+<td>❓ (3rd-party MCP only lead)</td>
+<td>❌</td>
+<td>❌</td>
+<td>❓</td>
+<td>❓</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>Notebook/Jupyter support</strong></td>
+<td>❌</td>
+<td>❌</td>
+<td>✅ rich native tool set</td>
+<td>✅ NotebookEdit tool</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>Browser automation (native, no MCP)</strong></td>
+<td>🟡 &quot;Computer use&quot; (desktop GUI, not browser-specific)</td>
+<td>🟡 default-on Playwright MCP (bundled ≠ native tool)</td>
+<td>✅ full native tool set</td>
+<td>❌ (WebFetch only)</td>
+<td>❌</td>
+<td>✅ Navigate/Click/Type/Screenshot/Console/Network</td>
+<td>❓ (Code Mode in desktop beta)</td>
+<td>❌</td>
+<td>✅ <code>browser_agent</code> subagent</td>
+<td>🟡 <code>/web</code> scrape (Playwright for JS)</td>
+<td>✅ Puppeteer <code>browser_action</code></td>
+<td>❌ (removed)</td>
+<td>❓</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>Persistent memory (cross-session facts)</strong></td>
+<td>✅ &quot;Copilot Memory&quot;</td>
+<td>❌</td>
+<td>❓</td>
+<td>🟡 auto-memory (2nd system beyond CLAUDE.md)</td>
+<td>❌</td>
+<td>🟡 &quot;Memories&quot; page gone/merged, uncertain</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅ experimental &quot;Auto Memory&quot;</td>
+<td>❌</td>
+<td>🟡 &quot;Memory Bank&quot; = community pattern, not native</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+</tbody></table>
+</div><hr>
+<h2 id="2-per-harness-distinctive-notes">2. Per-harness distinctive notes</h2>
+<h3 id="github-copilot-cli-githubcopilot">GitHub Copilot CLI (<code>@github/copilot</code>)</h3>
+<p>Standalone terminal agent. Distinctive natively-shipped features: automatic LSP-over-grep preference (<a href="https://docs.github.com/en/copilot/concepts/customizations/lsp-servers">docs.github.com/en/copilot/concepts/customizations/lsp-servers</a>); a native ACP server mode (<code>copilot --acp</code>) — notably the <strong>only</strong> Copilot surface with ACP; a dedicated cross-session &quot;Copilot Memory&quot; feature (<code>copilot memories import</code>) unmatched elsewhere in the Copilot family (<a href="https://docs.github.com/en/copilot/concepts/prompting-and-context/copilot-memory">docs.github.com/en/copilot/concepts/prompting-and-context/copilot-memory</a>); <code>--fleet</code>/<code>/fleet</code> for parallel subagents; &quot;Agent Plugins 1.0&quot; with its own marketplace (<code>github/awesome-copilot</code> default); &quot;Copilot Fusion&quot; model router shared conceptually with VS Code. Its slash-command surface (<code>/plan</code>,<code>/fleet</code>,<code>/delegate</code>,<code>/review</code>,<code>/security-review</code>,<code>/yolo</code>,<code>/sandbox</code>,<code>/undo</code>,<code>/resume</code>,<code>/compact</code>,<code>/context</code>,<code>/usage</code>) is the richest documented among the three Copilot surfaces.</p>
+<h3 id="github-copilot-cloudcoding-agent">GitHub Copilot Cloud/coding agent</h3>
+<p>Fundamentally async/headless by design — triggered via issue assignment, <code>@copilot</code> PR mention, a public-preview REST &quot;agent tasks&quot; API, or GraphQL. Distinctive: a formally documented, configurable <strong>network firewall/allowlist</strong> unique among all harnesses researched; strict self-approval governance (cannot approve its own PR; can only push to branches it created); default-enabled Playwright MCP server for browser automation; &quot;Agent Merge&quot; that watches a PR and auto-fixes failing CI/merge conflicts. Lacks: web tools (explicitly &quot;not applicable in cloud&quot;), todo-list tool (explicitly &quot;not applicable&quot;), documented context-window ceiling, confirmed BYOK.</p>
+<h3 id="vs-code-copilot-agent-mode">VS Code Copilot agent mode</h3>
+<p>VS Code&#39;s docs (reorganized ~Nov 2026) introduce the concept of <strong>&quot;agent harnesses&quot;</strong> — Copilot, Local (native extension-host), Claude, and Codex — all shipped as first-class, built into VS Code itself, not third-party extensions. Distinctive natively-shipped tools unmatched by the CLI or cloud agent: <code>#search/codebase</code> (semantic workspace index), full native <strong>Notebook tooling</strong> (<code>#edit/editNotebook</code>, <code>#execute/runNotebookCell</code>, kernel-variable refs), and fully native <strong>browser automation</strong> (<code>openBrowserPage</code>,<code>navigatePage</code>,<code>screenshotPage</code>,<code>clickElement</code>,<code>runPlaywrightCode</code> — no MCP required). Explicitly does <strong>not</strong> support ACP (uses its own &quot;Agent Host Protocol,&quot; open issue microsoft/vscode#265496). Web search is notably NOT native (requires a separate Microsoft extension).</p>
+<h3 id="claude-code">Claude Code</h3>
+<p>Strict <code>str_replace</code>-only edit model with mandatory read-before-edit gating and typed failure feedback (no diff/whole-file ambiguity). One of the richest <strong>hooks</strong> systems found (~30 named events: PreToolUse/PostToolUse/PreCompact/PostCompact/SubagentStart/Stop/etc.), all capable of blocking/modifying via <code>permissionDecision</code>. Skills and slash commands have been <strong>unified</strong> — both now produce <code>/name</code> invocations from <code>.claude/skills/&lt;name&gt;/SKILL.md</code>. A documented plugin manifest schema (<code>.claude-plugin/plugin.json</code>) with marketplaces. Native OS-level sandboxed Bash execution (open-sourced as <code>@anthropic-ai/sandbox-runtime</code>). Checkpointing is the most explicit of any harness (100 retained snapshots, granular restore options). Caveat: Grep/Glob tools are oddly <strong>absent by default on macOS/Linux/WSL</strong> (Bash-embedded find/grep used instead) — only on by default on Windows.</p>
+<h3 id="openai-codex-cli">OpenAI Codex CLI</h3>
+<p>Rust-based, open-source. Centers on the <code>apply_patch</code>/V4A context-anchored diff format (chosen specifically because models hallucinate line numbers — uses <code>@@</code> context markers instead), verified directly against source (<code>codex-rs/apply-patch/src/parser.rs</code>, <code>lib.rs</code>). Genuine OS-level sandbox (Seatbelt/bubblewrap/Windows sandbox) with <code>approval_policy</code> now reduced to <code>on-request</code>/<code>never</code> (the older <code>untrusted</code> policy was explicitly retired in Nov 2026 docs). <code>codex exec</code> headless mode is unusually rich: JSONL event stream, <code>--output-schema</code> for JSON-Schema-constrained structured output. &quot;Codex Cloud&quot; runs a two-phase sandboxed container (network-enabled setup phase, then offline agent phase by default). Subagents are enabled by default in current releases, explicitly framed around reducing &quot;context rot.&quot;</p>
+<h3 id="cursor-ide--cursor-agent-cli--cloud-agents">Cursor (IDE / <code>cursor-agent</code> CLI / Cloud Agents)</h3>
+<p>Replaced its embeddings-based semantic index with a proprietary local lexical engine (&quot;Instant Grep&quot;) — an important correction to common assumptions. Extremely granular, three-tier hooks taxonomy (Agent/Tab/App-lifecycle). Native MCP support includes the MCP Apps extension (interactive UI returned by tools) — notable breadth. Distinctive &quot;Run Modes&quot; permission model (Auto-review/Allowlist/Run-Everything) with an explicit documented admission that &quot;Auto-review is not a security boundary&quot; (LLM classifier, not sandbox). Native, no-MCP-required Browser tool with persistent per-workspace session state. Full ACP support with Cursor-specific protocol extensions (<code>cursor/update_todos</code>, <code>cursor/create_plan</code>, etc.). Ownership/bundling context: as of Nov 2026 docs, Cursor is marketed as part of &quot;The X Subscription&quot; bundling Grok+Cursor+X, reflecting a deep xAI tie-in.</p>
+<h3 id="opencode-sstopencode--anomalycoopencode-v2">OpenCode (sst/opencode → anomalyco/opencode, &quot;V2&quot;)</h3>
+<p>Client-server architecture (shared background daemon, multiple TUI/desktop/web clients attach to it). <code>AGENTS.md</code>-only by design in V2 (explicitly dropped CLAUDE.md fallback). Full ACP agent mode (<code>opencode acp</code>) for Zed/JetBrains. Named reasoning &quot;Variants&quot; (<code>#high</code>/<code>#low</code>/<code>#max</code>). Native git-object-based Snapshots for undo/redo. Permission model is an explicit rule engine (<code>{action, resource, effect}</code>) layered under org-level &quot;Policies&quot; — and docs explicitly <strong>recommend permission rules over OS sandboxing</strong>, i.e., no sandbox by default.</p>
+<h3 id="pi-earendil-workspi-formerly-badlogicpi-mono">pi (<code>earendil-works/pi</code>, formerly <code>badlogic/pi-mono</code>)</h3>
+<p>Deliberately minimal (&quot;clay, not product&quot;) — explicitly omits subagents, plan mode, and todo lists as <em>core</em> features by design, exposing a TypeScript extension API (<code>pi.registerTool/registerCommand/on(event)</code>) instead. No native web-fetch/web-search tool at all (by design — use Bash/MCP/extension). Distinctive &quot;codemode&quot; (QuickJS-sandboxed scripting layered over tools). Broadest native model-provider list (30+) including a local llama.cpp auto-discovery router for GGUF files. No default approval gating at all — relies entirely on opt-in sandbox extensions (Docker/Gondolin micro-VM). No ACP; uses a bespoke RPC protocol instead.</p>
+<h3 id="gemini-cli-google">Gemini CLI (Google)</h3>
+<p>Multi-stage edit-recovery pipeline confirmed directly in source (<code>edit.ts</code>): exact → whitespace-flexible → regex-flexible → Levenshtein fuzzy → LLM-assisted repair — the most elaborate documented edit-recovery chain of any harness. <code>GEMINI.md</code> hierarchical memory with JIT ancestor-directory scanning, configurable to also read <code>AGENTS.md</code>/<code>CONTEXT.md</code>. Native A2A (Agent2Agent) protocol support for <strong>remote</strong> subagents, distinct from local subagents. Native ACP mode (<code>gemini --acp</code>). Notably <strong>Gemini-only</strong> for models — no BYOK/third-party-LLM support, a sharp contrast with every other non-Copilot harness researched.</p>
+<h3 id="aider">Aider</h3>
+<p>The outlier in architecture: no plugin system, no native MCP, no AGENTS.md auto-detection — but the most mature <strong>repo-map</strong> feature (tree-sitter-parsed, PageRank-ranked symbol graph fit to a token budget) and the deepest native <strong>git integration</strong> (auto-commit on every AI edit with generated Conventional-Commits messages, <code>/undo</code> as git-revert). Supports the broadest edit-format selection (<code>whole</code>/<code>diff</code>/<code>diff-fenced</code>/<code>udiff</code>/architect-split), chosen per-model. Very detailed prompt-caching controls (<code>--cache-prompts</code>, structured cache-boundary ordering, keepalive pings).</p>
+<h3 id="cline">Cline</h3>
+<p>Full standalone evolution beyond its VS-Code-extension origins — now CLI/SDK/Desktop/JetBrains/Cloud. &quot;Plan/Act&quot; mode (distinct models per mode) is its signature feature. Granular per-capability permission toggles (Read/Edit/Execute/Browser/MCP) rather than Cursor/Claude-style unified permission-mode presets. Broadest documented provider catalog (200+ providers, 6,400+ models, auto-refreshed). &quot;Memory Bank&quot; is explicitly a <strong>community prompting convention</strong>, not a native feature — a useful distinction from similarly-named native features elsewhere.</p>
+<h3 id="roo-code-shut-down-2026-05-15--historical-snapshot">Roo Code (shut down 2026-05-15 — historical snapshot)</h3>
+<p>Its &quot;Boomerang Mode&quot; (Orchestrator) delegates subtasks via <code>new_task</code> but is <strong>sequential parent-pause/child-resume</strong>, not concurrent fan-out — an important nuance vs. true parallel subagents elsewhere. Had real semantic codebase search via tree-sitter→embeddings→Qdrant (more &quot;real&quot; vector search than most competitors claimed). Removed its browser tool entirely (PR #11392) before shutdown. Successor project &quot;Roomote&quot; is a separate self-hosted cloud-agent product, out of scope here.</p>
+<h3 id="amp-sourcegraph--amp-frontier-corporation">Amp (Sourcegraph → &quot;Amp Frontier Corporation&quot;)</h3>
+<p>Underwent a near-total rebuild in 2025–2026: VS Code/Cursor extensions killed, slash commands removed (replaced by skills), TODOs removed (&quot;no longer needed with Opus 4.5&quot;), and — critically — <strong>no default tool-approval gating as of Nov 2026</strong> (a reversal from its earlier granular <code>amp.permissions</code> system). &quot;The Dial&quot; (low/medium/high/ultra) bundles model+effort+prompt+toolset as fixed presets rather than exposing independent knobs. Background/cloud execution is branded &quot;Orbs&quot; (e2b-based, self-hostable). Closed-source — edit-tool internals are not publicly documented.</p>
+<h3 id="factory-droid">Factory Droid</h3>
+<p>Strong enterprise/governance posture: genuine OS-level sandbox (Seatbelt/bubblewrap+seccomp) with fail-closed semantics, a rule-based permission engine, and a built-in secret scanner (&quot;Droid Shield&quot;). &quot;Missions&quot; orchestrate plan-then-execute workflows at scale (worker/validator roles, up to ~500 features claimed). &quot;Workstreams&quot; (beta) do parallel multi-machine agent fan-out with a shared artifact folder. Explicit Claude-Code-plugin compatibility layer (auto-converts <code>.claude-plugin/</code>→<code>.factory-plugin/</code>). The commonly-referenced &quot;Reality Check&quot; branded term was <strong>not found</strong> in public docs — closest match is the <code>/verify</code> slash command (investigator framing with CONFIRMED/REFUTED/INCONCLUSIVE verdicts) in the &quot;Droid Control&quot; plugin.</p>
+<hr>
+<h2 id="3-what-base-github-copilot-cli-lacks-ranked-by-likely-omc-value">3. What base GitHub Copilot CLI lacks (ranked by likely OMC value)</h2>
+<p>Ranked roughly by (a) how commonly other top harnesses have it, (b) how much it would improve a Copilot CLI user&#39;s workflow, and (c) feasibility to port as an OMC plugin feature.</p>
+<ol>
+<li><strong>Dedicated todo-list tool</strong> — Copilot CLI only has an implicit <code>plan.md</code> checklist; Claude Code (TaskCreate/TodoWrite), VS Code (<code>#todos</code>), Gemini CLI (<code>write_todos</code>), Cline, Roo, and most others have an explicit structured tool the model is pushed to use for multi-step tracking. High value, low complexity to port as an OMC tool/skill.</li>
+<li><strong>Persistent, hook-based tool-call blocking beyond <code>preToolUse</code></strong> — Copilot CLI has hooks but the fuller event taxonomies in Claude Code (~30 events) and Cursor (agent/tab/app-lifecycle) allow much richer interception (e.g., <code>afterFileEdit</code>, <code>beforeSubmitPrompt</code>, <code>PreCompact</code>/<code>PostCompact</code>). Worth evaluating which additional hook points OMC could simulate via its own plugin layer.</li>
+<li><strong>Dedicated review-mode parity with Cursor&#39;s Agent Review/Bugbot or Codex&#39;s &quot;review uncommitted changes without touching the tree&quot;</strong> — Copilot CLI has <code>/review</code>/<code>/security-review</code> but no confirmed &quot;review without side effects&quot; guarantee documented; worth hardening/porting OMP&#39;s review workflow explicitly.</li>
+<li><strong>Multi-stage edit-error recovery</strong> (Gemini CLI&#39;s exact→whitespace→regex→Levenshtein→LLM-repair chain; Claude Code/Codex&#39;s typed-error feedback) — Copilot CLI&#39;s edit-recovery story is undocumented/unclear; a more robust recovery layer could reduce failed-edit loops.</li>
+<li><strong>Repo-map/tree-sitter symbol index (Aider-style)</strong> — none of the Copilot surfaces have this; it&#39;s a cheap, non-LLM-call way to improve context quality for large repos, complementary to Copilot&#39;s existing LSP-first approach.</li>
+<li><strong>Context-window visualization matching Cursor&#39;s &quot;context ring&quot; / Claude Code&#39;s context-window doc</strong> — Copilot CLI has <code>/context</code> but the category-by-category breakdown (System/Tools/Rules/Skills/MCP/Subagents/Conversation) seen in Cursor is more granular.</li>
+<li><strong>A more explicit, OS-level sandbox analogous to Codex&#39;s Seatbelt/bubblewrap or Factory&#39;s fail-closed sandbox</strong> — Copilot CLI&#39;s &quot;MXC&quot; local sandbox is mentioned but less transparently documented than Codex&#39;s/Factory&#39;s; worth comparing hardening posture.</li>
+<li><strong>Reasoning-effort/model-routing transparency to match Cursor&#39;s &quot;Auto&quot;/Factory&#39;s &quot;Auto Model&quot; cost-savings framing</strong> — Copilot has Copilot Fusion, broadly comparable, but less user-facing cost-savings messaging; lower priority since functionally similar.</li>
+<li><strong>Native debugger integration</strong> — absent in literally every harness researched (not a differentiator; low priority).</li>
+<li><strong>ast-grep</strong> — absent everywhere; not a meaningful gap versus competitors (skip).</li>
+</ol>
+<hr>
+<h2 id="4-what-copilot-across-its-three-surfaces-has-that-others-lack">4. What Copilot (across its three surfaces) has that others lack</h2>
+<ol>
+<li><strong>Automatic LSP preference over text search</strong> (CLI) — most competitors either have no LSP (Codex, Cursor unconfirmed, pi, Amp) or gate it behind manual plugin installs (Claude Code, Cline SDK-only).</li>
+<li><strong>Native ACP server mode</strong> (CLI only: <code>copilot --acp</code>) is relatively rare — shared only with Cursor, OpenCode, Gemini CLI, Factory Droid; notably Claude Code and Amp do <strong>not</strong> have first-party ACP.</li>
+<li><strong>Persistent cross-session &quot;Copilot Memory&quot;</strong> (CLI) with explicit import tooling — most competitors either have no native memory system (Codex, Cursor, OpenCode, pi, Aider, Roo, Amp, Factory) or only experimental/ambiguous versions (Gemini CLI&#39;s &quot;Auto Memory&quot;, Claude Code&#39;s second auto-memory system, Cursor&#39;s apparently-deprecated &quot;Memories&quot;).</li>
+<li><strong>Formally documented, configurable network firewall/allowlist</strong> (Cloud/coding agent) — the most explicit of any harness researched; Codex&#39;s sandbox is off-by-default network access but not a configurable allowlist in the same governance sense; Factory Droid is the closest comparator.</li>
+<li><strong>Fully native, no-MCP-required Notebook tooling and Browser automation</strong> (VS Code surface) — Claude Code has notebook support (NotebookEdit) but no native browser tool; Cursor has native browser but Claude Code/Codex/OpenCode/Aider/Amp/Factory do not have native notebook tools.</li>
+<li><strong>Cross-surface session continuity</strong> (CLI/cloud/VS Code/mobile/app all sharing session state) — a breadth of surface integration (desktop, mobile app, Slack/Teams trigger, GitHub.com) that most single-product competitors don&#39;t match end-to-end, though Amp and Cline both have multi-surface ambitions (native apps, Slack).</li>
+<li><strong>Strict governance model for cloud-agent PR self-approval</strong> (cannot approve own PR; can only push to branches it created) — a deliberate security design not emphasized the same way in other cloud-agent products (Codex Cloud, Cursor Cloud Agents, Amp Orbs, Factory Droid Computers) based on docs reviewed.</li>
+<li><strong>Shared &quot;Agent Skills&quot; cross-surface implementation</strong> spanning CLI/cloud/VS Code using the <em>same</em> open standard — gives Copilot users a consistent skills mechanism across all three products, whereas many competitors (e.g., Amp, pi) only partially or inconsistently adopt the same spec.</li>
+</ol>
+<hr>
+<h2 id="5-sources">5. Sources</h2>
+<h3 id="github-copilot-cli--cloud--vs-code">GitHub Copilot (CLI / Cloud / VS Code)</h3>
+<ul>
+<li><a href="https://docs.github.com/en/copilot/reference/custom-agents-configuration">https://docs.github.com/en/copilot/reference/custom-agents-configuration</a></li>
+<li><a href="https://docs.github.com/en/copilot/concepts/customizations/lsp-servers">https://docs.github.com/en/copilot/concepts/customizations/lsp-servers</a></li>
+<li><a href="https://docs.github.com/en/copilot/how-tos/copilot-on-github/use-copilot-agents/overview">https://docs.github.com/en/copilot/how-tos/copilot-on-github/use-copilot-agents/overview</a></li>
+<li><a href="https://docs.github.com/en/copilot/how-tos/copilot-on-github/use-copilot-agents/watch-and-fix-pull-requests">https://docs.github.com/en/copilot/how-tos/copilot-on-github/use-copilot-agents/watch-and-fix-pull-requests</a></li>
+<li><a href="https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-the-agent-environment">https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-the-agent-environment</a></li>
+<li><a href="https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-the-firewall">https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-the-firewall</a></li>
+<li><a href="https://docs.github.com/en/copilot/reference/copilot-allowlist-reference">https://docs.github.com/en/copilot/reference/copilot-allowlist-reference</a></li>
+<li><a href="https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/configure-secrets-and-variables">https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/configure-secrets-and-variables</a></li>
+<li><a href="https://docs.github.com/en/copilot/how-tos/copilot-cli/use-copilot-cli/allowing-tools">https://docs.github.com/en/copilot/how-tos/copilot-cli/use-copilot-cli/allowing-tools</a></li>
+<li><a href="https://docs.github.com/en/copilot/how-tos/copilot-cli/use-copilot-cli/overview">https://docs.github.com/en/copilot/how-tos/copilot-cli/use-copilot-cli/overview</a></li>
+<li><a href="https://docs.github.com/en/copilot/how-tos/copilot-cli/use-copilot-cli-in-actions">https://docs.github.com/en/copilot/how-tos/copilot-cli/use-copilot-cli-in-actions</a></li>
+<li><a href="https://docs.github.com/en/copilot/reference/copilot-cli-reference/acp-server">https://docs.github.com/en/copilot/reference/copilot-cli-reference/acp-server</a></li>
+<li><a href="https://docs.github.com/en/copilot/reference/github-copilot-app-reference/slash-commands">https://docs.github.com/en/copilot/reference/github-copilot-app-reference/slash-commands</a></li>
+<li><a href="https://docs.github.com/en/copilot/concepts/prompting-and-context/copilot-memory">https://docs.github.com/en/copilot/concepts/prompting-and-context/copilot-memory</a></li>
+<li><a href="https://docs.github.com/en/copilot/concepts/models/bring-your-own-key">https://docs.github.com/en/copilot/concepts/models/bring-your-own-key</a></li>
+<li><a href="https://docs.github.com/en/copilot/concepts/models/copilot-fusion">https://docs.github.com/en/copilot/concepts/models/copilot-fusion</a></li>
+<li><a href="https://docs.github.com/en/copilot/reference/custom-instructions-support">https://docs.github.com/en/copilot/reference/custom-instructions-support</a></li>
+<li><a href="https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions">https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions</a></li>
+<li><a href="https://docs.github.com/en/copilot/concepts/agent-capabilities/agent-powered-workflows-and-operations/computer-use">https://docs.github.com/en/copilot/concepts/agent-capabilities/agent-powered-workflows-and-operations/computer-use</a></li>
+<li><a href="https://docs.github.com/en/copilot/concepts/copilot-surfaces/copilot-cli">https://docs.github.com/en/copilot/concepts/copilot-surfaces/copilot-cli</a></li>
+<li><a href="https://code.visualstudio.com/docs/agents/reference/tools-reference">https://code.visualstudio.com/docs/agents/reference/tools-reference</a></li>
+<li><a href="https://code.visualstudio.com/docs/agents/reference/workspace-context">https://code.visualstudio.com/docs/agents/reference/workspace-context</a></li>
+<li><a href="https://code.visualstudio.com/docs/agents/reference/custom-instructions-reference">https://code.visualstudio.com/docs/agents/reference/custom-instructions-reference</a></li>
+<li><a href="https://code.visualstudio.com/docs/agents/run/review-code-edits">https://code.visualstudio.com/docs/agents/run/review-code-edits</a></li>
+<li><a href="https://code.visualstudio.com/docs/agents/run/approvals">https://code.visualstudio.com/docs/agents/run/approvals</a></li>
+<li><a href="https://code.visualstudio.com/docs/agents/run/agents-window">https://code.visualstudio.com/docs/agents/run/agents-window</a></li>
+<li><a href="https://code.visualstudio.com/docs/agents/run/browser-tools">https://code.visualstudio.com/docs/agents/run/browser-tools</a></li>
+<li><a href="https://code.visualstudio.com/docs/agents/guides/notebooks-with-ai">https://code.visualstudio.com/docs/agents/guides/notebooks-with-ai</a></li>
+<li><a href="https://code.visualstudio.com/docs/agents/concepts/language-models">https://code.visualstudio.com/docs/agents/concepts/language-models</a></li>
+<li><a href="https://code.visualstudio.com/docs/agent-customization/hooks">https://code.visualstudio.com/docs/agent-customization/hooks</a></li>
+<li><a href="https://code.visualstudio.com/docs/agent-customization/agent-skills">https://code.visualstudio.com/docs/agent-customization/agent-skills</a></li>
+<li><a href="https://github.blog/news-insights/product-news/github-copilot-meet-the-new-coding-agent/">https://github.blog/news-insights/product-news/github-copilot-meet-the-new-coding-agent/</a></li>
+<li><a href="https://github.blog/changelog/2026-10-28-route-and-orchestrate-models-with-github-copilot-fusion/">https://github.blog/changelog/2026-10-28-route-and-orchestrate-models-with-github-copilot-fusion/</a></li>
+<li><a href="https://github.com/microsoft/vscode/issues/265496">https://github.com/microsoft/vscode/issues/265496</a> (ACP feature request, unresolved)</li>
+</ul>
+<h3 id="claude-code-1">Claude Code</h3>
+<ul>
+<li><a href="https://code.claude.com/docs/en/tools-reference">https://code.claude.com/docs/en/tools-reference</a></li>
+<li><a href="https://code.claude.com/docs/en/hooks">https://code.claude.com/docs/en/hooks</a></li>
+<li><a href="https://code.claude.com/docs/en/plugins">https://code.claude.com/docs/en/plugins</a></li>
+<li><a href="https://code.claude.com/docs/en/plugins/manifest-reference">https://code.claude.com/docs/en/plugins/manifest-reference</a></li>
+<li><a href="https://code.claude.com/docs/en/mcp">https://code.claude.com/docs/en/mcp</a></li>
+<li><a href="https://code.claude.com/docs/en/skills">https://code.claude.com/docs/en/skills</a></li>
+<li><a href="https://code.claude.com/docs/en/slash-commands">https://code.claude.com/docs/en/slash-commands</a></li>
+<li><a href="https://code.claude.com/docs/en/sub-agents">https://code.claude.com/docs/en/sub-agents</a></li>
+<li><a href="https://code.claude.com/docs/en/output-styles">https://code.claude.com/docs/en/output-styles</a></li>
+<li><a href="https://code.claude.com/docs/en/memory">https://code.claude.com/docs/en/memory</a></li>
+<li><a href="https://code.claude.com/docs/en/permission-modes">https://code.claude.com/docs/en/permission-modes</a></li>
+<li><a href="https://code.claude.com/docs/en/sandboxing">https://code.claude.com/docs/en/sandboxing</a></li>
+<li><a href="https://code.claude.com/docs/en/permissions">https://code.claude.com/docs/en/permissions</a></li>
+<li><a href="https://code.claude.com/docs/en/settings">https://code.claude.com/docs/en/settings</a></li>
+<li><a href="https://code.claude.com/docs/en/devcontainer">https://code.claude.com/docs/en/devcontainer</a></li>
+<li><a href="https://code.claude.com/docs/en/checkpointing">https://code.claude.com/docs/en/checkpointing</a></li>
+<li><a href="https://code.claude.com/docs/en/sessions">https://code.claude.com/docs/en/sessions</a></li>
+<li><a href="https://code.claude.com/docs/en/interactive-mode">https://code.claude.com/docs/en/interactive-mode</a></li>
+<li><a href="https://code.claude.com/docs/en/model-config">https://code.claude.com/docs/en/model-config</a></li>
+<li><a href="https://code.claude.com/docs/en/prompt-caching">https://code.claude.com/docs/en/prompt-caching</a></li>
+<li><a href="https://code.claude.com/docs/en/costs">https://code.claude.com/docs/en/costs</a></li>
+<li><a href="https://code.claude.com/docs/en/context-window">https://code.claude.com/docs/en/context-window</a></li>
+<li><a href="https://code.claude.com/docs/en/headless">https://code.claude.com/docs/en/headless</a></li>
+<li><a href="https://code.claude.com/docs/en/agent-sdk/overview">https://code.claude.com/docs/en/agent-sdk/overview</a></li>
+<li><a href="https://code.claude.com/docs/en/github-actions">https://code.claude.com/docs/en/github-actions</a></li>
+</ul>
+<h3 id="openai-codex-cli-1">OpenAI Codex CLI</h3>
+<ul>
+<li><a href="https://developers.openai.com/codex/cli">https://developers.openai.com/codex/cli</a></li>
+<li><a href="https://developers.openai.com/codex/local-config">https://developers.openai.com/codex/local-config</a></li>
+<li><a href="https://developers.openai.com/codex/web-search">https://developers.openai.com/codex/web-search</a></li>
+<li><a href="https://developers.openai.com/codex/hooks">https://developers.openai.com/codex/hooks</a></li>
+<li><a href="https://developers.openai.com/codex/skills-and-plugins">https://developers.openai.com/codex/skills-and-plugins</a></li>
+<li><a href="https://developers.openai.com/codex/extend/mcp">https://developers.openai.com/codex/extend/mcp</a></li>
+<li><a href="https://developers.openai.com/codex/noninteractive">https://developers.openai.com/codex/noninteractive</a></li>
+<li><a href="https://developers.openai.com/codex/agent-configuration/subagents">https://developers.openai.com/codex/agent-configuration/subagents</a></li>
+<li><a href="https://developers.openai.com/codex/code-review">https://developers.openai.com/codex/code-review</a></li>
+<li><a href="https://developers.openai.com/codex/cloud">https://developers.openai.com/codex/cloud</a></li>
+<li><a href="https://developers.openai.com/codex/agent-approvals-security">https://developers.openai.com/codex/agent-approvals-security</a></li>
+<li><a href="https://developers.openai.com/codex/sandboxing">https://developers.openai.com/codex/sandboxing</a></li>
+<li><a href="https://developers.openai.com/codex/models">https://developers.openai.com/codex/models</a></li>
+<li><a href="https://developers.openai.com/codex/github-action">https://developers.openai.com/codex/github-action</a> (also mirrored at learn.chatgpt.com/docs/github-action)</li>
+<li><a href="https://github.com/openai/codex/blob/main/docs/agents_md.md">https://github.com/openai/codex/blob/main/docs/agents_md.md</a></li>
+<li><a href="https://github.com/openai/codex/blob/main/codex-rs/apply-patch/src/parser.rs">https://github.com/openai/codex/blob/main/codex-rs/apply-patch/src/parser.rs</a></li>
+<li><a href="https://github.com/openai/codex/blob/main/codex-rs/apply-patch/src/lib.rs">https://github.com/openai/codex/blob/main/codex-rs/apply-patch/src/lib.rs</a></li>
+<li><a href="https://github.com/openai/codex/blob/main/codex-rs/core/src/tools/handlers/apply_patch.rs">https://github.com/openai/codex/blob/main/codex-rs/core/src/tools/handlers/apply_patch.rs</a></li>
+<li><a href="https://github.com/openai/codex/blob/main/codex-rs/core/tests/suite/apply_patch_cli.rs">https://github.com/openai/codex/blob/main/codex-rs/core/tests/suite/apply_patch_cli.rs</a></li>
+<li><a href="https://github.com/openai/codex/blob/main/sdk/typescript/README.md">https://github.com/openai/codex/blob/main/sdk/typescript/README.md</a> [moderate confidence, not independently re-fetched]</li>
+<li>Secondary (moderate confidence only): codex.danielvaughan.com, hammerautomation.ai — <code>/compact</code> and <code>update_plan</code> opt-in claims</li>
+</ul>
+<h3 id="cursor">Cursor</h3>
+<ul>
+<li><a href="https://cursor.com/docs/agent/overview">https://cursor.com/docs/agent/overview</a></li>
+<li><a href="https://cursor.com/docs/agent/tools/search">https://cursor.com/docs/agent/tools/search</a></li>
+<li><a href="https://cursor.com/docs/agent/tools/browser">https://cursor.com/docs/agent/tools/browser</a></li>
+<li><a href="https://cursor.com/docs/agent/security/run-modes">https://cursor.com/docs/agent/security/run-modes</a></li>
+<li><a href="https://cursor.com/docs/agent/plan-mode">https://cursor.com/docs/agent/plan-mode</a></li>
+<li><a href="https://cursor.com/docs/agent/agent-review">https://cursor.com/docs/agent/agent-review</a></li>
+<li><a href="https://cursor.com/docs/agent/prompting">https://cursor.com/docs/agent/prompting</a></li>
+<li><a href="https://cursor.com/docs/rules">https://cursor.com/docs/rules</a></li>
+<li><a href="https://cursor.com/docs/hooks">https://cursor.com/docs/hooks</a></li>
+<li><a href="https://cursor.com/docs/skills">https://cursor.com/docs/skills</a></li>
+<li><a href="https://cursor.com/docs/subagents">https://cursor.com/docs/subagents</a></li>
+<li><a href="https://cursor.com/docs/mcp">https://cursor.com/docs/mcp</a></li>
+<li><a href="https://cursor.com/docs/bugbot">https://cursor.com/docs/bugbot</a></li>
+<li><a href="https://cursor.com/docs/cloud-agent">https://cursor.com/docs/cloud-agent</a></li>
+<li><a href="https://cursor.com/docs/cli/overview">https://cursor.com/docs/cli/overview</a></li>
+<li><a href="https://cursor.com/docs/cli/headless">https://cursor.com/docs/cli/headless</a></li>
+<li><a href="https://cursor.com/docs/cli/acp">https://cursor.com/docs/cli/acp</a></li>
+<li><a href="https://cursor.com/docs/models-and-pricing">https://cursor.com/docs/models-and-pricing</a></li>
+<li><a href="https://cursor.com/docs/enterprise/privacy-and-data-governance">https://cursor.com/docs/enterprise/privacy-and-data-governance</a></li>
+<li><a href="https://cursor.com/changelog">https://cursor.com/changelog</a></li>
+<li><a href="https://cursor.com/llms.txt">https://cursor.com/llms.txt</a></li>
+<li><a href="https://cursor.com/docs/reference/third-party-hooks">https://cursor.com/docs/reference/third-party-hooks</a></li>
+</ul>
+<h3 id="opencode">OpenCode</h3>
+<ul>
+<li><a href="https://opencode.ai/v2/docs/tools">https://opencode.ai/v2/docs/tools</a></li>
+<li><a href="https://opencode.ai/v2/docs/plugins">https://opencode.ai/v2/docs/plugins</a></li>
+<li><a href="https://opencode.ai/v2/docs/mcp-servers">https://opencode.ai/v2/docs/mcp-servers</a></li>
+<li><a href="https://opencode.ai/v2/docs/skills">https://opencode.ai/v2/docs/skills</a></li>
+<li><a href="https://opencode.ai/v2/docs/agents">https://opencode.ai/v2/docs/agents</a></li>
+<li><a href="https://opencode.ai/v2/docs/commands">https://opencode.ai/v2/docs/commands</a></li>
+<li><a href="https://opencode.ai/v2/docs/instructions">https://opencode.ai/v2/docs/instructions</a></li>
+<li><a href="https://opencode.ai/v2/docs/snapshots">https://opencode.ai/v2/docs/snapshots</a></li>
+<li><a href="https://opencode.ai/v2/docs/models">https://opencode.ai/v2/docs/models</a></li>
+<li><a href="https://opencode.ai/v2/docs/providers">https://opencode.ai/v2/docs/providers</a></li>
+<li><a href="https://opencode.ai/v2/docs/permissions">https://opencode.ai/v2/docs/permissions</a></li>
+<li><a href="https://opencode.ai/v2/docs/cli">https://opencode.ai/v2/docs/cli</a></li>
+<li><a href="https://opencode.ai/v2/docs/sdk/">https://opencode.ai/v2/docs/sdk/</a></li>
+<li><a href="https://opencode.ai/v2/docs/github/">https://opencode.ai/v2/docs/github/</a></li>
+<li><a href="https://opencode.ai/docs/lsp/">https://opencode.ai/docs/lsp/</a> (V1 path; V2 continuity unverified)</li>
+<li><a href="https://github.com/anomalyco/opencode/releases">https://github.com/anomalyco/opencode/releases</a> (v2.2.5 notes)</li>
+<li><a href="https://github.com/anomalyco/opencode">https://github.com/anomalyco/opencode</a> PR #60689/#60688</li>
+</ul>
+<h3 id="pi-earendil-workspi">pi (earendil-works/pi)</h3>
+<ul>
+<li><a href="https://github.com/earendil-works/pi">https://github.com/earendil-works/pi</a> — docs/settings.md, docs/compaction.md, docs/extensions.md, docs/mcp.md, docs/skills.md, docs/codemode.md, docs/configuration.md, docs/sessions.md, docs/providers.md, docs/models.md, docs/security.md, docs/cli-integration.md, docs/sdk.md</li>
+<li>pi.dev</li>
+</ul>
+<h3 id="gemini-cli">Gemini CLI</h3>
+<ul>
+<li><a href="https://github.com/google-gemini/gemini-cli">https://github.com/google-gemini/gemini-cli</a> — docs/tools/file-system.md, docs/reference/tools.md, docs/core/subagents.md, docs/tools/web-fetch.md, docs/tools/web-search.md, docs/extensions/index.md, docs/hooks/index.md, docs/tools/mcp-server.md, docs/cli/skills.md, docs/core/remote-agents.md, docs/cli/gemini-md.md, docs/cli/plan-mode.md, docs/cli/checkpointing.md, docs/cli/rewind.md, docs/get-started/authentication.mdx, docs/cli/model-routing.md, docs/reference/commands.md, docs/cli/token-caching.md, docs/cli/auto-memory.md, docs/cli/sandbox.md, docs/reference/policy-engine.md, docs/cli/headless.md, docs/cli/acp-mode.md, docs/issue-and-pr-automation.md</li>
+<li>geminicli.com/extensions/browse</li>
+<li>github.com/google-github-actions/run-gemini-cli</li>
+</ul>
+<h3 id="aider-1">Aider</h3>
+<ul>
+<li><a href="https://aider.chat/docs/more/edit-formats.html">https://aider.chat/docs/more/edit-formats.html</a></li>
+<li><a href="https://aider.chat/docs/troubleshooting/edit-errors.html">https://aider.chat/docs/troubleshooting/edit-errors.html</a></li>
+<li><a href="https://aider.chat/docs/repomap.html">https://aider.chat/docs/repomap.html</a></li>
+<li><a href="https://aider.chat/docs/languages.html">https://aider.chat/docs/languages.html</a></li>
+<li><a href="https://aider.chat/docs/usage/images-urls.html">https://aider.chat/docs/usage/images-urls.html</a></li>
+<li><a href="https://aider.chat/docs/install/optional.html">https://aider.chat/docs/install/optional.html</a></li>
+<li><a href="https://aider.chat/docs/usage/modes.html">https://aider.chat/docs/usage/modes.html</a></li>
+<li><a href="https://aider.chat/docs/usage/conventions.html">https://aider.chat/docs/usage/conventions.html</a></li>
+<li><a href="https://aider.chat/docs/config/aider_conf.html">https://aider.chat/docs/config/aider_conf.html</a></li>
+<li><a href="https://aider.chat/docs/git.html">https://aider.chat/docs/git.html</a></li>
+<li><a href="https://aider.chat/docs/llms.html">https://aider.chat/docs/llms.html</a></li>
+<li><a href="https://aider.chat/docs/usage/caching.html">https://aider.chat/docs/usage/caching.html</a></li>
+<li><a href="https://aider.chat/docs/scripting.html">https://aider.chat/docs/scripting.html</a></li>
+<li><a href="https://github.com/Aider-AI/aider/issues/3314">https://github.com/Aider-AI/aider/issues/3314</a> (no native MCP, open FR)</li>
+</ul>
+<h3 id="cline--roo-code">Cline / Roo Code</h3>
+<ul>
+<li><a href="https://github.com/cline/cline">https://github.com/cline/cline</a> — apps/vscode/src/core/prompts/responses.ts</li>
+<li>cline.bot docs (CLI/SDK/Desktop/Teams references)</li>
+<li><a href="https://github.com/RooCodeInc/Roo-Code">https://github.com/RooCodeInc/Roo-Code</a> — PR #11392 (browser tool removal); archived 2026-05-15</li>
+</ul>
+<h3 id="amp">Amp</h3>
+<ul>
+<li><a href="https://ampcode.com/docs/the-dial">https://ampcode.com/docs/the-dial</a></li>
+<li><a href="https://ampcode.com/docs/security">https://ampcode.com/docs/security</a></li>
+<li>(plugin/toolbox/skills/orbs documentation referenced per ampcode.com/docs)</li>
+<li>Third-party ACP bridge: <code>acp-amp</code> by Superagentic AI (not first-party)</li>
+</ul>
+<h3 id="factory-droid-1">Factory Droid</h3>
+<ul>
+<li>docs.factory.com (droid exec, Missions, Workstreams, Spec Mode, Droid Shield, Agent Readiness Model, Droid Action)</li>
+<li>github.com/Factory-AI/factory-plugins</li>
+<li>github.com/Factory-AI/droid-action</li>
+</ul>
+<hr>
+<h2 id="6-open-items-for-follow-up-flagged-uncertain-across-this-report">6. Open items for follow-up (flagged uncertain across this report)</h2>
+<ul>
+<li>Exact wire-level edit/diff format for base Copilot CLI/VS Code/Cloud agent is undocumented publicly (only the cloud agent&#39;s docs give an example-only <code>str_replace</code> mention).</li>
+<li>Codex CLI&#39;s <code>/compact</code> and <code>update_plan</code>-opt-in status rely on secondary sources, not a first-party changelog — recommend direct verification against <code>developers.openai.com/changelog</code> if this becomes load-bearing for OMC design decisions.</li>
+<li>OpenCode&#39;s MCP server-mode and context-window/cost UI in the TUI were not confirmed either way.</li>
+<li>Cursor&#39;s &quot;Memories&quot; feature status (deprecated vs. merged into Rules) is ambiguous — the docs page redirects without a clear deprecation notice.</li>
+<li>Whether VS Code&#39;s model page omission of xAI/Grok (vs. CLI/Cloud agent explicitly listing it) reflects a real capability gap or just an incomplete page wasn&#39;t resolved.</li>
+<li>&quot;GitHub Copilot SDK&quot; is named in both CLI and Cloud agent docs but its API surface was not deep-dived in this pass.</li>
+</ul>
+</article><footer>Documentation claims are not compatibility tests. Source links and uncertainty labels are preserved from the Markdown reports. Rebuild with <code>npm run docs:html</code>.</footer>
+</main></div></body></html>

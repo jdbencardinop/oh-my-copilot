@@ -1,0 +1,1343 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Managers and orchestrators | OMC research</title><style>
+:root{color-scheme:light dark;--background:light-dark(#f7f8fb,#11151d);--foreground:light-dark(#202c40,#e3e9f4);--muted:light-dark(#52617a,#acb9cc);--card:light-dark(#fff,#192231);--border:light-dark(#d5ddea,#344158);--primary:light-dark(#234db6,#9bbaff);--radius:12px;--font-sans:system-ui,sans-serif;--font-mono:ui-monospace,monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:var(--background);color:var(--foreground);font:17px/1.7 var(--font-sans)}
+a{color:var(--primary);text-underline-offset:3px}a:hover{text-decoration-thickness:2px}
+a:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--primary);outline-offset:3px}
+.skip{position:absolute;left:12px;top:-80px;background:var(--card);padding:10px;z-index:2}.skip:focus{top:12px}
+.layout{display:grid;grid-template-columns:255px minmax(0,1fr);gap:38px;max-width:1600px;margin:auto;padding:30px}
+aside{position:sticky;top:24px;align-self:start;max-height:calc(100dvh - 48px);overflow:auto;font-size:14px}
+aside strong{display:block;margin-bottom:12px}nav a{display:block;padding:7px 10px;border-radius:6px}
+nav a[aria-current=page]{background:var(--card);font-weight:700}
+summary{cursor:pointer;font-weight:650;margin-top:24px}ol.toc{padding-left:22px}.toc li{margin:7px 0}
+main{min-width:0}article{max-width:1100px}.meta{color:var(--muted);font-size:14px}
+h1,h2,h3,h4{line-height:1.25;scroll-margin-top:24px}h1{font-size:clamp(30px,4vw,46px);margin:18px 0 24px}
+h2{font-size:27px;margin:50px 0 18px;border-bottom:1px solid var(--border);padding-bottom:10px}
+h3{font-size:22px;margin-top:32px}p,ul,ol{max-width:85ch}li{margin:7px 0}
+blockquote{border-left:4px solid var(--primary);margin:24px 0;padding:12px 20px;background:var(--card);border-radius:0 var(--radius) var(--radius) 0}
+blockquote p{margin:8px 0}code{font:0.88em var(--font-mono);overflow-wrap:anywhere;background:var(--card);padding:2px 5px;border-radius:4px}
+pre{background:var(--card);padding:18px;border:1px solid var(--border);border-radius:var(--radius);overflow:auto}pre code{padding:0;white-space:pre}
+.table-scroll{overflow:auto;max-height:75dvh;border:1px solid var(--border);border-radius:var(--radius);margin:24px 0}
+table{border-collapse:collapse;min-width:100%;font-size:14px;line-height:1.55}th,td{text-align:left;vertical-align:top;padding:12px 14px;border-bottom:1px solid var(--border);min-width:155px}
+th{position:sticky;top:0;background:var(--card);z-index:1}tr:last-child td{border-bottom:0}td p{margin:0}
+hr{border:0;border-top:1px solid var(--border);margin:32px 0}img{max-width:100%}footer{margin-top:50px;padding:24px 0;border-top:1px solid var(--border);font-size:14px;color:var(--muted)}
+@media(max-width:850px){.layout{grid-template-columns:minmax(0,1fr);padding:18px;gap:12px}aside{position:static;max-height:none}nav{display:flex;flex-wrap:wrap;gap:4px}aside details{margin-bottom:20px}h2{font-size:24px}}
+@media print{aside,.skip,.meta{display:none}.layout{display:block;padding:0}body{font-size:11pt;background:white;color:black}.table-scroll{max-height:none;overflow:visible}table{font-size:8pt}th{position:static}a{color:inherit}h2,h3{break-after:avoid}}
+</style></head>
+<body><a class="skip" href="#content">Skip to report</a><div class="layout">
+<aside><strong>Oh-my-copilot research</strong><nav aria-label="Reports"><a href="index.html">Landscape overview</a><a href="omp-ecosystem.html">OMP and enhancement layers</a><a href="native-harnesses.html">Native harness capabilities</a><a href="oss-projects.html">Open-source tools to study</a><a href="orchestrators.html" aria-current="page">Managers and orchestrators</a></nav>
+<details open><summary>On this page</summary><ol class="toc"><li><a href="#1-summary">1. Summary</a></li><li><a href="#2-orca-stablyai">2. Orca (StablyAI)</a></li><li><a href="#3-t3-code-pingdotggt3code-by-theo-browne--ping-labs">3. T3 Code (pingdotgg/t3code, by Theo Browne / Ping Labs)</a></li><li><a href="#4-herdr">4. herdr</a></li><li><a href="#5-rex-beta--mitchell-hashimotos-new-terminal">5. Rex (beta) — Mitchell Hashimoto&#39;s new terminal</a></li><li><a href="#6-notable-others--localdesktop-orchestrators">6. Notable others — local/desktop orchestrators</a></li><li><a href="#7-cloud--ide-vendor-agent-management-platforms">7. Cloud / IDE-vendor agent management platforms</a></li><li><a href="#8-comparison-table">8. Comparison table</a></li><li><a href="#9-observed-design-patterns">9. Observed design patterns</a></li><li><a href="#10-implications-for-oh-my-copilot">10. Implications for oh-my-copilot</a></li><li><a href="#11-gaps-and-uncertainties-consolidated">11. Gaps and uncertainties (consolidated)</a></li><li><a href="#12-sources">12. Sources</a></li></ol></details></aside>
+<main id="content" tabindex="-1"><p class="meta">Research snapshot: November 2026 · <a href="../research/04-orchestrators.md">Markdown source</a></p>
+<article><h1 id="harness-managers--orchestrators-thread-4-of-4">Harness Managers &amp; Orchestrators (Thread 4 of 4)</h1>
+<p>Research scope: apps/tools that <strong>run, manage, and coordinate multiple coding-agent harnesses</strong>
+(Claude Code, Codex CLI, GitHub Copilot CLI, OpenCode, Cursor Agent, Pi, Gemini CLI, etc.) —
+as opposed to being a harness themselves. Compiled November 2026. All facts below were verified
+against primary sources (official GitHub repos, docs sites, vendor blogs) where possible; claims
+resting only on secondary/blog sources are explicitly flagged <strong>[unverified]</strong>.</p>
+<blockquote>
+<p>Note on method: GitHub star/fork/license/activity numbers in the comparison table were pulled
+live from the GitHub REST API (<code>api.github.com/repos/...</code>) on 2026-11-06 and may drift quickly —
+treat as a snapshot, not a permanent ranking.</p>
+</blockquote>
+<blockquote>
+<p><strong>Scope correction:</strong> this session runs in the user&#39;s
+<a href="https://github.com/tesseracode/t3code"><code>tesseracode/t3code</code> fork</a>, which adds Copilot support.
+That observation does not establish Copilot support in upstream <code>pingdotgg/t3code</code>.
+Local tool schemas are evidence about the fork, not necessarily upstream features.
+The large star counts prompted a verification check, not an allegation of artificial growth;
+six repository counts were independently confirmed in the <a href="index.html#what-the-star-count-warning-meant">synthesis</a>.</p>
+</blockquote>
+<hr>
+<h2 id="1-summary">1. Summary</h2>
+<p>The &quot;harness manager / orchestrator&quot; category has exploded in 2025–2026 into roughly four
+architectural families:</p>
+<ol>
+<li><strong>Desktop/terminal apps that spawn harness CLIs as subprocesses in isolated git worktrees</strong>
+(Orca, T3 Code, Conductor, Claude Squad, CCManager, uzi, vibe-kanban, Nimbalyst/Crystal,
+opcode). This is the dominant pattern: the orchestrator does not reimplement agent reasoning,
+it just runs <code>claude</code>, <code>codex</code>, <code>copilot</code>, <code>opencode</code>, etc. as child processes, usually one per
+<code>git worktree</code> so several agents can touch the same repo without colliding.</li>
+<li><strong>Terminal multiplexer/runtime layers</strong> that make agent <em>processes</em> (not just git state) safe
+to run in parallel, detach, and resume — tmux itself, Claude Squad (tmux-based), uzi
+(tmux-based), and the newer agent-native multiplexers <strong>herdr</strong> (Rust, tmux-like but
+agent-status-aware) and <strong>Rex</strong> (Mitchell Hashimoto&#39;s new terminal, with a first-class
+&quot;Activity Mode&quot; built on an open escalation protocol, OSC 7501 &quot;Program Status Protocol&quot;).</li>
+<li><strong>Cloud/VM orchestration platforms</strong> that run agents in ephemeral sandboxes you don&#39;t own
+locally — Cursor Cloud Agents, OpenAI Codex Cloud, GitHub Copilot coding agent + Agent HQ,
+Google Jules, Devin (Cognition), OpenHands, Terragon (now shut down), Sculptor (containers).
+These emphasize async/remote/mobile workflows over local worktree juggling.</li>
+<li><strong>Protocol-level standardization</strong>: the <strong>Agent Client Protocol (ACP)</strong>, originally built by
+Zed and Google, is emerging as the &quot;LSP for coding agents&quot; — a JSON-RPC-over-stdio protocol
+that lets <em>any</em> ACP client (editor, IDE, orchestrator) drive <em>any</em> ACP agent uniformly. GitHub
+Copilot CLI itself now implements ACP (public preview, Jan 2026), which is the single most
+important integration point for <code>oh-my-copilot</code>: Copilot CLI can be driven headlessly by any
+ACP-aware orchestrator, independent of its own plugin/hook system.</li>
+</ol>
+<p>For disambiguation: <strong>&quot;Orca&quot;</strong> most likely refers to <strong>Orca by StablyAI</strong> (<code>stablyai/orca</code>,
+onorca.dev) — a cross-platform (macOS/Windows/Linux + mobile) &quot;AI orchestrator&quot; app explicitly
+designed to run Claude Code, Codex, and other coding agents in parallel worktrees, with chat/CLI
+views, mobile companion, review/annotate-diff tools, and a CLI/plugin system. A second,
+much smaller, unrelated project called <strong>orca-harness / Orcacode</strong> (<code>okikorg/orca-harness</code>) is a
+Rust-based <em>standalone terminal coding agent</em> (a harness, not an orchestrator) and is likely a
+false-positive match on the name; it is noted below for completeness but is out of the &quot;manages
+multiple harnesses&quot; scope. <strong>&quot;T3 Code&quot;</strong> is confirmed as the open-source &quot;agent harness control
+surface&quot; (<code>pingdotgg/t3code</code>, t3.codes) from Theo Browne / Ping Labs (makers of t3.gg /
+create-t3-app) — not to be confused with &quot;T3 Chat.&quot; <strong>&quot;herdr&quot;</strong> is <code>herdrdev/herdr</code>
+(herdr.dev), a Rust, Apache-2.0, agent-aware terminal workspace/multiplexer. <strong>&quot;rex (beta)&quot;</strong> is
+<strong>Rex</strong>, a new terminal in public beta from Mitchell Hashimoto (creator of Ghostty, HashiCorp
+co-founder, via his company &quot;Superlogical&quot;), at <code>superlogical.com/rex</code>, with an &quot;Activity Mode&quot;
+sidebar for tracking coding-agent status across panes/hosts; a community plugin,
+<code>irfn/rex-agents</code>, adds a herdr-style dedicated agent list panel on top of Rex.</p>
+<p><strong>This research session runs inside the user&#39;s <code>tesseracode/t3code</code> fork.</strong> Its local
+<code>t3-code-*</code> tool schemas show the fork&#39;s orchestration surface, including Copilot integration.
+Those observations must not be attributed to upstream without separate upstream evidence.</p>
+<hr>
+<h2 id="2-orca-stablyai">2. Orca (StablyAI)</h2>
+<ul>
+<li><strong>Identity:</strong> <code>stablyai/orca</code> on GitHub; product site <strong>onorca.dev</strong>; &quot;The AI Orchestrator for
+100x builders.&quot; MIT license. (<a href="https://github.com/stablyai/orca">https://github.com/stablyai/orca</a>, <a href="https://www.onorca.dev/">https://www.onorca.dev/</a>)</li>
+<li><strong>What it does:</strong> Desktop app (macOS/Windows/Linux) + mobile companion (iOS App Store, Android
+APK) that runs Claude Code, Codex, and &quot;any other coding agent&quot; in parallel, each in its own git
+worktree. Supports both a Chat UI and raw terminal CLI view for the same agent conversation,
+interchangeably, without losing context.
+(<a href="https://github.com/stablyai/orca#chat-or-terminal">https://github.com/stablyai/orca#chat-or-terminal</a>)</li>
+<li><strong>Orchestration model:</strong> A &quot;coordinator&quot; agent can split one big task, spin up worker agents
+each in their own workspace/worktree, and merge their reported results back —
+i.e., built-in <strong>multi-agent task decomposition</strong>, not just parallel independent sessions.
+(<a href="https://www.onorca.dev/docs/cli/orchestration">https://www.onorca.dev/docs/cli/orchestration</a>)</li>
+<li><strong>Worktrees:</strong> First-class &quot;Parallel Worktrees&quot; feature — quickly split tasks into isolated
+environments so agents don&#39;t interfere with each other.
+(<a href="https://www.onorca.dev/docs/model/worktrees">https://www.onorca.dev/docs/model/worktrees</a>)</li>
+<li><strong>Run anywhere / remote:</strong> Pair a &quot;Remote Orca Server,&quot; work on any SSH host, or give a single
+worktree its own cloud VM; agents keep running when the laptop sleeps.
+(<a href="https://www.onorca.dev/docs/ways-to-run">https://www.onorca.dev/docs/ways-to-run</a>)</li>
+<li><strong>Mobile/remote access:</strong> Native iOS/Android companion app — get pinged when an agent needs
+input, reply in chat, keep work moving away from the desk.
+(<a href="https://apps.apple.com/us/app/orca-ide/id6766130217">https://apps.apple.com/us/app/orca-ide/id6766130217</a>, <a href="https://www.onorca.dev/docs/mobile">https://www.onorca.dev/docs/mobile</a>)</li>
+<li><strong>Review/diff flow:</strong> Review diffs, leave inline notes on exact changed lines, send focused
+feedback back to the agent (&quot;Review AI Output&quot; / annotate-diff feature).
+(<a href="https://www.onorca.dev/docs/review/annotate-ai-diff">https://www.onorca.dev/docs/review/annotate-ai-diff</a>)</li>
+<li><strong>PR integration:</strong> Draft commit messages and PRs directly from the diff; send failing CI
+checks or PR review comments back to an agent to fix.
+(<a href="https://www.onorca.dev/docs/review/commit-push">https://www.onorca.dev/docs/review/commit-push</a>)</li>
+<li><strong>Issue tracker integration:</strong> Native GitHub &amp; Linear integration — see issues in one place,
+start a workspace directly from a Linear issue. (<a href="https://www.onorca.dev/docs/review/linear">https://www.onorca.dev/docs/review/linear</a>)</li>
+<li><strong>Scheduling/automation:</strong> &quot;Automations&quot; feature schedules prompts on a repo (nightly dependency
+bumps, weekly triage, flaky-test sweeps), run via the <strong>Orca CLI</strong>, which exposes everything the
+app does (worktree create, start workers, drive browser/desktop apps, schedule automations) to
+scripts or to agents themselves. (<a href="https://www.onorca.dev/docs/cli/overview">https://www.onorca.dev/docs/cli/overview</a>,
+<a href="https://www.onorca.dev/docs/cli/automations">https://www.onorca.dev/docs/cli/automations</a>)</li>
+<li><strong>Browser/computer-use tooling:</strong> Built-in browser with a &quot;Design Mode&quot; (click an element, copy
+its HTML/CSS/selector into the agent&#39;s chat) and generic <strong>Computer Use</strong> support for driving
+desktop apps/external browsers when there&#39;s no CLI or API.
+(<a href="https://www.onorca.dev/docs/browser/design-mode">https://www.onorca.dev/docs/browser/design-mode</a>, <a href="https://www.onorca.dev/docs/cli/computer-use">https://www.onorca.dev/docs/cli/computer-use</a>)</li>
+<li><strong>Plugins:</strong> A plugin catalog for themes, editors, languages, and panels, installed in one
+click. (<a href="https://www.onorca.dev/plugins">https://www.onorca.dev/plugins</a>)</li>
+<li><strong>Open-source status / stack:</strong> MIT-licensed; TypeScript (per GitHub API). Live GitHub stats at
+time of writing: <strong>~117k stars, ~7.4k forks</strong>, pushed same-day — i.e., among the most popular
+projects in this entire category (note: this scale of star count for a sub-year-old desktop app
+is unusually high and should be sanity-checked against GitHub&#39;s own star history/README badges
+before being treated as fully organic). Supported platforms badge confirms macOS, Windows,
+Linux. (<a href="https://github.com/stablyai/orca">https://github.com/stablyai/orca</a>)</li>
+<li><strong>Copilot CLI / ACP relevance:</strong> Orca&#39;s README does not explicitly mention GitHub Copilot CLI or
+ACP support as of this research pass; its &quot;run any other coding agent&quot; framing plus a generic
+plugin system suggests Copilot CLI could likely be wired in similarly to Claude Code/Codex, but
+this is <strong>inferred, not confirmed</strong>.</li>
+</ul>
+<h3 id="disambiguation-note-orca-harness--orcacode-okikorgorca-harness">Disambiguation note: orca-harness / Orcacode (<code>okikorg/orca-harness</code>)</h3>
+<p>A separate, much smaller project shares the &quot;Orca&quot; name: Orcacode is a <em>standalone terminal coding
+agent</em> (&quot;Orca Harness,&quot; a Rust kernel), shipped as a ~6.5 MB static binary, with parallel subagent
+delegation and a Rust SDK/plugin system. It is a <strong>harness</strong>, not a manager-of-harnesses, so it is
+out of this thread&#39;s primary scope, but is worth flagging since the name collision is easy to
+make. (<a href="https://github.com/okikorg/orca-harness">https://github.com/okikorg/orca-harness</a>, <a href="https://orcapods.ai/blog/introducing-orcacode">https://orcapods.ai/blog/introducing-orcacode</a>)</p>
+<hr>
+<h2 id="3-t3-code-pingdotggt3code-by-theo-browne--ping-labs">3. T3 Code (pingdotgg/t3code, by Theo Browne / Ping Labs)</h2>
+<ul>
+<li><p><strong>Identity:</strong> <code>pingdotgg/t3code</code> on GitHub; site <strong>t3.codes</strong>; self-described as &quot;an <em>agent
+harness control surface</em>.&quot; MIT-licensed, open source, explicitly forkable.
+(<a href="https://github.com/pingdotgg/t3code">https://github.com/pingdotgg/t3code</a>, <a href="https://t3.codes">https://t3.codes</a>)</p>
+</li>
+<li><p><strong>What it does:</strong> Orchestrates (does not replace) installed coding-agent CLIs from one surface:
+an Electron desktop app, a web app (app.t3.codes), and native mobile apps (iOS/Android). It is
+explicitly a control plane, not a model reseller: &quot;We built T3 Code because we wanted the best
+possible development experience with agents... inspired by existing solutions like the Codex
+desktop app, Conductor, Claude Desktop and Cursor Glass, but none met our bar.&quot;
+(<a href="https://github.com/pingdotgg/t3code">https://github.com/pingdotgg/t3code</a>)</p>
+</li>
+<li><p><strong>Harnesses supported &amp; how driven:</strong> Claude Code, Codex CLI, Cursor CLI, Grok Build CLI,
+OpenCode, Google Antigravity, and &quot;fx&quot; — each via <strong>bring-your-own-subscription</strong>: the user
+installs and authenticates the underlying CLI (<code>claude auth login</code>, <code>codex login</code>,
+<code>agent login</code> for Cursor, <code>grok login</code>, <code>opencode auth login</code>, Google sign-in for Antigravity,
+<code>fx login</code>) on the machine running the T3 Code <strong>server</strong>, and T3 Code drives that already-
+authenticated CLI as a subprocess/session. No API keys are resold and there are no quota caps
+beyond the underlying provider&#39;s own limits. (<a href="https://github.com/pingdotgg/t3code">https://github.com/pingdotgg/t3code</a>,
+<a href="https://t3.codes">https://t3.codes</a>) Marketing copy also references &quot;ACP registry agents&quot; as a supported class,
+implying ACP is one of the drive mechanisms alongside direct CLI spawning <strong>[secondary/marketing
+source — not independently confirmed against T3 Code&#39;s own technical docs in this pass]</strong>.</p>
+</li>
+<li><p><strong>Architecture:</strong> A local Node.js-style <strong>server</strong> process runs on the user&#39;s machine (installed
+via <code>curl -fsSL https://t3.codes/install.sh | sh</code>, or <code>npx t3@latest</code> to try without installing);
+desktop/web/mobile <strong>clients</strong> connect to that server. <code>t3 service install</code> keeps the server
+running in the background; <code>t3 update</code> upgrades it. (<a href="https://github.com/pingdotgg/t3code">https://github.com/pingdotgg/t3code</a>)</p>
+</li>
+<li><p><strong>Worktrees &amp; parallel agents:</strong> T3 Code runs agent tasks in <strong>separate git worktrees</strong>, so each
+task/agent gets an isolated checkout with no file collisions; this environment&#39;s own T3 Code
+MCP tool surface (<code>t3-code-t3_worktree_handoff</code>, <code>t3-code-t3_worktree_status</code>,
+<code>t3-code-t3_worktree_list</code>) confirms per-thread worktree creation, listing, and handoff as
+first-class primitives, each thread optionally bound to its own branch/worktree. Threads can
+also be delegated to background/child agents (<code>t3-code-delegate_task</code>,
+<code>t3-code-t3_thread_launch</code>) with configurable isolation (<code>shared</code> vs. <code>worktree</code>), consistent
+with the &quot;every task writes to its own branch&quot; model described publicly.</p>
+</li>
+<li><p><strong>Snapshots/undo:</strong> Every agent step is snapshotted for comparison and rollback — described in
+third-party write-ups as an &quot;undo any step&quot; safety net for agent output <strong>[secondary source:
+<a href="https://luminalog.com/blog/t3code-explained">https://luminalog.com/blog/t3code-explained</a> — plausible given the worktree model but not
+independently confirmed against primary T3 Code docs]</strong>.</p>
+</li>
+<li><p><strong>Review/diff/PR flow:</strong> Every agent thread writes to its own branch. &quot;One button to commit,
+push, and make a PR&quot; opens a GitHub PR with an auto-generated title/body/changelog, after an
+inline diff review; supports draft PRs, stacked PRs, and amending PRs, using the user&#39;s existing
+GitHub auth. (<a href="https://t3.codes">https://t3.codes</a>) This matches first-hand observation in this environment via
+<code>t3-code-link_pull_request</code>, <code>t3-code-list_thread_pull_requests</code>,
+<code>t3-code-read_pull_request_guide</code>, and <code>t3-code-watch_pull_request</code> tools, which watch PR CI
+status/comments/conflicts and wake the orchestrating thread on events.</p>
+</li>
+<li><p><strong>Orchestrator V2 (Claude plans, Codex builds):</strong> A documented workflow where Claude Code drafts
+a plan, hands execution off to Codex running in a separate worktree/thread, and Claude then
+verifies Codex&#39;s work against the plan; several Codex threads can run in parallel, each in its
+own worktree, to avoid merge conflicts. As of the research date this was shipping in <strong>nightly</strong>
+builds. (YouTube walkthrough: <a href="https://www.youtube.com/watch?v=epSi9U87wz4">https://www.youtube.com/watch?v=epSi9U87wz4</a> — <strong>secondary source,
+video not independently re-verified via a T3 Code changelog entry, but consistent with the
+underlying worktree/branch architecture confirmed from primary docs</strong>)</p>
+</li>
+<li><p><strong>Remote/mobile access:</strong> Native iOS (<code>T3 Code: Remote Claude &amp; More</code>,
+<a href="https://apps.apple.com/us/app/t3-code-remote-claude-more/id6787819824">https://apps.apple.com/us/app/t3-code-remote-claude-more/id6787819824</a>) and Android
+(Google Play <code>com.t3tools.t3code</code>) apps, plus a web app, all connecting to the same local/remote
+server — i.e., full remote control of agents running on a home/work machine from a phone.</p>
+</li>
+<li><p><strong>Fork-friendliness:</strong> Explicitly designed to be forked wholesale (&quot;If you don&#39;t like something,
+fork it&quot; — <code>gh repo fork pingdotgg/t3code --clone</code>); UI, agents/tools/flows, and distribution are
+all meant to be user-customizable; monorepo structure visible in the marketing site&#39;s own commit
+diff example (<code>apps/marketing/...</code>). (<a href="https://t3.codes">https://t3.codes</a>)</p>
+</li>
+<li><p><strong>Open-source status / stack:</strong> MIT license; TypeScript (per GitHub API); packaged for
+Homebrew (<code>brew install --cask t3-code</code>), Winget, Scoop, <code>.deb</code>, AUR (stable + nightly), and
+Nix (nixpkgs <code>t3code</code>). &quot;We are very very early in this project... We are (mostly) not accepting
+contributions yet.&quot; (<a href="https://github.com/pingdotgg/t3code">https://github.com/pingdotgg/t3code</a>)</p>
+</li>
+<li><p><strong>Popularity/activity:</strong> Live GitHub stats: <strong>~48.6k stars, ~9.6k forks</strong>, pushed same-day as
+this research — extremely fast growth for a project started ~Feb 2026, reflecting Theo
+Browne/t3.gg&#39;s large existing developer audience; marketing copy claims &quot;Tolerated by over
+500,000 devs.&quot; (<a href="https://t3.codes">https://t3.codes</a>)</p>
+</li>
+<li><p><strong>Pricing:</strong> Free; BYOS (bring your own subscription) model — no token reselling.</p>
+</li>
+<li><p><strong>Copilot CLI / ACP relevance:</strong> GitHub Copilot CLI was <strong>not</strong> in T3 Code&#39;s explicitly listed
+harness set at research time (Claude Code, Codex, Cursor, Grok Build, OpenCode, Antigravity,
+fx). The user&#39;s <code>tesseracode/t3code</code> fork does add Copilot support; this session uses it.
+Upstream support was not confirmed. The project&#39;s stated
+&quot;Add an agent&quot; extensibility model (plus possible ACP-registry support referenced in marketing
+copy) suggests it would be straightforward to add. This is a concrete gap/opportunity worth
+flagging for <code>oh-my-copilot</code>: if T3 Code or a similar control-surface project adds Copilot CLI as
+a harness, a Copilot CLI plugin&#39;s hooks/skills would very likely continue to work unmodified,
+since T3 Code&#39;s model is &quot;drive the CLI you already have installed and authenticated&quot; rather than
+reimplementing agent behavior.</p>
+<hr>
+<h2 id="4-herdr">4. herdr</h2>
+<ul>
+<li><strong>Identity:</strong> <code>herdrdev/herdr</code> on GitHub; site <strong>herdr.dev</strong>. Apache-2.0 license. Tagline:
+&quot;the runtime your coding agents live on.&quot; (<a href="https://github.com/herdrdev/herdr">https://github.com/herdrdev/herdr</a>, <a href="https://herdr.dev">https://herdr.dev</a>)</li>
+<li><strong>What it does:</strong> A <strong>tmux-like terminal workspace manager purpose-built for coding agents</strong>,
+not a GUI wrapper around them — herdr shows each agent&#39;s <em>actual</em> terminal UI inside a pane,
+tracks real session state, and layers workspace/tab/pane organization, persistence, and remote
+access on top. (<a href="https://github.com/herdrdev/herdr">https://github.com/herdrdev/herdr</a>)</li>
+<li><strong>Core mechanics:</strong><ul>
+<li><strong>Detach without stopping work</strong> — closing the client or losing the SSH connection does not
+kill agent processes; herdr keeps terminals running in a background server. After a server/
+machine restart it restores the saved pane/tab layout and can <em>resume</em> supported agent
+sessions (the original OS processes do not survive a full restart, but herdr can relaunch the
+agent&#39;s own resume/continue command). (<a href="https://herdr.dev/docs/session-state/">https://herdr.dev/docs/session-state/</a>)</li>
+<li><strong>Several machines, one window</strong> — local work and saved SSH machines are combined into one
+agent list with independent reconnects per host. (<a href="https://herdr.dev/docs/connecting-machines/">https://herdr.dev/docs/connecting-machines/</a>)</li>
+<li><strong>State detection</strong> — every pane is automatically marked <code>idle</code>, <code>working</code>, or <code>blocked</code> by
+reading the live bottom of the pane&#39;s screen against a per-agent &quot;detection manifest&quot; (no
+custom scripting needed), or by reading an agent&#39;s own self-reported state when the agent
+supports herdr natively.</li>
+<li><strong>Agent-native automation</strong> — agents can drive herdr themselves through a CLI + <strong>socket API</strong>:
+spawning panes, prompting other agents, and waiting until another agent is <em>genuinely</em> blocked
+(not just idle) before proceeding — enabling agent-to-agent coordination scripts.
+(<a href="https://herdr.dev/docs/agent-skill/">https://herdr.dev/docs/agent-skill/</a>)</li>
+<li><strong>Keyboard + mouse both first-class</strong> — tmux-style prefix-key bindings and click/drag/split
+mouse interaction, switchable per moment.</li>
+<li><strong>Plugins</strong> — a marketplace extending panes/workflows. (<a href="https://herdr.dev/plugins/">https://herdr.dev/plugins/</a>)</li>
+<li><strong>Single static binary, no Electron</strong> — &quot;one rust binary, no electron... runs in whatever
+terminal you already use.&quot;</li>
+</ul>
+</li>
+<li><strong>Harnesses supported &amp; how driven:</strong> herdr is explicitly agent-agnostic — &quot;runs what you
+already run: claude code, codex, cursor, opencode, grok and the rest&quot; — and does <strong>not</strong> wrap or
+replace the agent process; it <em>owns their terminals</em> (i.e., spawns/attaches the literal CLI
+process inside a managed pane, the same subprocess/tmux-style model as Claude Squad/uzi, but
+with first-party state detection). A detailed support matrix
+(<a href="https://herdr.dev/docs/agents/">https://herdr.dev/docs/agents/</a>, verified directly) lists two tiers:<ul>
+<li><strong>&quot;Supported by herdr&quot;</strong> (herdr reads state from on-screen output, with an optional
+<code>herdr integration install &lt;name&gt;</code> for session-resume support): <strong>Claude Code, Codex,
+GitHub Copilot CLI, Cursor Agent CLI, OpenCode, Pi, OMP, Droid, Devin CLI, Kimi Code CLI,
+Kilo Code CLI, Hermes Agent, Qoder CLI, Qwen Code, Letta Code, MastraCode, Grok CLI,
+Antigravity CLI</strong>, plus lighter &quot;state only&quot; support for Amp, Kiro CLI, Maki, Gemini CLI, and
+Cline.</li>
+<li><strong>&quot;Supported by the agent&quot;</strong> (the agent itself reports state to herdr, nothing to install):
+Command Code, Crush (charmbracelet/crush), Kiro CLI, Muse Code, and Prime Agent.</li>
+<li><strong>GitHub Copilot CLI is explicitly and directly supported</strong> (<code>copilot</code> integration, installed
+via <code>herdr integration install copilot</code>) — this is one of the clearest and most directly
+confirmed Copilot CLI integrations found across this entire research thread.
+(<a href="https://herdr.dev/docs/agents/">https://herdr.dev/docs/agents/</a>)</li>
+<li><strong>VM/sandbox wrapper support:</strong> on Linux/macOS, if a sandbox wrapper hides the real agent
+process from herdr, setting <code>HERDR_AGENT=&lt;agent&gt;</code> on the wrapper command (e.g.
+<code>HERDR_AGENT=claude fence -- claude</code>) tells herdr which detection manifest to use for that
+foreground process — useful for agents run inside containers/sandboxes.</li>
+</ul>
+</li>
+<li><strong>Remote/mobile access:</strong> Remote machines via SSH are first-class (see &quot;several machines, one
+window&quot; above); no dedicated mobile app was found — herdr is terminal-native, used via its own
+CLI/TUI client rather than a phone app.</li>
+<li><strong>Open-source status / stack:</strong> Apache-2.0 license; <strong>Rust</strong>, single static binary; install via
+<code>curl -fsSL https://herdr.dev/install.sh | sh</code>, <code>brew install herdr</code>, <code>mise use -g herdr</code>, or a
+Windows PowerShell installer (plus an &quot;endpoint-protected Windows&quot; beta mode).
+(<a href="https://github.com/herdrdev/herdr">https://github.com/herdrdev/herdr</a>)</li>
+<li><strong>Popularity/activity:</strong> Live GitHub stats: <strong>~48.3k stars, ~3.9k forks</strong>, pushed within the
+last few days of this research — created ~March 2026, implying very rapid adoption; listed on
+Homebrew core (<code>formulae.brew.sh/formula/herdr</code>).</li>
+<li><strong>Pricing:</strong> Free and open source; no paid tier found in docs.</li>
+<li><strong>Copilot CLI / ACP relevance:</strong> Direct, first-class, explicitly documented GitHub Copilot CLI
+support (state detection + optional session-resume integration) makes herdr one of the two or
+three clearest &quot;already works with oh-my-copilot&#39;s host CLI&quot; tools in this whole landscape.
+Since herdr attaches to Copilot CLI&#39;s <em>real</em> terminal process rather than reimplementing it, any
+<code>oh-my-copilot</code> plugin behavior (slash commands, hooks, skills) should be fully preserved when
+Copilot CLI is run inside a herdr pane — herdr only reads the pane&#39;s screen output for state and
+does not intercept or rewrite Copilot CLI&#39;s stdin/stdout stream content. No explicit ACP support
+was found in herdr&#39;s docs; its integration model is screen-scraping + optional self-reporting,
+not JSON-RPC/ACP.</li>
+</ul>
+<hr>
+<h2 id="5-rex-beta--mitchell-hashimotos-new-terminal">5. Rex (beta) — Mitchell Hashimoto&#39;s new terminal</h2>
+<ul>
+<li><strong>Identity:</strong> <strong>Rex</strong>, a terminal application in public beta, built by <strong>Mitchell Hashimoto</strong>
+(co-founder of HashiCorp, creator of Ghostty), under a company/site branded <strong>Superlogical</strong>, at
+<strong>superlogical.com/rex</strong>. Tagline: &quot;the multiplexer for all work.&quot;
+(<a href="https://www.superlogical.com/rex/docs/">https://www.superlogical.com/rex/docs/</a>, <a href="https://en.theblockbeats.news/flash/371371">https://en.theblockbeats.news/flash/371371</a>)</li>
+<li><strong>Platform/status:</strong> macOS application and a Linux/FreeBSD server component, available to beta
+testers as of this research. Configuration is written in <strong>Lua</strong> (<code>init.lua</code>), with custom
+actions (<code>rex.action</code>), key bindings (<code>rex.bind</code>/<code>rex.unbind</code>), key sequences/modes, and Lua
+event hooks (<code>rex.on</code>) for reacting to terminal events (directory changes, program exit, window
+close, session creation). (<a href="https://www.superlogical.com/rex/docs/">https://www.superlogical.com/rex/docs/</a>)</li>
+<li><strong>Activity Mode — the key orchestrator feature:</strong> Rex&#39;s standout feature for this report is
+<strong>Activity Mode</strong>, a centralized sidebar listing every running or recently-idle program/coding
+agent across panes, with task status, letting a user jump directly to whichever terminal needs
+attention. (<a href="https://en.theblockbeats.news/flash/371371">https://en.theblockbeats.news/flash/371371</a>) This is powered by an open protocol:</li>
+<li><strong>Program Status Protocol (OSC 7501):</strong> A terminal escape sequence that lets <em>any</em> program
+proactively tell the terminal whether it is idle, working, waiting on the user, finished, or
+failed, and why — documented at
+<a href="https://www.superlogical.com/rex/docs/build/program-status">https://www.superlogical.com/rex/docs/build/program-status</a>. Claude Code and Codex emit this
+status natively (&quot;out of the box&quot;); other agents without native emission (OpenCode, Pi, etc.)
+still show up in the panel via weaker signals (e.g., terminal title parsing for Claude Code&#39;s
+<code>✳</code>/spinner glyphs). Mitchell Hashimoto has stated the team historically disliked typical task-
+notification panels for being noisy, and spent &quot;several weeks&quot; tuning Rex&#39;s status-aggregation
+rules to avoid alert fatigue; beta feedback has reportedly been positive.
+(<a href="https://en.theblockbeats.news/flash/371371">https://en.theblockbeats.news/flash/371371</a>)</li>
+<li><strong>Agent automation primitives:</strong> Rex ships a <strong>built-in agent skill</strong> letting agents like Claude
+Code or Codex directly open tabs, split panes, read a terminal&#39;s screen content, and control
+connected Rex apps/hosts — i.e., agents can drive Rex itself, similar to herdr&#39;s socket API
+concept. (<a href="https://www.superlogical.com/rex/docs/automate/agent-skill.md">https://www.superlogical.com/rex/docs/automate/agent-skill.md</a>) A full CLI (<code>rex</code>) and
+a documented, self-describing <strong>Server API</strong> (list methods, inspect args/results, call them) are
+also available for scripting. (<a href="https://www.superlogical.com/rex/docs/automate/cli.md">https://www.superlogical.com/rex/docs/automate/cli.md</a>,
+<a href="https://www.superlogical.com/rex/docs/automate/server-api.md">https://www.superlogical.com/rex/docs/automate/server-api.md</a>)</li>
+<li><strong>Remote hosts:</strong> Rex supports connecting to other Rex servers (<code>rex hosts</code>) for cross-machine
+session management, surfaced in the community <code>rex-agents</code> plugin&#39;s &quot;Remote hosts&quot; section
+(see below) with per-host agent/session lists and unreachable-host detection.</li>
+<li><strong>Community plugin — <code>irfn/rex-agents</code>:</strong> A third-party plugin (MIT license, tiny — 1 GitHub
+star at time of writing, created Oct 2026) that adds a dedicated, herdr-style agent-list panel
+to Rex: one row per coding agent (not per tab), sorted by urgency (🔴 waiting &gt; ❌ failed &gt;
+✅ done &gt; ⏳ working &gt; 💤 idle), showing git branch/dirty state per agent, Claude Code&#39;s own
+<code>/rename</code> session name, usage/plan-limit bars (5-hour and weekly, read from local files such as
+<code>ai-usage</code>, no API keys needed), and keybindings to jump straight to whichever agent is waiting.
+Agents must emit OSC 7501 to appear; Claude Code and Codex do this &quot;out of the box&quot;; OpenCode and
+Pi panes are listed but only as idle (no waiting-state support) unless they also emit the
+protocol. (<a href="https://github.com/irfn/rex-agents">https://github.com/irfn/rex-agents</a>) Installable via the <code>Amber</code> Lua plugin manager or
+by hand-cloning into <code>~/.local/share/rex/plugins/</code>.</li>
+<li><strong>Harnesses supported &amp; how driven:</strong> Rex and its plugins are agent-agnostic at the protocol
+level — any program that emits OSC 7501 (or is detected via title-parsing heuristics) shows up
+in Activity Mode / the agents panel, which is architecturally identical to herdr&#39;s own &quot;state
+only&quot; vs. &quot;integration installed&quot; tiers. Confirmed compatible agents (from the <code>rex-agents</code> repo
+README): Claude Code, Codex, OpenCode, Pi.</li>
+<li><strong>Open-source status:</strong> Rex itself (the terminal application and server) appears to be
+<strong>closed-source/proprietary</strong> (no GitHub org/repo found for &quot;Rex&quot; or &quot;Superlogical&quot; containing
+the terminal&#39;s source, only documentation served from superlogical.com); the OSC 7501 <em>protocol</em>
+itself is openly documented and implementable by any program, and third-party plugins like
+<code>rex-agents</code> are open source (MIT) and hosted on GitHub.</li>
+<li><strong>Popularity/activity:</strong> Public beta stage; community engagement centers on a &quot;Rex Beta Discord&quot;
+(the docs site even exposes an MCP server, OAuth-gated to Discord members, for querying docs +
+community feedback — <a href="https://www.superlogical.com/rex/community-mcp">https://www.superlogical.com/rex/community-mcp</a>). Given Mitchell
+Hashimoto&#39;s profile (Ghostty, HashiCorp/Terraform/Vagrant) and the recency of the beta, exact
+install-base/popularity numbers were not found and should be treated as <strong>early-stage/unverified
+at scale</strong>.</li>
+<li><strong>Pricing:</strong> Not disclosed in docs found during this research pass — likely still pre-pricing
+given beta status. <strong>[unverified]</strong></li>
+<li><strong>Copilot CLI / ACP relevance:</strong> No explicit mention of GitHub Copilot CLI support was found in
+Rex&#39;s docs or the <code>rex-agents</code> plugin (Copilot CLI is not in the plugin&#39;s confirmed-agent list).
+Because Copilot CLI does not natively emit OSC 7501 (as of this research), it would currently
+only appear as a generic &quot;idle&quot; terminal in Rex&#39;s Activity Mode rather than with rich
+waiting/working/failed status, <em>unless</em> Copilot CLI adds native Program Status Protocol support
+or a herdr-style external detection manifest is built for it. This is a concrete, low-effort
+integration opportunity for <code>oh-my-copilot</code>: emitting OSC 7501 escape sequences (or documenting
+how to configure one) would make Copilot CLI sessions &quot;just work&quot; with both Rex&#39;s Activity Mode
+and any OSC-7501-aware tool, without needing Rex-specific plugin code.</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="6-notable-others--localdesktop-orchestrators">6. Notable others — local/desktop orchestrators</h2>
+<h3 id="61-conductor-conductorbuild">6.1 Conductor (conductor.build)</h3>
+<ul>
+<li>Native <strong>macOS app</strong>. Each task gets an isolated workspace (branch, files, terminal, diff,
+review path); supports parallel agents in separate tabs/workspaces; built-in diff viewer, PR
+creation, merge/archive flow; &quot;Plan Mode&quot;/&quot;Fast Mode&quot; and reasoning-effort controls.
+(<a href="https://www.conductor.build/">https://www.conductor.build/</a>, <a href="https://www.conductor.build/docs">https://www.conductor.build/docs</a>)</li>
+<li><strong>Harnesses &amp; how driven:</strong> Claude Code, Codex, and OpenCode are <strong>bundled</strong> (no separate
+install needed); Cursor is driven via the <strong>Cursor API</strong> rather than a spawned CLI. No GitHub
+Copilot CLI support found. (<a href="https://www.conductor.build/docs/reference/harnesses">https://www.conductor.build/docs/reference/harnesses</a>)</li>
+<li><strong>Closed-source</strong>, proprietary; free to use, &quot;we do not bill or resell model usage&quot; — harness
+usage is billed through the user&#39;s own provider account/API key.</li>
+<li><strong>Notable idea:</strong> &quot;Codex goals&quot; — a standing objective Codex keeps pursuing across turns without
+a fresh prompt each time (local workspaces only, not yet in cloud workspaces).</li>
+<li>T3 Code&#39;s own README explicitly cites Conductor as one of its direct inspirations
+(<a href="https://github.com/pingdotgg/t3code">https://github.com/pingdotgg/t3code</a>).</li>
+</ul>
+<h3 id="62-claude-squad-smtg-aiclaude-squad">6.2 Claude Squad (<code>smtg-ai/claude-squad</code>)</h3>
+<ul>
+<li>Terminal (TUI) app, <strong>Go</strong>, <strong>AGPL-3.0</strong>. Each task/instance gets an isolated <strong>git worktree</strong>
+plus its own <strong>tmux session</strong>; review diffs before applying, checkout changes before pushing, a
+background/&quot;yolo&quot; auto-accept mode (<code>--autoyes</code>). (<a href="https://github.com/smtg-ai/claude-squad">https://github.com/smtg-ai/claude-squad</a>)</li>
+<li><strong>Harnesses &amp; how driven:</strong> Claude Code (default), Codex, Gemini CLI, Aider, and other local
+agents, via a configurable <code>program</code> field per profile — plain subprocess spawning inside a tmux
+pane, no SDK/ACP layer. Requires <code>tmux</code> and <code>gh</code> as prerequisites.</li>
+<li><strong>Popularity:</strong> live GitHub stats <strong>~8.7k stars, 623 forks</strong>; created Mar 2025, still actively
+maintained (pushed Aug 2026).</li>
+<li><strong>Copilot CLI/ACP:</strong> not in the documented supported-program list; no ACP mention.</li>
+<li>Its <code>--autoyes</code> auto-accept design is explicitly criticized by <strong>CCManager</strong> (below) as
+&quot;bypass[ing] Claude Code&#39;s built-in security confirmations&quot; — a useful cautionary design note.</li>
+</ul>
+<h3 id="63-vibe-kanban-bloopaivibe-kanban">6.3 vibe-kanban (<code>BloopAI/vibe-kanban</code>)</h3>
+<ul>
+<li>A <strong>Kanban board</strong> for planning + orchestrating coding agents: each workspace gives an agent a
+branch, terminal, dev server; diff review with inline comments sent directly back to the agent;
+built-in browser preview with devtools/inspect/device emulation; opens PRs with AI-generated
+descriptions. (<a href="https://github.com/BloopAI/vibe-kanban">https://github.com/BloopAI/vibe-kanban</a>)</li>
+<li><strong>Harnesses &amp; how driven:</strong> 10+ agents — Claude Code, Codex, Gemini CLI, <strong>GitHub Copilot CLI</strong>,
+Amp, Cursor, OpenCode, Droid, Claude Code Router, Qwen Code
+(<a href="https://www.vibekanban.com/docs/supported-coding-agents">https://www.vibekanban.com/docs/supported-coding-agents</a>) — each driven via a Rust
+<code>StandardCodingAgentExecutor</code> trait, spawned as an isolated subprocess inside its own git
+worktree by a <code>ContainerService</code>, with logs normalized back to the UI.</li>
+<li><strong>Apache 2.0</strong>, Rust + TypeScript/pnpm monorepo; install via <code>npx vibe-kanban</code>.</li>
+<li><strong>Popularity:</strong> live GitHub stats <strong>~28.6k stars, ~3.1k forks</strong> — one of the most-starred tools
+in this entire category.</li>
+<li><strong>Status:</strong> the company behind it (bloop) <strong>shut down</strong> the business (announced it couldn&#39;t find
+a sustainable model since most users were free); code continues as community-maintained open
+source, while the hosted cloud/kanban services wind down.
+(<a href="https://vibekanban.com/blog/shutdown">https://vibekanban.com/blog/shutdown</a>)</li>
+<li><strong>Copilot CLI/ACP:</strong> explicit first-party <strong>GitHub Copilot CLI</strong> executor support is documented
+— vibe-kanban drives <code>copilot</code> as a direct CLI subprocess (not via ACP). This is one of the
+clearest confirmed Copilot CLI integrations in this report.</li>
+</ul>
+<h3 id="64-crystal--nimbalyst-stravucrystal--nimbalystnimbalyst">6.4 Crystal → Nimbalyst (<code>stravu/crystal</code> → <code>Nimbalyst/nimbalyst</code>)</h3>
+<ul>
+<li><strong>Crystal is deprecated</strong> (as of Feb 2026) and fully replaced by <strong>Nimbalyst</strong>, an &quot;AI-native
+workspace&quot;: Electron desktop app (macOS/Windows/Linux) + iOS companion. WYSIWYG editors
+(markdown, mockups, Mermaid, Excalidraw, CSV, data models, Monaco code editor) where human and
+agent edit the same files; red/green diff review stepped through in the rendered document;
+<strong>parallel agent sessions each isolated in its own git worktree</strong>; session kanban board; MCP
+client/servers with visual widget rendering; iOS companion for replying to agents, swiping
+diffs, push notifications. (<a href="https://github.com/Nimbalyst/nimbalyst">https://github.com/Nimbalyst/nimbalyst</a>)</li>
+<li><strong>Harnesses:</strong> Codex, Claude Code, OpenCode &quot;side by side,&quot; plus <strong>GitHub Copilot CLI listed as
+&quot;alpha&quot;</strong> support and a Gemini provider. Exact drive mechanism (subprocess vs. ACP) not
+explicitly documented.</li>
+<li><strong>Free and MIT-licensed</strong>; live GitHub stats <strong>~2.0k stars, ~333 forks</strong> (new repo, created Oct
+2025; the legacy Crystal repo had ~3.1k stars/196 forks before deprecation).</li>
+<li><strong>Notable idea:</strong> &quot;Extension SDK&quot; — every built-in editor, including the code editor, goes
+through the same <code>EditorHost</code> contract, so a community-built editor for a new file type is
+first-class rather than a plugin bolt-on.</li>
+</ul>
+<h3 id="65-sculptor-imbue--imbue-aisculptor">6.5 Sculptor (Imbue) — <code>imbue-ai/sculptor</code></h3>
+<ul>
+<li>Desktop app (Mac Apple Silicon, Linux) for running coding agents in <strong>isolated containers</strong>
+(explicitly <em>not</em> git worktrees) in parallel — positioned against worktrees because &quot;containers
+keep your machine safe&quot; vs. worktrees sharing the local environment/dependencies. &quot;Pairing
+Mode&quot; syncs an agent&#39;s container work bidirectionally into the local repo/IDE for instant
+testing; merge-with-conflict-flagging; resumable session history (plans/chats/tool
+calls/code). (<a href="https://imbue.com/blog/sculptor-announce">https://imbue.com/blog/sculptor-announce</a>, <a href="https://github.com/imbue-ai/sculptor">https://github.com/imbue-ai/sculptor</a>)</li>
+<li><strong>Harnesses:</strong> ships with integrated support for <strong>Claude Code</strong> and Imbue&#39;s own <strong>&quot;Pi&quot; agentic
+harness</strong> (pi.dev); can also run/manage any generic terminal-based agent; Codex support added
+via pasting an OpenAI API key.</li>
+<li><strong>Not truly open source yet</strong> — the repo is public, but Imbue states they &quot;don&#39;t have the
+bandwidth to take on a large volume of external contributions... it&#39;s not truly open source
+until the community is involved.&quot; Live GitHub stats <strong>~245 stars, 20 forks</strong>; MIT license,
+Python.</li>
+<li><strong>Notable idea:</strong> explicit anti-worktree design philosophy — full container isolation avoids
+dependency reinstallation and shared-local-env corruption, at the cost of being heavier-weight
+than a worktree.</li>
+<li><strong>Copilot CLI/ACP:</strong> no mention found.</li>
+</ul>
+<h3 id="66-terragon-terragonlabs--shut-down">6.6 Terragon (terragonlabs) — SHUT DOWN</h3>
+<ul>
+<li>Cloud-based coding agent orchestration (ran agents in cloud sandboxes). <strong>Officially shut down
+February 9, 2026</strong> — its website now serves only a &quot;Terragon Shutdown&quot; notice. No live product
+remains to evaluate; secondary sources claim a final code snapshot was released &quot;as-is&quot; with
+migration recommendations toward Claude Code Web / Codex Web, but this was <strong>not independently
+verified</strong> beyond the shutdown page itself. A cautionary data point on category volatility.</li>
+</ul>
+<h3 id="67-omnara-omnara-aiomnara">6.7 Omnara (<code>omnara-ai/omnara</code>)</h3>
+<ul>
+<li>Originally launched (YC S25, Aug 2025) as a mobile &quot;mission control&quot;/remote-control tool
+specifically for Claude Code (<code>pip install omnara &amp;&amp; omnara</code> syncs a local Claude Code session
+to Omnara&#39;s web/iOS apps for remote review, voice input, cloud-sandbox failover). Current docs
+reposition it as a broader <strong>&quot;open-source managed agent platform&quot;</strong> — agents defined via YAML
+(instruction, model, tools, machine sources), launched via dashboard/CLI/REST+TypeScript SDK,
+streaming events for mobile/web monitoring with human-in-the-loop &quot;ask_question&quot; interactions.
+(<a href="https://github.com/omnara-ai/omnara">https://github.com/omnara-ai/omnara</a>, <a href="https://docs.omnara.com/introduction">https://docs.omnara.com/introduction</a>)</li>
+<li><strong>Apache 2.0</strong>; self-hostable (Docker Compose) or &quot;Omnara Cloud&quot; (app.omnara.com); Go backend +
+TypeScript SDK. Live GitHub stats <strong>~3.4k stars, 261 forks</strong>.</li>
+<li><strong>Copilot CLI/ACP:</strong> current official docs don&#39;t mention Copilot CLI; older secondary sources
+claimed broader tool support (Cursor, Codex, Copilot) but this is <strong>unverified</strong> against the
+current primary docs — treat the original &quot;mobile remote for Claude Code&quot; framing as historically
+accurate but possibly superseded by the pivot.</li>
+</ul>
+<h3 id="68-happy-slopushappy-happy-coder">6.8 Happy (<code>slopus/happy</code>, &quot;Happy Coder&quot;)</h3>
+<ul>
+<li>Open-source, multi-surface (iOS/Android native apps, desktop, web, CLI) orchestrator across a
+multi-repo project (<code>happy</code>, <code>happy-desktop</code>, <code>happy-agent</code>): subagents on different models can
+message each other; scheduled messages; persistent bots; durable sessions surviving restarts;
+<strong>Git worktrees on their own branch</strong> for parallel work; end-to-end encrypted mobile sync;
+natively multiplayer (invite a colleague to watch/steer the same session).
+(<a href="https://github.com/slopus/happy">https://github.com/slopus/happy</a>, <a href="https://happy.engineering/welcome/">https://happy.engineering/welcome/</a>)</li>
+<li><strong>Harnesses &amp; how driven:</strong> Claude (native Claude Code), Codex (native), Grok (Grok Build),
+Gemini (via Google&#39;s Antigravity), and explicitly: <strong>&quot;any Agent Client Protocol (ACP) agent can
+run too (beta)&quot;</strong> — reuses existing CLI subscriptions already on the machine rather than
+requiring a Happy account for model access.</li>
+<li><strong>MIT-licensed</strong>; native Swift/UIKit iOS app, native Kotlin/Jetpack Compose Android app, a
+relay server that only ever sees encrypted ciphertext, Cloudflare Worker for push.</li>
+<li><strong>Popularity:</strong> live GitHub stats <strong>~24.5k stars, ~2.1k forks</strong> — very high activity, pushed the
+same day as this research; App Store rating 4.9★ (1,000+ ratings), Google Play 5.0★ (3.1k+
+reviews).</li>
+<li><strong>Pricing:</strong> free/MIT; only voice-in-the-phone-app feature is paid (20 free min/30 days, then
+subscription, or bring your own ElevenLabs agent for unlimited use).</li>
+<li><strong>Copilot CLI/ACP:</strong> this is the <strong>clearest explicit ACP confirmation</strong> found among all the
+local-orchestrator tools in this report (&quot;any ACP agent can run too (beta)&quot;) — since GitHub
+Copilot CLI implements ACP (see §9), Happy should in principle already be able to drive Copilot
+CLI as a generic ACP agent, even without Happy-specific Copilot code, though this exact
+combination was not independently tested in this research pass.</li>
+<li><strong>Notable idea:</strong> &quot;Auto mode&quot; — reads and workspace edits run freely while everything else is
+OS-sandboxed, with only boundary-crossing actions auto-reviewed, rather than prompting the user
+for every action.</li>
+</ul>
+<h3 id="69-opcode-formerly-claudia-winfuncopcode">6.9 opcode (formerly Claudia, <code>winfunc/opcode</code>)</h3>
+<ul>
+<li>Desktop GUI (<strong>Tauri 2</strong>: Rust backend + TypeScript/React frontend) — a &quot;command center&quot; for
+<strong>Claude Code only</strong>: visual project/session browser (reads <code>~/.claude/projects/</code>), session
+history/resume, custom &quot;CC Agents&quot; (system prompts run as background processes), usage/cost
+analytics dashboard, MCP server management UI, timeline/checkpoints for branching/reverting
+conversation history, CLAUDE.md management. (<a href="https://github.com/winfunc/opcode">https://github.com/winfunc/opcode</a>)</li>
+<li><strong>AGPL-3.0</strong>; explicitly &quot;not affiliated with Anthropic.&quot; Live GitHub stats <strong>~22.4k stars,
+~1.7k forks</strong>.</li>
+<li>Single-harness tool (Claude Code only) — no Copilot CLI/ACP relevance.</li>
+</ul>
+<h3 id="610-ccmanager-kbwoccmanager">6.10 CCManager (<code>kbwo/ccmanager</code>)</h3>
+<ul>
+<li>Self-contained terminal UI (<strong>no tmux dependency</strong>, unlike Claude Squad) managing multiple
+coding sessions across git worktrees and <strong>multiple projects/repos simultaneously</strong>, with
+real-time per-session Busy/Waiting/Idle state in the menu; create/merge/delete worktrees
+in-app; restore sessions after crash/restart; copy Claude Code session data between worktrees
+to preserve context; <code>.worktreeinclude</code> to carry gitignored files (<code>.env</code>, certs) into new
+worktrees; devcontainer integration; status-change hooks and post-creation worktree hooks for
+automation/notifications. (<a href="https://github.com/kbwo/ccmanager">https://github.com/kbwo/ccmanager</a>)</li>
+<li><strong>Harnesses &amp; how driven:</strong> Claude Code, Gemini CLI, Codex CLI, Cursor Agent, <strong>Copilot CLI</strong>
+(explicitly mapped <code>copilot</code> → <code>github.com/github/copilot-cli</code> in its program table), Cline CLI,
+OpenCode, Kimi CLI — all launched as configurable shell <code>program</code> commands per preset, i.e.,
+direct subprocess spawning.</li>
+<li><strong>MIT</strong>; TypeScript, built with Bun; <code>npm install -g ccmanager</code>. Live GitHub stats <strong>~1.3k
+stars, 94 forks</strong> — smaller but actively maintained.</li>
+<li>Explicitly contrasts itself against Claude Squad (no tmux dependency, real-time state
+visibility, and criticizes <code>--autoyes</code> as unsafe).</li>
+<li><strong>Copilot CLI/ACP:</strong> direct, first-class <strong>Copilot CLI</strong> support as a spawnable subprocess
+binary — one of the clearest confirmed Copilot CLI integrations in this report; no ACP support
+mentioned.</li>
+</ul>
+<h3 id="611-uzi-devflowincuzi">6.11 uzi (<code>devflowinc/uzi</code>)</h3>
+<ul>
+<li>Go CLI for running many coding agents in parallel git worktrees + <strong>tmux sessions</strong>, with
+automatic per-agent dev-server port management (<code>uzi.yaml</code> with <code>devCommand</code>/<code>portRange</code>),
+real-time monitoring (<code>uzi ls -w</code>), broadcast messaging to all agents (<code>uzi broadcast</code>),
+auto-confirming trust/continuation prompts (<code>uzi auto</code>), checkpoint/rebase-merge workflow (<code>uzi checkpoint</code>). (<a href="https://github.com/devflowinc/uzi">https://github.com/devflowinc/uzi</a>)</li>
+<li><strong>Harnesses:</strong> any CLI tool, via <code>--agents claude:3,codex:2</code> syntax — spawns each as its own
+tmux window/pane in its own git worktree; purely subprocess/tmux-based and agent-agnostic by
+design.</li>
+<li><strong>MIT</strong>; Go; requires Git + Tmux + Go. Live GitHub stats: <strong>582 stars, 29 forks, last pushed
+June 2025</strong> — stale relative to the Nov 2026 research date, suggesting the project is dormant.</li>
+<li><strong>Notable idea:</strong> agent instances get randomly generated human names (e.g., &quot;brian,&quot; &quot;gregory&quot;)
+for easy reference in <code>uzi ls</code>/<code>uzi checkpoint &lt;name&gt;</code>.</li>
+<li><strong>Copilot CLI/ACP:</strong> no explicit mention; generic enough to run <code>copilot</code> as an arbitrary agent
+binary but untested/undocumented for it.</li>
+</ul>
+<h3 id="612-amp-sourcegraph--parallel-threads--orbs--runners--puck">6.12 Amp (Sourcegraph) — &quot;parallel threads&quot; / Orbs / Runners / Puck</h3>
+<ul>
+<li>Amp is primarily <strong>a coding agent</strong>, not an external-harness orchestrator (it uses its own
+model/agent stack, not spawned third-party CLIs) — included here because its parallelism
+features are directly comparable:<ul>
+<li><strong>Orbs</strong> — ephemeral cloud machines Amp creates per thread with code/tools/plugins
+pre-configured; closing the laptop does not stop the agent.</li>
+<li><strong>Runners</strong> (Sept 2026) — a local/self-hosted machine that can create <strong>git worktrees
+directly from the thread composer</strong> (pick a repo, hit Tab, name a branch, start in a fresh
+checkout like <code>~/code/amp-fix-flaky-login-test</code>), with one-click &quot;Archive and Remove
+Worktree&quot; cleanup (<code>git worktree remove</code> + branch delete).</li>
+<li><strong>Shared Runners</strong> (Sept 2026) — a runner started with <code>--share</code> lets anyone in a workspace
+start threads on that machine from ampcode.com.</li>
+<li><strong>Puck</strong> — an orchestrator persona/bot that launches and coordinates agents, and can itself
+pass a worktree name through to sub-threads; &quot;Many, Many Pucks&quot; supports multiple independent
+concurrent Puck conversations.</li>
+<li>&quot;Steer, Don&#39;t Queue&quot; — mid-run messages steer the running agent immediately instead of
+queuing.</li>
+</ul>
+</li>
+<li>Amp itself is closed-source/commercial; some example/automation repos are open. &quot;Free Agent&quot;
+(Sept 2026): free to use bringing your own compute/model subscription/keys; a separate option
+lets users spend an existing Claude subscription inside Amp for free.</li>
+<li><strong>Copilot CLI/ACP:</strong> no evidence of Copilot CLI or ACP integration found in Amp itself — it is
+structurally different from the other local tools in this report (an agent with its own
+parallelism features, not a wrapper around external CLIs).</li>
+</ul>
+<hr>
+<h2 id="7-cloud--ide-vendor-agent-management-platforms">7. Cloud / IDE-vendor agent management platforms</h2>
+<h3 id="71-cursor--background-agents--cloud-agents">7.1 Cursor — Background Agents / Cloud Agents</h3>
+<ul>
+<li>Cursor&#39;s remote agents (originally &quot;Background Agents,&quot; renamed <strong>Cloud Agents</strong>) run coding
+tasks in isolated cloud VMs rather than locally, so work continues with the laptop closed/
+offline. &quot;You can run as many agents as you want in parallel&quot;; supports multi-repo environments
+(one agent touching separate frontend/backend/infra repos, opening PRs across each).
+(<a href="https://cursor.com/docs/cloud-agent">https://cursor.com/docs/cloud-agent</a>)</li>
+<li><strong>Environments:</strong> agent-led setup, saved snapshots, or a Dockerfile via
+<code>.cursor/environment.json</code>; can use browser/desktop &quot;computer use,&quot; connect MCP servers, use
+Tailscale for private networks, or run on <strong>Self-Hosted Machines</strong> for on-prem execution.</li>
+<li><strong>Entry points:</strong> iOS app, <code>cursor.com/agents</code> web (installable as a PWA on Android), desktop,
+<strong>Slack</strong> (<code>@cursor</code>), commenting <code>@cursor</code> on a GitHub/GitLab/Bitbucket PR or issue, Linear
+<code>@cursor</code>, and a public API.</li>
+<li><strong>Automations:</strong> scheduled or event-triggered agent runs (e.g., on new PRs, Slack messages)
+<strong>[named feature per secondary source, not independently re-verified against an official
+cursor.com page in this pass]</strong>.</li>
+<li>Requires a paid Cursor plan; billed through Cursor, not BYOS like T3 Code/Orca.</li>
+<li><strong>Copilot CLI/ACP:</strong> no evidence Cursor&#39;s Cloud Agents drive Copilot CLI or implement ACP as a
+client; separately, <strong>Cursor CLI itself is listed as an ACP agent</strong> in Zed&#39;s and the ACP
+registry&#39;s &quot;Common Agents&quot; (see §9) — i.e., Cursor is more often the <em>driven</em> agent than the
+driver, in the ACP ecosystem.</li>
+</ul>
+<h3 id="72-openai-codex--codex-cloud">7.2 OpenAI Codex — Codex Cloud</h3>
+<ul>
+<li>&quot;Give Codex coding tasks to work through in the cloud... Each task has its own workspace and
+can keep working while your computer is asleep.&quot; Flow: choose repos → Codex inspects the
+project and prepares setup/dependencies → tasks run from a <strong>published, versioned environment</strong>
+with configured network egress limited to allowed HTTPS destinations/secrets → review changed
+files, request follow-ups, commit, or open a PR. (<a href="https://learn.chatgpt.com/docs/cloud">https://learn.chatgpt.com/docs/cloud</a>)</li>
+<li>Multiple tasks can run concurrently against the same published environment with separate
+working state per task.</li>
+<li>Accessible from ChatGPT web, desktop, and mobile apps; the <strong>Codex CLI can also start a cloud
+task or list/check recent cloud chats</strong> directly (&quot;Start cloud work from the CLI&quot;).</li>
+<li>GitHub integration (<code>@codex</code> mentions on issues/PRs, a <code>codex-action</code> GitHub Action for CI
+automation) is referenced by secondary sources but was <strong>not independently re-verified</strong> against
+an OpenAI primary doc in this pass.</li>
+<li>As part of GitHub&#39;s Agent HQ (see §7.3), Codex is also reachable directly inside VS Code
+Insiders for Copilot Pro+ users.</li>
+<li><strong>Copilot CLI/ACP:</strong> Codex CLI is listed as an ACP agent (via a community <code>codex-acp</code> adapter)
+in the ACP registry — again, Codex is typically the <em>driven</em> agent in ACP contexts, not an
+orchestrator of other harnesses.</li>
+</ul>
+<h3 id="73-github-copilot-coding-agent--agent-hq--mission-control">7.3 GitHub Copilot coding agent + Agent HQ / Mission Control</h3>
+<ul>
+<li><strong>Copilot coding agent:</strong> assigning a GitHub Issue to &quot;Copilot&quot; (via assignee, mobile, CLI, or
+the <code>assign-to-agent</code>/<code>create-agent-session</code> Actions) spins up an isolated cloud dev environment
+(via GitHub Actions), which reads the issue + repo context +
+<code>.github/copilot-setup-steps.yml</code>, writes code, runs tests, and pushes to a <strong>draft PR</strong> for
+human review — Copilot cannot merge or deploy itself.
+(<a href="https://github.blog/news-insights/product-news/github-copilot-meet-the-new-coding-agent/">https://github.blog/news-insights/product-news/github-copilot-meet-the-new-coding-agent/</a>)</li>
+<li><strong>Agent HQ / Mission Control</strong> (announced GitHub Universe, Oct 2025; verified directly from
+<a href="https://github.blog/news-insights/company-news/welcome-home-agents/">https://github.blog/news-insights/company-news/welcome-home-agents/</a>): &quot;Agent HQ transforms
+GitHub into an open ecosystem that unites every agent on a single platform.&quot; Coding agents from
+<strong>Anthropic, OpenAI, Google, Cognition, and xAI</strong> become directly available in GitHub as part of
+a paid Copilot subscription. Day one: Copilot Pro+ users could use <strong>OpenAI Codex inside VS Code
+Insiders</strong> immediately — &quot;the first of our partner agents to extend beyond its native surfaces
+and directly into the editor.&quot; Quotes: OpenAI&#39;s Alexander Embiricos; Anthropic&#39;s Mike Krieger
+(&quot;Claude can pick up issues, create branches, commit code, and respond to pull requests&quot;);
+Google Labs&#39; Kathy Korevec (Jules becoming &quot;a native assignee&quot;).</li>
+<li><strong>Mission control:</strong> &quot;a single command center to assign, steer, and track the work of multiple
+agents from anywhere&quot; — a consistent interface (not one destination) across <strong>GitHub web, VS
+Code, mobile, and CLI</strong>, letting users &quot;choose from a fleet of agents, assign them work in
+parallel, and track their progress from any device.&quot;
+(<a href="https://github.blog/changelog/2025-10-28-a-mission-control-to-assign-steer-and-track-copilot-coding-agent-tasks/">https://github.blog/changelog/2025-10-28-a-mission-control-to-assign-steer-and-track-copilot-coding-agent-tasks/</a>)</li>
+<li><strong>Enterprise additions:</strong> branch controls (granular CI/check gating for agent-authored code),
+identity/access-policy management for agents like any team member, one-click merge-conflict
+resolution, Slack/Linear integrations (alongside existing Jira, MS Teams, Azure Boards,
+Raycast), an org-wide control plane governing agent behavior, and a metrics dashboard.</li>
+<li><strong>VS Code additions:</strong> Plan Mode (Copilot asks clarifying questions, builds a step-by-step plan
+before writing code); custom agents via source-controlled <code>AGENTS.md</code>; a GitHub MCP Registry in
+VS Code for one-click MCP server installs; agentic code review; GitHub Code Quality (org-wide
+maintainability/reliability reporting).</li>
+<li>As of a Jan 2026 changelog, <strong>Copilot itself is now also usable as an ACP agent</strong> — extending
+&quot;any agent, any surface&quot; beyond GitHub&#39;s own UI into any ACP-aware client.</li>
+</ul>
+<h3 id="73b-copilot-cli-plugins--acp--the-key-integration-surface-for-oh-my-copilot">7.3b Copilot CLI plugins &amp; ACP — the key integration surface for <code>oh-my-copilot</code></h3>
+<ul>
+<li><strong>Plugin system</strong> (directory with <code>plugin.json</code> manifest, optional custom agents
+<code>*.agent.md</code>, skills <code>SKILL.md</code> bound to slash commands, hooks <code>hooks.json</code>, MCP configs
+<code>mcp-config.json</code>; installed via <code>copilot plugin install &lt;source&gt;</code>, managed via <code>copilot plugin enable/disable/list</code>, state tracked in persisted configuration rather than session memory).</li>
+<li><strong>Hooks</strong> (verified directly,
+<a href="https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-hooks">https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-hooks</a>):
+repo-level hooks in <code>.github/hooks/*.json</code>; user-level hooks in <code>~/.copilot/hooks/</code> (or
+<code>$COPILOT_HOME/hooks/</code>). Lifecycle events: <code>sessionStart</code>, <code>sessionEnd</code>, <code>userPromptSubmitted</code>,
+<code>preToolUse</code>, <code>postToolUse</code>, <code>errorOccurred</code>, <code>agentStop</code>. Each hook runs bash/PowerShell with
+optional <code>cwd</code>/<code>timeoutSec</code>/<code>env</code>, receives JSON event payloads on stdin, and can block actions
+via exit code. Docs state explicitly: &quot;Changes to hook configurations are loaded when the CLI
+starts.&quot;</li>
+<li><strong>ACP support</strong> (verified directly, <a href="https://github.blog/changelog/2026-01-28-acp-support-in-copilot-cli-is-now-in-public-preview/">https://github.blog/changelog/2026-01-28-acp-support-in-copilot-cli-is-now-in-public-preview/</a>,
+Jan 28 2026): &quot;GitHub Copilot CLI now implements the Agent Client Protocol (ACP)... This enables
+third-party tools, IDEs, and automation systems to integrate directly with Copilot&#39;s agentic
+capabilities.&quot; Launch via <code>copilot --acp</code> (stdio) or <code>copilot --acp --port 8080</code> (TCP). ACP
+clients can initialize connections, discover capabilities, create isolated sessions with custom
+working directories, send prompts (text/images/context resources), get streaming updates,
+respond to permission requests, and cancel/manage session lifecycle. Explicit use cases:
+IDE integrations, CI/CD orchestration, custom frontends, and <strong>multi-agent systems</strong>
+(&quot;Coordinate Copilot with other AI agents using a standard protocol&quot;). Official ACP server docs:
+<a href="https://docs.github.com/copilot/reference/acp-server">https://docs.github.com/copilot/reference/acp-server</a>. Corroborated by the ACP agents registry
+(<a href="https://agentclientprotocol.com/get-started/agents.md">https://agentclientprotocol.com/get-started/agents.md</a> — &quot;GitHub Copilot (in public preview)&quot;)
+and by Zed&#39;s docs (<a href="https://zed.dev/docs/ai/external-agents">https://zed.dev/docs/ai/external-agents</a>), which list Copilot as a &quot;Common
+Agent&quot; installable as an ACP External Agent in Zed&#39;s Agent Panel.</li>
+<li><strong>Conclusion — the two extension surfaces are independent:</strong> the <strong>hooks/plugins system</strong>
+extends/customizes Copilot&#39;s own local behavior; <strong>ACP mode</strong> exposes Copilot itself as a
+drivable agent backend to any ACP-aware client/editor (Zed, JetBrains, VS Code extensions, Devin
+Desktop, etc.). Since both read config from the filesystem at CLI <strong>startup</strong> rather than being
+injected by the parent process, <strong>a <code>oh-my-copilot</code> plugin&#39;s hooks/skills should keep working
+whether Copilot CLI is run interactively by a human, spawned as a subprocess by an orchestrator
+(CCManager, vibe-kanban, herdr, Claude Squad), or driven headlessly over ACP</strong> — <em>provided</em> the
+working directory/repo context passed to the subprocess still contains the relevant
+<code>.github/hooks/</code>/<code>.github/plugin/</code> files, and the user&#39;s <code>~/.copilot/</code> home directory is
+reachable from that subprocess&#39;s environment. Container-isolated tools (e.g., Sculptor&#39;s Docker
+sandboxes) could break user-level hooks/plugins unless those paths are explicitly mounted — this
+is an inference from the documented file-based config mechanism, not independently
+tested/confirmed in any specific orchestrator&#39;s own docs.</li>
+<li>Of the local tools surveyed in §6, only <strong>CCManager</strong>, <strong>vibe-kanban</strong>, and <strong>herdr</strong> explicitly
+document first-class Copilot CLI support as a spawnable agent; Nimbalyst lists it as &quot;alpha.&quot;</li>
+</ul>
+<h3 id="74-google-jules">7.4 Google Jules</h3>
+<ul>
+<li>&quot;An experimental coding agent that helps you fix bugs, add documentation, and build new
+features. It integrates with GitHub, understands your codebase, and works autonomously.&quot;
+(<a href="https://jules.google/docs">https://jules.google/docs</a>) Sign in at jules.google.com, connect GitHub, select repos.</li>
+<li><strong>VM sandbox / workflow:</strong> Jules runs in a VM where it clones code, installs dependencies, and
+modifies files; user picks repo + branch, writes a prompt, optionally adds environment setup
+scripts, clicks &quot;Give me a plan&quot; — Jules generates a plan the user must <strong>review and approve
+before any code changes are made</strong>.</li>
+<li>Automatically looks for an <code>AGENTS.md</code> at the repo root for codebase conventions. Async —
+users can leave while Jules works; browser notifications alert on completion or when input is
+needed.</li>
+<li>Concurrent task limits scale with Google AI Pro/Ultra subscription tier; a <strong>Jules Tools</strong> CLI
+and a REST API allow scripted/automated task management; a GitHub Action
+(<code>google-labs-code/jules-action</code>) supports CI/CD; MCP support for tools like Linear, Stitch,
+Neon <strong>[secondary sources for this paragraph, consistent with Google&#39;s positioning but not
+independently refetched this pass]</strong>.</li>
+<li>Per GitHub&#39;s Agent HQ announcement, Jules becomes &quot;a native assignee&quot; within GitHub&#39;s mission
+control.</li>
+</ul>
+<h3 id="75-devin-cognition-labs">7.5 Devin (Cognition Labs)</h3>
+<ul>
+<li><strong>Devin can manage Devins:</strong> a parent Devin session can break a large task into scoped pieces
+and delegate each to a <strong>&quot;managed Devin&quot;</strong> — a full Devin instance in its own isolated VM with
+its own terminal/browser/dev environment, able to run shell commands/tests and verify its own
+changes. The parent session acts as <strong>coordinator</strong>: scopes work, assigns pieces, monitors
+progress, resolves conflicts, compiles results, and can read full trajectories of child sessions
+to improve future task breakdowns. (<a href="https://cognition.com/blog/devin-can-now-manage-devins">https://cognition.com/blog/devin-can-now-manage-devins</a>)
+Coordinator capabilities: spin up managed Devins; message child sessions mid-task; monitor ACU
+(compute) consumption per child; put child sessions to sleep or terminate them; schedule
+follow-up self-messages. Example uses: parallel QA across app pages, large codebase migrations,
+security/dependency audits (one session per package), bulk refactors.</li>
+<li><strong>Devin Desktop 2.0&#39;s Agent Command Center</strong>
+(<a href="https://docs.devin.ai/desktop/agent-command-center">https://docs.devin.ai/desktop/agent-command-center</a>) manages every agent running — both
+<strong>local agents</strong> (in-editor sessions) and <strong>cloud agents</strong> (Devin VM sessions) — from a single
+view: duplicate/branch a session from a response footer, editable queued messages, a sidebar
+listing/filtering/grouping sessions per workspace, &quot;start child session,&quot; and unified native OS
+notifications across <strong>Devin Local and ACP agents alike</strong> (&quot;one notification per session rather
+than one per surface&quot;) — notably, Devin Desktop can itself <strong>host/drive ACP agents</strong>, confirming
+a second major vendor (besides Zed) building ACP support into its own management UI.</li>
+<li>Enterprise features (SSO/SCIM, RBAC, Slack/PagerDuty/Sentry triggers) are documented by Cognition
+but weren&#39;t independently re-fetched in this pass <strong>[secondary source for this bullet]</strong>.</li>
+</ul>
+<h3 id="76-openhands-formerly-opendevin">7.6 OpenHands (formerly OpenDevin)</h3>
+<ul>
+<li><code>OpenHands/OpenHands</code> on GitHub — MIT-licensed, open-source autonomous SWE agent platform,
+originally a community response to closed-source Devin, with academic (CMU, UIUC) and industry
+contributors. Live GitHub stats confirmed via API: <strong>~92.8k stars, ~12.4k forks</strong> — one of the
+largest projects in this entire report by star count. (<a href="https://github.com/OpenHands/OpenHands">https://github.com/OpenHands/OpenHands</a>)</li>
+<li><strong>Sandbox model:</strong> executes agent actions inside an isolated <strong>Docker container</strong> (official
+agent-server image <code>ghcr.io/openhands/agent-server:latest-python</code>), with the local project
+optionally bind-mounted (<code>SANDBOX_VOLUMES=$PWD:/workspace:rw</code>).
+(<a href="https://docs.openhands.dev/openhands/usage/sandboxes/docker">https://docs.openhands.dev/openhands/usage/sandboxes/docker</a>)</li>
+<li><strong>Multi-agent/multi-harness orchestration:</strong> supports delegating to different underlying coding
+harnesses/models via the <strong>Agent Client Protocol</strong> — confirmed in the official ACP agents
+registry, with its own doc page: <a href="https://docs.openhands.dev/openhands/usage/run-openhands/acp">https://docs.openhands.dev/openhands/usage/run-openhands/acp</a>.
+This makes OpenHands dual-purpose: both an ACP-capable <strong>agent</strong> (drivable by ACP clients like
+Zed) and historically an orchestration platform in its own right.</li>
+<li>Browser-based chat UI, event-based architecture logging every action/decision for full
+replay/audit, extensible Python/TypeScript SDK, self-hostable for on-prem/enterprise use.</li>
+</ul>
+<h3 id="77-warp-terminal--agent-mode--warp-code">7.7 Warp terminal — Agent Mode / &quot;Warp Code&quot;</h3>
+<ul>
+<li>Warp&#39;s <strong>Agent Mode</strong> turns the terminal into an agentic environment: natural-language tasks
+decompose into shell command sequences, executed with per-command (and extra-strict
+per-destructive-action) approval, with shell/git/error-log context attached automatically.</li>
+<li>Secondary sources describe a <strong>&quot;Oz&quot; orchestration platform</strong> enabling parallel multi-agent runs
+(Claude Code, Codex, Gemini CLI) and cloud-agent delegation across desktop/web/remote — <strong>this
+was not independently verified against an official Warp blog/docs page in this research pass</strong>
+(a direct fetch of a candidate Warp blog URL 404&#39;d); treat as <strong>unverified</strong> pending direct
+confirmation.</li>
+<li>Shared/reusable &quot;workflows&quot; can be saved/versioned as team primitives; MCP support lets Agent
+Mode reach external tools/ticketing/DBs.</li>
+</ul>
+<h3 id="78-zed-editor--agent-panel--agent-client-protocol-acp">7.8 Zed editor — Agent Panel &amp; Agent Client Protocol (ACP)</h3>
+<ul>
+<li><strong>ACP spec</strong> (verified directly, <a href="https://agentclientprotocol.com">https://agentclientprotocol.com</a>): ACP &quot;standardizes
+communication between code editors/IDEs and coding agents,&quot; analogous to how LSP standardized
+language servers — solving per-editor custom integration overhead, limited compatibility, and
+agent/editor lock-in. <strong>Local agents</strong> run as editor subprocesses over <strong>JSON-RPC over stdio</strong>;
+<strong>remote agents</strong> can be cloud-hosted over HTTP/WebSocket (&quot;full support for remote agents is a
+work in progress&quot;). ACP reuses MCP&#39;s JSON representations where possible but adds
+agentic-UX-specific types (e.g., diff display); default text format is Markdown.</li>
+<li><strong>Zed&#39;s Agent Panel / External Agents</strong> (verified, <a href="https://zed.dev/docs/ai/external-agents">https://zed.dev/docs/ai/external-agents</a>):
+Zed hosts the conversation thread in its Agent Panel while an &quot;External Agent&quot; owns its own
+runtime, auth, model selection, tools, and native config — Zed does not charge for or mediate
+billing of External Agents. Agents install from an <strong>ACP Registry</strong> (<code>zed: acp registry</code>
+command). Zed lists <strong>Claude, Codex, OpenCode, Copilot, Cursor, and Pi Coding Agent</strong> as &quot;Common
+Agents,&quot; each with its own documented auth/billing flow (e.g., Claude&#39;s <code>/login</code>, Gemini CLI&#39;s
+<code>GEMINI_API_KEY</code>/Vertex, Codex&#39;s ChatGPT-login-or-API-key).</li>
+<li><strong>Full ACP agent registry</strong> (verified, <a href="https://agentclientprotocol.com/get-started/agents.md">https://agentclientprotocol.com/get-started/agents.md</a>):
+a large, fast-growing list including Claude Agent (via Zed&#39;s own <code>claude-agent-acp</code> adapter),
+<strong>Codex CLI</strong> (via a community <code>codex-acp</code> adapter), Gemini CLI (native), <strong>GitHub Copilot</strong>
+(native, public preview), Cursor (via <code>cursor.com/docs/cli/acp</code>), OpenHands, OpenCode, Cline,
+Factory Droid, Goose, Junie (JetBrains), Kiro CLI, Qwen Code, and dozens of smaller/community
+implementations.</li>
+<li><strong>Full ACP client/editor list</strong> (verified, <a href="https://agentclientprotocol.com/get-started/clients.md">https://agentclientprotocol.com/get-started/clients.md</a>):
+beyond Zed, ACP clients include JetBrains IDEs (native), multiple VS Code extensions (ACP
+Client, ACP Patchbay, ACP Pro Extension — also usable in Cursor/Windsurf/Trae), Neovim plugins
+(CodeCompanion, avante.nvim, agentic.nvim), Emacs (<code>agent-shell.el</code>), Obsidian plugins, Sublime
+Text, Qt Creator, Visual Studio (via Poolside Assistant), and various standalone/experimental
+editors (Athas, necoder, Volt). CLIs/TUIs wrapping ACP include <code>acpx</code> and others.</li>
+<li><strong>Bottom line for oh-my-copilot:</strong> yes — GitHub Copilot CLI&#39;s own ACP implementation (§7.3b)
+plus its listing in the official ACP agents registry means it can already, in principle, be
+driven by Zed&#39;s Agent Panel, Devin Desktop, Happy (beta ACP support), and any other ACP client
+— independent of whether that client knows anything about Copilot specifically. This is the
+single most future-proof integration surface identified in this entire research thread.</li>
+</ul>
+<h3 id="79-tmux-based-manualdiy-multi-agent-managers-beyond-claude-squadherdr">7.9 tmux-based manual/DIY multi-agent managers (beyond Claude Squad/herdr)</h3>
+<ul>
+<li><strong>Claude Squad</strong> (see §6.2) is the best-documented, most widely-used example (requires <code>tmux</code> +
+<code>gh</code>, isolated git worktree per session).</li>
+<li>Several smaller community tmux dashboards were identified via secondary sources but <strong>not
+independently fetched/verified in this pass</strong> — flagged for follow-up before citing specific
+feature claims:<ul>
+<li><strong>Agent of Empires (aoe)</strong> — Go TUI atop tmux; project grouping, live output previews,
+optional Docker sandboxing + git worktree isolation.</li>
+<li><strong>Agent-Manager</strong> — Go TUI wrapping tmux; tree view of sessions by project, status indicators
+(working/waiting/finished/errored/idle/dead), diff/review mode.</li>
+<li><strong>tmuxcc</strong> (<code>nyanko3141592/tmuxcc</code>) — Rust TUI dashboard managing Claude Code/Codex
+CLI/Gemini CLI/OpenCode sessions across tmux panes; tree grouping, approval/rejection, batch
+ops, live pane previews.</li>
+<li><strong>Named Tmux Manager (NTM)</strong> — turns tmux into a multi-agent control center: spawn/tile
+agents, broadcast prompts across panes, conflict detection, persistent named-pane sessions,
+TUI command palette.</li>
+<li>These represent a broader DIY/open-source ecosystem of &quot;Claude Squad–style&quot; tmux
+orchestrators, generally free/MIT-licensed, wrapping <strong>CLI subprocess invocation</strong> rather than
+the ACP JSON-RPC protocol — complementary to, and sometimes overlapping with, ACP-based editor
+integrations.</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="8-comparison-table">8. Comparison table</h2>
+<div class="table-scroll" role="region" aria-label="Comparison table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Project</th>
+<th>Supported harnesses (confirmed)</th>
+<th>Drive mechanism</th>
+<th>Worktrees</th>
+<th>Remote/mobile</th>
+<th>OSS / License</th>
+<th>Stack</th>
+<th>Activity (stars/forks, live)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Orca (StablyAI)</strong></td>
+<td>Claude Code, Codex, &quot;any other agent&quot;</td>
+<td>CLI subprocess spawn, own CLI exposes same ops</td>
+<td>Yes, first-class</td>
+<td>Yes — iOS/Android app, SSH, cloud VM per-worktree</td>
+<td>MIT</td>
+<td>TypeScript (Electron-style desktop)</td>
+<td>~117k★ / 7.4k🍴</td>
+</tr>
+<tr>
+<td><strong>T3 Code</strong></td>
+<td>Claude Code, Codex, Cursor, Grok Build, OpenCode, Antigravity, fx</td>
+<td>BYOS: drives already-authenticated local CLIs; ACP registry referenced in marketing</td>
+<td>Yes, per-thread</td>
+<td>Yes — iOS/Android/web, local server + remote clients</td>
+<td>MIT</td>
+<td>TypeScript (Electron + Node server)</td>
+<td>~48.6k★ / 9.6k🍴</td>
+</tr>
+<tr>
+<td><strong>herdr</strong></td>
+<td>Claude Code, Codex, <strong>Copilot CLI</strong>, Cursor, OpenCode, Grok, Pi, Droid, Devin CLI, Kimi, Kilo, Qwen, Antigravity, +more</td>
+<td>Owns/attaches real terminal process; screen-scrape or self-reported state</td>
+<td>N/A (process/pane mgmt, agent-agnostic re: git)</td>
+<td>SSH to saved machines; no phone app</td>
+<td>Apache-2.0</td>
+<td>Rust, single binary</td>
+<td>~48.3k★ / 3.9k🍴</td>
+</tr>
+<tr>
+<td><strong>Rex (beta)</strong></td>
+<td>Claude Code, Codex, OpenCode, Pi (via OSC 7501); agnostic otherwise</td>
+<td>OSC 7501 escape-sequence status protocol + title heuristics</td>
+<td>N/A (terminal/pane mgmt)</td>
+<td>Multi-host (<code>rex hosts</code>); no phone app found</td>
+<td>Terminal closed-source; protocol + plugins (e.g. <code>rex-agents</code>) open (MIT)</td>
+<td>Native app; Lua config/plugins</td>
+<td>Beta — no public stars for core app; plugin ~1★</td>
+</tr>
+<tr>
+<td><strong>Conductor</strong></td>
+<td>Claude Code, Codex, OpenCode (bundled), Cursor (API)</td>
+<td>Bundled runtime / Cursor API</td>
+<td>Yes</td>
+<td>No (macOS-only)</td>
+<td>Closed source</td>
+<td>macOS native</td>
+<td>No public repo</td>
+</tr>
+<tr>
+<td><strong>Claude Squad</strong></td>
+<td>Claude Code, Codex, Gemini CLI, Aider</td>
+<td>tmux pane + subprocess</td>
+<td>Yes</td>
+<td>No</td>
+<td>AGPL-3.0</td>
+<td>Go + tmux</td>
+<td>~8.7k★ / 623🍴</td>
+</tr>
+<tr>
+<td><strong>vibe-kanban</strong></td>
+<td>Claude Code, Codex, Gemini CLI, <strong>Copilot CLI</strong>, Amp, Cursor, OpenCode, Droid, Qwen</td>
+<td>Rust executor trait, subprocess in worktree</td>
+<td>Yes</td>
+<td>Hosted cloud service shutting down; local continues</td>
+<td>Apache-2.0</td>
+<td>Rust + TS</td>
+<td>~28.6k★ / 3.1k🍴</td>
+</tr>
+<tr>
+<td><strong>Nimbalyst (ex-Crystal)</strong></td>
+<td>Codex, Claude Code, OpenCode, <strong>Copilot CLI (alpha)</strong>, Gemini</td>
+<td>Not fully documented</td>
+<td>Yes</td>
+<td>iOS companion app</td>
+<td>MIT</td>
+<td>Electron/TS</td>
+<td>~2.0k★ / 333🍴</td>
+</tr>
+<tr>
+<td><strong>Sculptor</strong></td>
+<td>Claude Code, Pi, Codex (via API key), generic terminal agents</td>
+<td>Container runtime (not worktree)</td>
+<td>No (containers)</td>
+<td>No</td>
+<td>Public repo, not accepting contributions (&quot;not truly OSS yet&quot;)</td>
+<td>Python, Docker</td>
+<td>~245★ / 20🍴</td>
+</tr>
+<tr>
+<td><strong>Terragon</strong></td>
+<td>(historical) cloud agents</td>
+<td>Cloud sandbox</td>
+<td>—</td>
+<td>Was cloud-based</td>
+<td>—</td>
+<td>—</td>
+<td>Shut down Feb 2026</td>
+</tr>
+<tr>
+<td><strong>Omnara</strong></td>
+<td>Claude Code (origin); generic &quot;managed agents&quot; now</td>
+<td>YAML-defined agents, dashboard/CLI/SDK</td>
+<td>N/A</td>
+<td>iOS app (historical), web dashboard</td>
+<td>Apache-2.0</td>
+<td>Go + TS SDK</td>
+<td>~3.4k★ / 261🍴</td>
+</tr>
+<tr>
+<td><strong>Happy</strong></td>
+<td>Claude, Codex, Grok, Gemini (Antigravity), <strong>any ACP agent (beta)</strong></td>
+<td>Native CLI integration + ACP (beta)</td>
+<td>Yes, per-branch</td>
+<td>iOS/Android native, E2E-encrypted, multiplayer</td>
+<td>MIT</td>
+<td>Swift, Kotlin, relay server</td>
+<td>~24.5k★ / 2.1k🍴</td>
+</tr>
+<tr>
+<td><strong>opcode (ex-Claudia)</strong></td>
+<td>Claude Code only</td>
+<td>Reads/writes Claude&#39;s own session files, spawns background processes</td>
+<td>No (session mgmt, not worktree-centric)</td>
+<td>No</td>
+<td>AGPL-3.0</td>
+<td>Tauri 2 (Rust+TS/React)</td>
+<td>~22.4k★ / 1.7k🍴</td>
+</tr>
+<tr>
+<td><strong>CCManager</strong></td>
+<td>Claude Code, Gemini CLI, Codex CLI, Cursor Agent, <strong>Copilot CLI</strong>, Cline, OpenCode, Kimi</td>
+<td>Configurable shell <code>program</code> subprocess</td>
+<td>Yes, multi-repo</td>
+<td>No</td>
+<td>MIT</td>
+<td>TypeScript (Bun)</td>
+<td>~1.3k★ / 94🍴</td>
+</tr>
+<tr>
+<td><strong>uzi</strong></td>
+<td>Any CLI agent (<code>--agents claude:3,codex:2</code>)</td>
+<td>tmux window/pane + subprocess</td>
+<td>Yes</td>
+<td>No</td>
+<td>MIT</td>
+<td>Go</td>
+<td>582★ / 29🍴 (stale, last push Jun 2025)</td>
+</tr>
+<tr>
+<td><strong>Amp (Orbs/Runners/Puck)</strong></td>
+<td>Its own agent stack (not external CLIs)</td>
+<td>N/A (not a CLI wrapper)</td>
+<td>Yes (Runners feature)</td>
+<td>Cloud &quot;Orbs&quot;, shared Runners</td>
+<td>Closed source</td>
+<td>—</td>
+<td>Commercial, active</td>
+</tr>
+<tr>
+<td><strong>Cursor Cloud Agents</strong></td>
+<td>Cursor&#39;s own agent</td>
+<td>Cloud VM</td>
+<td>N/A</td>
+<td>iOS, web, Slack, PWA</td>
+<td>Closed source</td>
+<td>—</td>
+<td>Commercial, active</td>
+</tr>
+<tr>
+<td><strong>Codex Cloud</strong></td>
+<td>Codex</td>
+<td>Cloud VM, published environments</td>
+<td>N/A</td>
+<td>ChatGPT web/desktop/mobile, Codex CLI</td>
+<td>Closed source</td>
+<td>—</td>
+<td>Commercial, active</td>
+</tr>
+<tr>
+<td><strong>GitHub Copilot coding agent + Agent HQ</strong></td>
+<td>Copilot, Codex, Claude, Jules, Grok (via Agent HQ)</td>
+<td>GitHub Actions cloud environment; mission control UI</td>
+<td>N/A (PR/branch-based)</td>
+<td>GitHub web, VS Code, mobile, CLI</td>
+<td>Closed source (GitHub product)</td>
+<td>—</td>
+<td>Active, major 2025 GitHub Universe launch</td>
+</tr>
+<tr>
+<td><strong>Google Jules</strong></td>
+<td>Jules (Google&#39;s own agent)</td>
+<td>VM sandbox</td>
+<td>N/A</td>
+<td>Web, Jules Tools CLI, REST API, GitHub Action</td>
+<td>Closed source</td>
+<td>—</td>
+<td>Active</td>
+</tr>
+<tr>
+<td><strong>Devin (Cognition)</strong></td>
+<td>Devin, &quot;managed Devins,&quot; + ACP agents (Desktop 2.0)</td>
+<td>VM per managed Devin; Desktop hosts ACP agents</td>
+<td>N/A</td>
+<td>Desktop app, cloud dashboard</td>
+<td>Closed source</td>
+<td>—</td>
+<td>Active</td>
+</tr>
+<tr>
+<td><strong>OpenHands</strong></td>
+<td>Any ACP-compliant harness + its own agent</td>
+<td>Docker sandbox; ACP client/agent both ways</td>
+<td>N/A (container-based)</td>
+<td>Self-hosted web UI</td>
+<td>MIT</td>
+<td>Python/TS</td>
+<td>~92.8k★ / 12.4k🍴</td>
+</tr>
+<tr>
+<td><strong>Warp (Agent Mode / &quot;Oz&quot;)</strong></td>
+<td>Claude Code, Codex, Gemini CLI (unverified specifics)</td>
+<td>Terminal-native agent execution</td>
+<td>Unclear</td>
+<td>Desktop app, unverified cloud claims</td>
+<td>Closed source</td>
+<td>—</td>
+<td><strong>[unverified]</strong></td>
+</tr>
+<tr>
+<td><strong>Zed Agent Panel</strong></td>
+<td>Claude, Codex, OpenCode, <strong>Copilot</strong>, Cursor, Pi, + full ACP registry</td>
+<td>ACP (JSON-RPC over stdio/HTTP)</td>
+<td>N/A (editor, not worktree mgr)</td>
+<td>Editor-based, remote agents &quot;work in progress&quot;</td>
+<td>Zed itself OSS (GPL/AGPL mix, not re-verified here); ACP spec open</td>
+<td>Rust (Zed), protocol-agnostic</td>
+<td>Fast-growing ACP ecosystem</td>
+</tr>
+</tbody></table>
+</div><hr>
+<h2 id="9-observed-design-patterns">9. Observed design patterns</h2>
+<ol>
+<li><strong>Git worktrees are the default isolation primitive</strong> for local orchestrators (Orca, T3 Code,
+Conductor, Claude Squad, vibe-kanban, Nimbalyst, CCManager, uzi, Happy, Amp Runners) — cheap,
+native to git, avoids full container overhead, and plays well with GitHub PR flows (branch per
+task/agent → PR). Containers (Sculptor) are the explicit minority position, trading worktree
+convenience for stronger isolation/dependency safety.</li>
+<li><strong>Subprocess spawning of the user&#39;s own authenticated CLI (&quot;BYOS&quot;) is the dominant drive
+mechanism</strong>, not SDKs or reimplementation — T3 Code, Orca, Claude Squad, CCManager, uzi,
+vibe-kanban, herdr, Rex-plugins all explicitly describe driving <code>claude</code>, <code>codex</code>, <code>copilot</code>,
+etc. as already-installed, already-authenticated CLI binaries. This has a direct, favorable
+implication for <code>oh-my-copilot</code>: a Copilot CLI plugin installed on the user&#39;s machine should
+&quot;just work&quot; unmodified under nearly all of these tools, since none of them replace or
+re-author Copilot CLI&#39;s own startup/config-loading behavior.</li>
+<li><strong>ACP is emerging as the second, protocol-level drive mechanism</strong>, layered on top of (not
+replacing) subprocess spawning — Zed pioneered it, GitHub Copilot CLI, Codex CLI (via adapter),
+Gemini CLI, Cursor CLI, OpenHands, and dozens of smaller agents now implement it; Happy and
+Devin Desktop are driving ACP support into general-purpose orchestrator UIs, not just editors.
+This is architecturally similar to LSP: one protocol, many clients, many agents, decoupling
+&quot;which editor/orchestrator you use&quot; from &quot;which agent you use.&quot;</li>
+<li><strong>Terminal-native state-detection is a competing, lighter-weight pattern to ACP</strong> — herdr&#39;s
+screen-scraping + optional self-reported-state model, and Rex&#39;s OSC 7501 escape-sequence
+protocol, both let <em>any</em> program (not just purpose-built ACP agents) surface
+idle/working/waiting/blocked/failed status without requiring a structured RPC integration.
+These two approaches (herdr&#39;s manifest-based detection vs. Rex&#39;s open escape-sequence
+broadcast) are solving the same &quot;which of my N agents needs me right now&quot; problem with
+different trade-offs: herdr needs no cooperation from the agent but is more brittle to UI
+changes; OSC 7501 needs the agent to cooperate but is more robust and semantically rich.</li>
+<li><strong>Mobile/remote-first design is now table stakes for new entrants</strong> — Orca, T3 Code, Happy, and
+(historically) Omnara all ship native iOS/Android apps as core, not bolted-on, features; Cursor
+and Codex Cloud similarly treat mobile/web parity as core. This reflects a broader shift toward
+&quot;fire off a task, walk away, get pinged when it needs you&quot; as the expected UX for long-running
+agent work.</li>
+<li><strong>The &quot;coordinator delegates to worker agents&quot; pattern recurs at every layer</strong> — Orca&#39;s
+coordinator/worker worktrees, T3 Code&#39;s &quot;Claude plans, Codex builds&quot; Orchestrator V2, Amp&#39;s
+Puck persona, and Devin&#39;s &quot;managed Devins&quot; are all variations on the same idea: one agent (or
+the orchestrator itself) plans/coordinates, while one or more separate agent processes execute
+in isolated environments and report back.</li>
+<li><strong>The category is financially volatile</strong> — Terragon and vibe-kanban&#39;s parent company both shut
+down within the research window, while Crystal was deprecated in favor of a rebrand
+(Nimbalyst). Free/BYOS-only orchestrators with no separate revenue model (Conductor, T3 Code,
+Orca, Happy) may be more durable than venture-funded cloud-hosting plays, but this is
+speculative based on only a few observed data points.</li>
+<li><strong>Copilot CLI&#39;s position in this ecosystem is currently &quot;supported but not central&quot;</strong> — it
+appears as a confirmed, first-class spawnable agent in herdr, vibe-kanban, CCManager, and
+(alpha) Nimbalyst, and as a confirmed ACP agent in the Zed/ACP registry and GitHub&#39;s own Agent
+HQ — but it is conspicuously absent from T3 Code&#39;s and Conductor&#39;s harness lists, and has no
+native OSC 7501 (Rex) status-reporting yet. This is both a gap and an opportunity.</li>
+</ol>
+<hr>
+<h2 id="10-implications-for-oh-my-copilot">10. Implications for <code>oh-my-copilot</code></h2>
+<ul>
+<li><strong>Plugins/hooks should survive subprocess spawning largely unmodified.</strong> Because Copilot CLI&#39;s
+plugin and hooks system both load from the filesystem at CLI startup (<code>.github/hooks/</code>,
+<code>.github/plugin/</code>, <code>~/.copilot/hooks/</code>) rather than depending on how the parent process invokes
+it, running Copilot CLI under any of the subprocess-spawning orchestrators above (CCManager,
+vibe-kanban, herdr, Claude Squad-style tools, T3 Code if/when it adds Copilot support) should
+preserve <code>oh-my-copilot</code>&#39;s behavior as long as (a) the working directory still contains the
+relevant repo-level hook/plugin files, and (b) <code>$HOME</code>/<code>$COPILOT_HOME</code> is reachable from that
+subprocess. <strong>Container-isolated tools (Sculptor) are the one category where this could silently
+break</strong> unless config paths are explicitly mounted — worth testing directly and worth
+documenting in <code>oh-my-copilot</code>&#39;s own README as a known caveat.</li>
+<li><strong>ACP support in Copilot CLI (<code>copilot --acp</code>) is the most future-proof integration surface.</strong>
+Any ACP client (Zed&#39;s Agent Panel, Devin Desktop, Happy&#39;s beta ACP support, future orchestrators)
+can already drive Copilot CLI headlessly. It&#39;s worth verifying empirically whether
+<code>oh-my-copilot</code>&#39;s slash-commands/hooks still fire when Copilot CLI is launched in <code>--acp</code> mode
+rather than its normal interactive mode — ACP sessions may bypass some interactive-only UX
+paths (e.g., certain prompt/confirmation flows), so this should not be assumed without testing.</li>
+<li><strong>Terminal status-reporting is a cheap, high-leverage addition.</strong> Neither Copilot CLI nor
+(as far as this research found) <code>oh-my-copilot</code> currently emits Rex&#39;s OSC 7501 &quot;Program Status
+Protocol,&quot; even though herdr already has first-class Copilot CLI detection via screen-scraping.
+Adding native OSC 7501 emission (idle/working/waiting/finished/failed + reason) to Copilot
+CLI/<code>oh-my-copilot</code> would make Copilot CLI sessions show up with full-fidelity status in Rex&#39;s
+Activity Mode (and any other tool that adopts the open protocol) without needing per-tool
+plugin code — a good target for a future <code>oh-my-copilot</code> feature or upstream Copilot CLI
+request.
+(protocol doc: <a href="https://www.superlogical.com/rex/docs/build/program-status">https://www.superlogical.com/rex/docs/build/program-status</a>)
+Similarly, <code>oh-my-copilot</code> could document a herdr &quot;integration&quot; manifest/skill
+(<a href="https://herdr.dev/docs/add-herdr-support/">https://herdr.dev/docs/add-herdr-support/</a>) to make Copilot CLI sessions resumable across herdr
+server restarts, matching what Claude Code/Codex/OpenCode/Pi already get.
+(<a href="https://herdr.dev/docs/agent-skill/">https://herdr.dev/docs/agent-skill/</a>)</li>
+<li><strong>Worktree-centric orchestrators are the primary audience to design for.</strong> Since the large
+majority of local tools in this space (Orca, T3 Code, Claude Squad, vibe-kanban, CCManager, uzi,
+Nimbalyst, Happy, Amp Runners) use <code>git worktree</code>-per-task as their isolation unit,
+<code>oh-my-copilot</code> features that assume a single canonical working directory (e.g., caching paths,
+state files keyed only by repo URL rather than worktree path) could misbehave when multiple
+Copilot CLI instances run concurrently across sibling worktrees of the same repo. Session/cache
+state should be keyed by worktree path, not just repo identity.</li>
+<li><strong>Explicit first-class Copilot CLI support currently exists in:</strong> herdr (state detection +
+resumable integration), vibe-kanban (spawnable executor), CCManager (spawnable preset), Zed /
+ACP registry (native ACP agent), and GitHub&#39;s own Agent HQ/mission control (first-party). It is
+<strong>missing</strong> from T3 Code, Conductor, Claude Squad, uzi, and Rex&#39;s native status protocol as of
+this research — these are concrete targets if <code>oh-my-copilot</code> or the broader Copilot CLI team
+wants to pursue first-party adoption/visibility in those ecosystems.</li>
+</ul>
+<hr>
+<h2 id="11-gaps-and-uncertainties-consolidated">11. Gaps and uncertainties (consolidated)</h2>
+<ul>
+<li><strong>Terragon:</strong> site is shutdown-only; historical product details (pricing, exact harness-driving
+mechanism) rely on secondary sites (devboxer.com, codeherder.com) not independently
+cross-verified.</li>
+<li><strong>Omnara:</strong> current docs/README&#39;s generic &quot;managed agent platform&quot; framing is hard to fully
+reconcile with its well-documented 2025 Claude-Code-specific mobile launch; mobile-app and
+Cursor/Codex/Copilot integration claims rest on secondary sources (YC launch page, and others)
+not re-confirmed on the current official repo/docs.</li>
+<li><strong>Sculptor pricing tiers</strong> (reported free ≤3 agents, paid &quot;Professional&quot; tier) came from
+secondary review sites, not an official Imbue pricing page (<code>imbue.com/pricing</code> returned 404
+during this research).</li>
+<li><strong>Conductor:</strong> no public GitHub repo, so no stars/activity/license transparency; exact
+process-spawning mechanism for bundled harnesses not documented publicly.</li>
+<li><strong>Amp&#39;s exact technical mechanism</strong> for parallel agent processes within one Orb/Runner (separate
+OS processes vs. logical threads in one process) was not found in public docs.</li>
+<li><strong>Cursor Cloud Agents&#39; exact current pricing/plan gating</strong> and the precise name/feature-set of
+&quot;Automations&quot; rest on secondary/blog sources, not independently re-verified against an official
+<code>cursor.com</code> page in this pass.</li>
+<li><strong>Codex Cloud&#39;s GitHub PR mechanics</strong> (<code>@codex</code> mentions, <code>codex-action</code>) were not independently
+refetched from an OpenAI primary source (<code>help.openai.com</code> returned HTTP 403 during this
+research); the core Codex Cloud workflow itself was verified directly.</li>
+<li><strong>Warp&#39;s &quot;Oz&quot;/multi-agent orchestration claims</strong> are unverified against an official Warp page (a
+direct fetch attempt 404&#39;d) — treat as uncertain pending a successful fetch of a Warp
+blog/changelog page.</li>
+<li><strong>Devin&#39;s enterprise dashboard details</strong> (SSO/SCIM/RBAC, Slack/Sentry/PagerDuty triggers) rely
+on secondary/Cognition-adjacent sources not independently refetched this pass; the Agent Command
+Center and &quot;Managed Devins&quot; core claims are, however, fully verified against primary Cognition
+sources.</li>
+<li><strong>OpenHands&#39; exact star/fork counts</strong> were confirmed directly via the GitHub API in this pass
+(~92.8k★/12.4k🍴) superseding an earlier, lower secondary-source estimate used mid-research.</li>
+<li><strong>The broader tmux-manager ecosystem</strong> (NTM, Agent-Manager, Agent of Empires, tmuxcc) descriptions
+come from a single aggregated secondary-source search response; only Claude Squad was
+independently fetched and confirmed from its own GitHub README — recommend direct repo fetches
+for the other four before citing specific feature claims elsewhere.</li>
+<li><strong>Orca&#39;s and T3 Code&#39;s GitHub star counts</strong> (~117k and ~48.6k respectively, pulled live via the
+GitHub API on 2026-11-06) are unusually high for projects created within the past ~8-9 months;
+this is reported as observed, but readers should sanity-check against each repo&#39;s own star
+history before treating these as a stable measure of &quot;true&quot; organic popularity.</li>
+<li><strong>Rex</strong> itself (the terminal application/server) could not be found on GitHub under an obvious
+org name, and no independent popularity/installed-base figures were found beyond its public-beta
+status and Discord community — treat its overall adoption level as <strong>unverified/early-stage</strong>.</li>
+</ul>
+<hr>
+<h2 id="12-sources">12. Sources</h2>
+<h3 id="orca">Orca</h3>
+<ul>
+<li><a href="https://github.com/stablyai/orca">https://github.com/stablyai/orca</a></li>
+<li><a href="https://www.onorca.dev/">https://www.onorca.dev/</a> (and docs subpages: <code>/docs/cli/orchestration</code>, <code>/docs/agents/native-chat</code>,
+<code>/docs/ways-to-run</code>, <code>/docs/mobile</code>, <code>/docs/review/annotate-ai-diff</code>, <code>/docs/review/commit-push</code>,
+<code>/docs/model/worktrees</code>, <code>/docs/browser/design-mode</code>, <code>/docs/review/linear</code>, <code>/docs/cli/overview</code>,
+<code>/docs/cli/automations</code>, <code>/docs/cli/computer-use</code>, <code>/plugins</code>)</li>
+<li><a href="https://apps.apple.com/us/app/orca-ide/id6766130217">https://apps.apple.com/us/app/orca-ide/id6766130217</a></li>
+<li><a href="https://github.com/okikorg/orca-harness">https://github.com/okikorg/orca-harness</a> (disambiguation)</li>
+<li><a href="https://orcapods.ai/blog/introducing-orcacode">https://orcapods.ai/blog/introducing-orcacode</a> (disambiguation)</li>
+</ul>
+<h3 id="t3-code">T3 Code</h3>
+<ul>
+<li><a href="https://github.com/pingdotgg/t3code">https://github.com/pingdotgg/t3code</a></li>
+<li><a href="https://t3.codes">https://t3.codes</a></li>
+<li><a href="https://apps.apple.com/us/app/t3-code-remote-claude-more/id6787819824">https://apps.apple.com/us/app/t3-code-remote-claude-more/id6787819824</a></li>
+<li><a href="https://www.youtube.com/watch?v=epSi9U87wz4">https://www.youtube.com/watch?v=epSi9U87wz4</a> (Orchestrator V2 walkthrough — secondary/video)</li>
+<li><a href="https://luminalog.com/blog/t3code-explained">https://luminalog.com/blog/t3code-explained</a> (secondary)</li>
+</ul>
+<h3 id="herdr">herdr</h3>
+<ul>
+<li><a href="https://github.com/herdrdev/herdr">https://github.com/herdrdev/herdr</a></li>
+<li><a href="https://herdr.dev/docs/session-state/">https://herdr.dev/docs/session-state/</a>, /docs/connecting-machines/, /docs/agent-skill/,
+/docs/agents/, /plugins/, /docs/add-herdr-support/</li>
+</ul>
+<h3 id="rex">Rex</h3>
+<ul>
+<li><a href="https://www.superlogical.com/rex/docs/">https://www.superlogical.com/rex/docs/</a></li>
+<li><a href="https://www.superlogical.com/rex/docs/build/program-status.md">https://www.superlogical.com/rex/docs/build/program-status.md</a> (OSC 7501)</li>
+<li><a href="https://www.superlogical.com/rex/docs/automate/agent-skill.md">https://www.superlogical.com/rex/docs/automate/agent-skill.md</a></li>
+<li><a href="https://github.com/irfn/rex-agents">https://github.com/irfn/rex-agents</a></li>
+<li><a href="https://en.theblockbeats.news/flash/371371">https://en.theblockbeats.news/flash/371371</a> (Rex Activity Mode announcement)</li>
+</ul>
+<h3 id="localdesktop-orchestrators">Local/desktop orchestrators</h3>
+<ul>
+<li><a href="https://www.conductor.build/">https://www.conductor.build/</a> , <a href="https://www.conductor.build/docs">https://www.conductor.build/docs</a>,
+<a href="https://www.conductor.build/docs/reference/harnesses">https://www.conductor.build/docs/reference/harnesses</a></li>
+<li><a href="https://github.com/smtg-ai/claude-squad">https://github.com/smtg-ai/claude-squad</a></li>
+<li><a href="https://github.com/BloopAI/vibe-kanban">https://github.com/BloopAI/vibe-kanban</a> , <a href="https://www.vibekanban.com/docs/supported-coding-agents">https://www.vibekanban.com/docs/supported-coding-agents</a> ,
+<a href="https://vibekanban.com/blog/shutdown">https://vibekanban.com/blog/shutdown</a></li>
+<li><a href="https://github.com/stravu/crystal">https://github.com/stravu/crystal</a> , <a href="https://github.com/Nimbalyst/nimbalyst">https://github.com/Nimbalyst/nimbalyst</a></li>
+<li><a href="https://github.com/imbue-ai/sculptor">https://github.com/imbue-ai/sculptor</a> , <a href="https://imbue.com/blog/sculptor-announce">https://imbue.com/blog/sculptor-announce</a></li>
+<li><a href="https://www.terragonlabs.com">https://www.terragonlabs.com</a> (shutdown page)</li>
+<li><a href="https://github.com/omnara-ai/omnara">https://github.com/omnara-ai/omnara</a> , <a href="https://docs.omnara.com/introduction">https://docs.omnara.com/introduction</a></li>
+<li><a href="https://github.com/slopus/happy">https://github.com/slopus/happy</a> , <a href="https://happy.engineering/welcome/">https://happy.engineering/welcome/</a></li>
+<li><a href="https://github.com/winfunc/opcode">https://github.com/winfunc/opcode</a></li>
+<li><a href="https://github.com/kbwo/ccmanager">https://github.com/kbwo/ccmanager</a></li>
+<li><a href="https://github.com/devflowinc/uzi">https://github.com/devflowinc/uzi</a></li>
+<li><a href="https://ampcode.com/docs">https://ampcode.com/docs</a> , <a href="https://ampcode.com/news/one-runner-many-worktrees">https://ampcode.com/news/one-runner-many-worktrees</a> ,
+<a href="https://ampcode.com/chronicle">https://ampcode.com/chronicle</a></li>
+</ul>
+<h3 id="cloud--ide-vendor-platforms--acp">Cloud / IDE-vendor platforms &amp; ACP</h3>
+<ul>
+<li><a href="https://cursor.com/docs/cloud-agent">https://cursor.com/docs/cloud-agent</a></li>
+<li><a href="https://learn.chatgpt.com/docs/cloud">https://learn.chatgpt.com/docs/cloud</a></li>
+<li><a href="https://github.blog/news-insights/product-news/github-copilot-meet-the-new-coding-agent/">https://github.blog/news-insights/product-news/github-copilot-meet-the-new-coding-agent/</a></li>
+<li><a href="https://github.blog/news-insights/company-news/welcome-home-agents/">https://github.blog/news-insights/company-news/welcome-home-agents/</a></li>
+<li><a href="https://github.blog/changelog/2025-10-28-a-mission-control-to-assign-steer-and-track-copilot-coding-agent-tasks/">https://github.blog/changelog/2025-10-28-a-mission-control-to-assign-steer-and-track-copilot-coding-agent-tasks/</a></li>
+<li><a href="https://github.blog/changelog/2026-01-28-acp-support-in-copilot-cli-is-now-in-public-preview/">https://github.blog/changelog/2026-01-28-acp-support-in-copilot-cli-is-now-in-public-preview/</a></li>
+<li><a href="https://docs.github.com/copilot/reference/acp-server">https://docs.github.com/copilot/reference/acp-server</a></li>
+<li><a href="https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-hooks">https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-hooks</a></li>
+<li><a href="https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-plugin-reference">https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-plugin-reference</a></li>
+<li><a href="https://jules.google/docs">https://jules.google/docs</a></li>
+<li><a href="https://cognition.com/blog/devin-can-now-manage-devins">https://cognition.com/blog/devin-can-now-manage-devins</a></li>
+<li><a href="https://docs.devin.ai/desktop/agent-command-center">https://docs.devin.ai/desktop/agent-command-center</a></li>
+<li><a href="https://github.com/OpenHands/OpenHands">https://github.com/OpenHands/OpenHands</a> , <a href="https://docs.openhands.dev/openhands/usage/sandboxes/docker">https://docs.openhands.dev/openhands/usage/sandboxes/docker</a> ,
+<a href="https://docs.openhands.dev/openhands/usage/run-openhands/acp">https://docs.openhands.dev/openhands/usage/run-openhands/acp</a></li>
+<li><a href="https://agentclientprotocol.com">https://agentclientprotocol.com</a> , <a href="https://agentclientprotocol.com/get-started/agents.md">https://agentclientprotocol.com/get-started/agents.md</a> ,
+<a href="https://agentclientprotocol.com/get-started/clients.md">https://agentclientprotocol.com/get-started/clients.md</a></li>
+<li><a href="https://zed.dev/docs/ai/external-agents">https://zed.dev/docs/ai/external-agents</a></li>
+</ul>
+<h3 id="github-repo-stats">GitHub repo stats</h3>
+<p>All star/fork/license/language/push-date figures were pulled live via
+<code>https://api.github.com/repos/&lt;owner&gt;/&lt;repo&gt;</code> on 2026-11-06.</p>
+</article><footer>Documentation claims are not compatibility tests. Source links and uncertainty labels are preserved from the Markdown reports. Rebuild with <code>npm run docs:html</code>.</footer>
+</main></div></body></html>
