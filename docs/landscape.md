@@ -10,7 +10,7 @@ the tools that manage them. It answers three questions:
 The research ran in November 2026. Read the [HTML edition](html/index.html) for section
 navigation, readable tables, and links between reports.
 The HTML files open locally without a server or external assets. Markdown is the source of
-truth; regenerate all five HTML pages with `npm ci` followed by `npm run docs:html`.
+truth; regenerate all six HTML pages with `npm ci` followed by `npm run docs:html`.
 
 The reports are a research snapshot, not an installed-version compatibility test. They mix
 primary documentation with explicitly flagged secondary evidence. A missing feature means it
@@ -23,6 +23,16 @@ flagged uncertainties, live in [`research/`](research/):
 | [02 — Native harnesses](research/02-native-harnesses.md) | Built-in capabilities of 14 harnesses versus Copilot |
 | [03 — Open-source projects](research/03-oss-projects.md) | Reusable tools: MCP servers, hooks, benchmarks |
 | [04 — Orchestrators](research/04-orchestrators.md) | Apps that run and coordinate several harnesses |
+| [05 — Superagent and EGM](research/05-superagent-and-egm.md) | DeepSeek's dsh-superagent and Google's Elephant-Goldfish Model, mapped to OMC's layer |
+
+## How to read these reports
+
+- **Short on time (10 minutes):** read the key findings, the candidate roadmap additions, and the
+  mapping table in [report 05](research/05-superagent-and-egm.md#mapping-to-omc).
+- **Full pass:** this page from top to bottom, then 05, then 02's capability comparison and 03's
+  top reuse picks. Read 01 and 04 when you need depth on OMP-style layers or orchestrators.
+- **Treat everything as a snapshot.** Star counts, versions, and "missing" features were true
+  in the reviewed sources at research time.
 
 ## Key findings
 
@@ -40,6 +50,11 @@ flagged uncertainties, live in [`research/`](research/):
 - **OMC's in-session layers are rare.** Most "oh-my-*" projects add agent teams and prompts.
   OMP is the only one found that adds tools such as a stream interrupt, an advisor, a debugger,
   or URL-scheme reads.
+- **Review with a fresh context, before code exists.** Google's EGM drafts a spec with a
+  context-rich agent and reviews it with zero-context subagents; it already ships an
+  experimental Copilot CLI adapter. OMC should integrate with it rather than copy it. DeepSeek's
+  dsh-superagent is mostly an orchestrator, but its "minimize human attention" prompts fit OMC
+  as an opt-in rule pack. See [report 05](research/05-superagent-and-egm.md).
 - **Many orchestrators run the user's own CLI in a git worktree.** OMC may work unchanged,
   but plugin loading, permissions, and interactive-only features need compatibility checks.
 
@@ -170,3 +185,8 @@ These are proposals, not decisions.
    use MCP where the native harness lacks a capability.
 6. **Orchestrator readiness:** worktree-keyed state, an ACP-mode test, and optional OSC 7501
    status.
+7. **EGM alongside OMC, plus a drift-report skill.** Test EGM's Copilot adapter in a disposable
+   `COPILOT_HOME`, document the install, and add a read-only skill that reports drift between
+   docs and code. See [report 05](research/05-superagent-and-egm.md#recommended-additions).
+8. **Low-attention rule pack and dry-run stream rules.** Opt-in prompts from dsh-superagent
+   (ask once, stop at named scope limits, honest delivery) and a log-only mode for stream rules.

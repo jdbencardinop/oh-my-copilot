@@ -10,6 +10,7 @@ const pages = [
   { source: "research/02-native-harnesses.md", output: "native-harnesses.html", title: "Native harness capabilities" },
   { source: "research/03-oss-projects.md", output: "oss-projects.html", title: "Open-source tools to study" },
   { source: "research/04-orchestrators.md", output: "orchestrators.html", title: "Managers and orchestrators" },
+  { source: "research/05-superagent-and-egm.md", output: "superagent-and-egm.html", title: "Superagent and EGM" },
 ];
 const escape = (text) => text.replace(/[&<>"']/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",

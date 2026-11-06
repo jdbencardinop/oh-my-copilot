@@ -27,8 +27,8 @@ hr{border:0;border-top:1px solid var(--border);margin:32px 0}img{max-width:100%}
 @media print{aside,.skip,.meta{display:none}.layout{display:block;padding:0}body{font-size:11pt;background:white;color:black}.table-scroll{max-height:none;overflow:visible}table{font-size:8pt}th{position:static}a{color:inherit}h2,h3{break-after:avoid}}
 </style></head>
 <body><a class="skip" href="#content">Skip to report</a><div class="layout">
-<aside><strong>Oh-my-copilot research</strong><nav aria-label="Reports"><a href="index.html" aria-current="page">Landscape overview</a><a href="omp-ecosystem.html">OMP and enhancement layers</a><a href="native-harnesses.html">Native harness capabilities</a><a href="oss-projects.html">Open-source tools to study</a><a href="orchestrators.html">Managers and orchestrators</a></nav>
-<details open><summary>On this page</summary><ol class="toc"><li><a href="#key-findings">Key findings</a></li><li><a href="#what-the-star-count-warning-meant">What the star-count warning meant</a></li><li><a href="#ast-grep-and-go-language-support">ast-grep and Go language support</a></li><li><a href="#what-base-copilot-cli-lacks">What base Copilot CLI lacks</a></li><li><a href="#omp-style-layers-for-other-harnesses">OMP-style layers for other harnesses</a></li><li><a href="#reuse-candidates-for-the-roadmap">Reuse candidates for the roadmap</a></li><li><a href="#orchestrators">Orchestrators</a></li><li><a href="#candidate-additions-to-the-roadmap">Candidate additions to the roadmap</a></li></ol></details></aside>
+<aside><strong>Oh-my-copilot research</strong><nav aria-label="Reports"><a href="index.html" aria-current="page">Landscape overview</a><a href="omp-ecosystem.html">OMP and enhancement layers</a><a href="native-harnesses.html">Native harness capabilities</a><a href="oss-projects.html">Open-source tools to study</a><a href="orchestrators.html">Managers and orchestrators</a><a href="superagent-and-egm.html">Superagent and EGM</a></nav>
+<details open><summary>On this page</summary><ol class="toc"><li><a href="#how-to-read-these-reports">How to read these reports</a></li><li><a href="#key-findings">Key findings</a></li><li><a href="#what-the-star-count-warning-meant">What the star-count warning meant</a></li><li><a href="#ast-grep-and-go-language-support">ast-grep and Go language support</a></li><li><a href="#what-base-copilot-cli-lacks">What base Copilot CLI lacks</a></li><li><a href="#omp-style-layers-for-other-harnesses">OMP-style layers for other harnesses</a></li><li><a href="#reuse-candidates-for-the-roadmap">Reuse candidates for the roadmap</a></li><li><a href="#orchestrators">Orchestrators</a></li><li><a href="#candidate-additions-to-the-roadmap">Candidate additions to the roadmap</a></li></ol></details></aside>
 <main id="content" tabindex="-1"><p class="meta">Research snapshot: November 2026 · <a href="../landscape.md">Markdown source</a></p>
 <article><h1 id="agent-harness-landscape">Agent harness landscape</h1>
 <p>This document compares oh-my-copilot (OMC) with OMP, with other coding-agent harnesses, and with
@@ -41,7 +41,7 @@ the tools that manage them. It answers three questions:</p>
 <p>The research ran in November 2026. Read the <a href="index.html">HTML edition</a> for section
 navigation, readable tables, and links between reports.
 The HTML files open locally without a server or external assets. Markdown is the source of
-truth; regenerate all five HTML pages with <code>npm ci</code> followed by <code>npm run docs:html</code>.</p>
+truth; regenerate all six HTML pages with <code>npm ci</code> followed by <code>npm run docs:html</code>.</p>
 <p>The reports are a research snapshot, not an installed-version compatibility test. They mix
 primary documentation with explicitly flagged secondary evidence. A missing feature means it
 was not found in the reviewed sources, not that it cannot exist. Full reports, with sources and
@@ -69,8 +69,21 @@ flagged uncertainties, live in <a href="../research"><code>research/</code></a>:
 <td><a href="orchestrators.html">04 — Orchestrators</a></td>
 <td>Apps that run and coordinate several harnesses</td>
 </tr>
+<tr>
+<td><a href="superagent-and-egm.html">05 — Superagent and EGM</a></td>
+<td>DeepSeek&#39;s dsh-superagent and Google&#39;s Elephant-Goldfish Model, mapped to OMC&#39;s layer</td>
+</tr>
 </tbody></table>
-</div><h2 id="key-findings">Key findings</h2>
+</div><h2 id="how-to-read-these-reports">How to read these reports</h2>
+<ul>
+<li><strong>Short on time (10 minutes):</strong> read the key findings, the candidate roadmap additions, and the
+mapping table in <a href="superagent-and-egm.html#mapping-to-omc">report 05</a>.</li>
+<li><strong>Full pass:</strong> this page from top to bottom, then 05, then 02&#39;s capability comparison and 03&#39;s
+top reuse picks. Read 01 and 04 when you need depth on OMP-style layers or orchestrators.</li>
+<li><strong>Treat everything as a snapshot.</strong> Star counts, versions, and &quot;missing&quot; features were true
+in the reviewed sources at research time.</li>
+</ul>
+<h2 id="key-findings">Key findings</h2>
 <ul>
 <li><strong>Anchored editing deserves an isolated benchmark.</strong> OMP&#39;s own benchmark reports hashline edits beating
 patch formats on 14 of 16 models. Two unrelated projects, gptme and PI-Desktop, adopted the
@@ -86,6 +99,11 @@ map, and a debugger.</li>
 <li><strong>OMC&#39;s in-session layers are rare.</strong> Most &quot;oh-my-*&quot; projects add agent teams and prompts.
 OMP is the only one found that adds tools such as a stream interrupt, an advisor, a debugger,
 or URL-scheme reads.</li>
+<li><strong>Review with a fresh context, before code exists.</strong> Google&#39;s EGM drafts a spec with a
+context-rich agent and reviews it with zero-context subagents; it already ships an
+experimental Copilot CLI adapter. OMC should integrate with it rather than copy it. DeepSeek&#39;s
+dsh-superagent is mostly an orchestrator, but its &quot;minimize human attention&quot; prompts fit OMC
+as an opt-in rule pack. See <a href="superagent-and-egm.html">report 05</a>.</li>
 <li><strong>Many orchestrators run the user&#39;s own CLI in a git worktree.</strong> OMC may work unchanged,
 but plugin loading, permissions, and interactive-only features need compatibility checks.</li>
 </ul>
@@ -375,6 +393,11 @@ through Harbor.</li>
 use MCP where the native harness lacks a capability.</li>
 <li><strong>Orchestrator readiness:</strong> worktree-keyed state, an ACP-mode test, and optional OSC 7501
 status.</li>
+<li><strong>EGM alongside OMC, plus a drift-report skill.</strong> Test EGM&#39;s Copilot adapter in a disposable
+<code>COPILOT_HOME</code>, document the install, and add a read-only skill that reports drift between
+docs and code. See <a href="superagent-and-egm.html#recommended-additions">report 05</a>.</li>
+<li><strong>Low-attention rule pack and dry-run stream rules.</strong> Opt-in prompts from dsh-superagent
+(ask once, stop at named scope limits, honest delivery) and a log-only mode for stream rules.</li>
 </ol>
 </article><footer>Documentation claims are not compatibility tests. Source links and uncertainty labels are preserved from the Markdown reports. Rebuild with <code>npm run docs:html</code>.</footer>
 </main></div></body></html>

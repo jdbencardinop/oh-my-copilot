@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Superagent and EGM | OMC research</title><style>
+:root{color-scheme:light dark;--background:light-dark(#f7f8fb,#11151d);--foreground:light-dark(#202c40,#e3e9f4);--muted:light-dark(#52617a,#acb9cc);--card:light-dark(#fff,#192231);--border:light-dark(#d5ddea,#344158);--primary:light-dark(#234db6,#9bbaff);--radius:12px;--font-sans:system-ui,sans-serif;--font-mono:ui-monospace,monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}
+body{margin:0;background:var(--background);color:var(--foreground);font:17px/1.7 var(--font-sans)}
+a{color:var(--primary);text-underline-offset:3px}a:hover{text-decoration-thickness:2px}
+a:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--primary);outline-offset:3px}
+.skip{position:absolute;left:12px;top:-80px;background:var(--card);padding:10px;z-index:2}.skip:focus{top:12px}
+.layout{display:grid;grid-template-columns:255px minmax(0,1fr);gap:38px;max-width:1600px;margin:auto;padding:30px}
+aside{position:sticky;top:24px;align-self:start;max-height:calc(100dvh - 48px);overflow:auto;font-size:14px}
+aside strong{display:block;margin-bottom:12px}nav a{display:block;padding:7px 10px;border-radius:6px}
+nav a[aria-current=page]{background:var(--card);font-weight:700}
+summary{cursor:pointer;font-weight:650;margin-top:24px}ol.toc{padding-left:22px}.toc li{margin:7px 0}
+main{min-width:0}article{max-width:1100px}.meta{color:var(--muted);font-size:14px}
+h1,h2,h3,h4{line-height:1.25;scroll-margin-top:24px}h1{font-size:clamp(30px,4vw,46px);margin:18px 0 24px}
+h2{font-size:27px;margin:50px 0 18px;border-bottom:1px solid var(--border);padding-bottom:10px}
+h3{font-size:22px;margin-top:32px}p,ul,ol{max-width:85ch}li{margin:7px 0}
+blockquote{border-left:4px solid var(--primary);margin:24px 0;padding:12px 20px;background:var(--card);border-radius:0 var(--radius) var(--radius) 0}
+blockquote p{margin:8px 0}code{font:0.88em var(--font-mono);overflow-wrap:anywhere;background:var(--card);padding:2px 5px;border-radius:4px}
+pre{background:var(--card);padding:18px;border:1px solid var(--border);border-radius:var(--radius);overflow:auto}pre code{padding:0;white-space:pre}
+.table-scroll{overflow:auto;max-height:75dvh;border:1px solid var(--border);border-radius:var(--radius);margin:24px 0}
+table{border-collapse:collapse;min-width:100%;font-size:14px;line-height:1.55}th,td{text-align:left;vertical-align:top;padding:12px 14px;border-bottom:1px solid var(--border);min-width:155px}
+th{position:sticky;top:0;background:var(--card);z-index:1}tr:last-child td{border-bottom:0}td p{margin:0}
+hr{border:0;border-top:1px solid var(--border);margin:32px 0}img{max-width:100%}footer{margin-top:50px;padding:24px 0;border-top:1px solid var(--border);font-size:14px;color:var(--muted)}
+@media(max-width:850px){.layout{grid-template-columns:minmax(0,1fr);padding:18px;gap:12px}aside{position:static;max-height:none}nav{display:flex;flex-wrap:wrap;gap:4px}aside details{margin-bottom:20px}h2{font-size:24px}}
+@media print{aside,.skip,.meta{display:none}.layout{display:block;padding:0}body{font-size:11pt;background:white;color:black}.table-scroll{max-height:none;overflow:visible}table{font-size:8pt}th{position:static}a{color:inherit}h2,h3{break-after:avoid}}
+</style></head>
+<body><a class="skip" href="#content">Skip to report</a><div class="layout">
+<aside><strong>Oh-my-copilot research</strong><nav aria-label="Reports"><a href="index.html">Landscape overview</a><a href="omp-ecosystem.html">OMP and enhancement layers</a><a href="native-harnesses.html">Native harness capabilities</a><a href="oss-projects.html">Open-source tools to study</a><a href="orchestrators.html">Managers and orchestrators</a><a href="superagent-and-egm.html" aria-current="page">Superagent and EGM</a></nav>
+<details open><summary>On this page</summary><ol class="toc"><li><a href="#summary">Summary</a></li><li><a href="#evidence-and-limits">Evidence and limits</a></li><li><a href="#dsh-superagent-in-brief">dsh-superagent in brief</a></li><li><a href="#egm-in-brief">EGM in brief</a></li><li><a href="#mapping-to-omc">Mapping to OMC</a></li><li><a href="#recommended-additions">Recommended additions</a></li><li><a href="#not-recommended">Not recommended</a></li></ol></details></aside>
+<main id="content" tabindex="-1"><p class="meta">Research snapshot: November 2026 · <a href="../research/05-superagent-and-egm.md">Markdown source</a></p>
+<article><h1 id="05--deepseek-superagent-and-googles-elephant-goldfish-model">05 — DeepSeek superagent and Google&#39;s Elephant-Goldfish Model</h1>
+<p>This report covers two projects the user asked to add: DeepSeek&#39;s
+<a href="https://github.com/deepseek-ai/dsh-superagent-prototype">dsh-superagent-prototype</a> and Google&#39;s
+<a href="https://github.com/google/elephant-goldfish-model">elephant-goldfish-model</a> (EGM). For each one,
+it answers three questions:</p>
+<ol>
+<li>What does OMC already have?</li>
+<li>What belongs in another layer, such as an orchestrator, a service, or the harness itself?</li>
+<li>What can OMC bring in?</li>
+</ol>
+<h2 id="summary">Summary</h2>
+<ul>
+<li><strong>EGM is the stronger candidate for OMC.</strong> It is a set of skills and agent files and works as
+a plugin. It already ships an experimental Copilot CLI adapter and an OMP plugin install. Its
+core idea also fits our layer: one agent keeps the full context and drafts the design (the
+&quot;elephant&quot;), and fresh subagents with no context review it (the &quot;goldfish&quot;). OMC should
+<strong>use EGM directly</strong> and reuse its patterns, not copy its skills.</li>
+<li><strong>dsh-superagent is mostly a different layer.</strong> It is a long-running service. It listens to
+GitHub and Feishu, decides which requests to take, opens tickets, and runs one worker session per
+ticket. That is orchestrator or service work, close to T3 Code or Copilot&#39;s cloud agent. Its
+prompt rules, however, carry over well: ask for attention only when needed, stop at defined
+scope limits, report delivery honestly, and keep a person&#39;s pause in force.</li>
+<li><strong>OMC already covers part of both.</strong> The <code>reviewer</code> agent is a fresh-context reviewer, rules
+give the model written policy, and the commit skill and anchored edits support delivery. What OMC lacks:
+design-stage review, a drift check from docs to code, and a &quot;low-attention&quot; working style.</li>
+</ul>
+<h2 id="evidence-and-limits">Evidence and limits</h2>
+<ul>
+<li>Both repositories were read at their default branch on 2026-11-06. dsh-superagent:
+MIT, about 20.2k stars, created 2026-10-31, last pushed 2026-11-03. EGM: Apache-2.0,
+about 13k stars, created 2026-09-13, pushed 2026-11-06.</li>
+<li><strong>The video transcripts could not be read.</strong> YouTube asked this machine to sign in
+(&quot;confirm you&#39;re not a bot&quot;), and the transcript service blocked its IP. Only the titles were
+confirmed, through YouTube&#39;s oEmbed endpoint. Both videos are by AI LABS:<ul>
+<li><a href="https://www.youtube.com/watch?v=3DklR44DHnM">3DklR44DHnM</a> — &quot;Deepseek Just Released The
+Greatest Claude Code Workflow Ever&quot;.</li>
+<li><a href="https://www.youtube.com/watch?v=xxf6D9jynFw">xxf6D9jynFw</a> — &quot;EGM: Google&#39;s New Way To Use
+Claude Code Is Insane&quot;.</li>
+</ul>
+</li>
+<li><strong>Secondary write-ups of the EGM video</strong> (<a href="https://daily.dev/posts/egm-google-s-new-way-to-plan-with-claude-code-is-insane-wnpdgfh5l">daily.dev</a>,
+<a href="https://www.ai.joaoqueiros.com/blog/elephant-goldfish-model-claude-code-spec-review-ai-labs">ai.joaoqueiros.com</a>)
+match the repository. The video&#39;s stages are bootstrap, brainstorm, draft, a review of up to
+five rounds, and a drift check. In the video&#39;s demo, the drift check found a real bug: the
+code allowed deleting a sold product that the spec said should only be hidden. The video calls
+EGM overkill for small fixes.</li>
+<li><strong>No reliable summary of the DeepSeek video was found.</strong> Search results described DeepSeek&#39;s
+model API in general. Per the user, the video recreates the superagent workflow by hand inside
+Claude Code. The analysis here therefore relies on the repository.</li>
+</ul>
+<h2 id="dsh-superagent-in-brief">dsh-superagent in brief</h2>
+<p>dsh-superagent is a research prototype that runs as a plugin inside <strong>DeepSeek Harness (DSH)</strong>.
+It is not an official DeepSeek product. It acts as an automated team member for one GitHub
+repository.</p>
+<ul>
+<li><strong>Flow.</strong> A <em>Source</em> (GitHub or Feishu) emits <em>Triggers</em>. An <em>Eval</em> step decides whether a
+batch of triggers asks for new work. On accept, it creates a <em>Ticket</em> with a <em>Mandate</em>: what the
+agent may do and why. An <em>Executor</em> runs one DSH session and one directory per ticket, and
+replies on the original thread.
+(<a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/main/docs/001-domain.md">001 Domain</a>)</li>
+<li><strong>Two roles.</strong> The main session (the orchestrator) only routes, with routing notes of 30 words
+or fewer. The workers read sources, implement, and verify. The orchestrator has 14 tools; each
+worker has 6, such as <code>orchestrator_report</code> and <code>orchestrator_trigger_handback</code>.</li>
+<li><strong>No waiting.</strong> A guard refuses <code>sleep</code>, shell timeouts over 30 seconds, and job waits over
+5 seconds in the main session. Reports arrive as messages instead.</li>
+<li><strong>Philosophy: minimize human attention.</strong> The agent acts only when asked or when a written
+rule allows it. Proactive rules start in a record-only mode. It speaks only when a person must
+act, and asks one structured question at a time.
+(<a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/main/docs/000-philosophy.md">000 Philosophy</a>)</li>
+<li><strong>Scope rules.</strong> A worker finishes focused changes through review and CI. It stops when a
+change would break caller expectations, change module responsibilities, or redesign several
+modules. It then leaves an explicitly incomplete draft PR and names the blocker.</li>
+<li><strong>Honest delivery.</strong> Opening a PR does not mean it is ready. A UI change needs real before and
+after screenshots. The agent never merges its own work, and enables auto-merge only under
+configured limits.</li>
+<li><strong>Per-role models</strong> (<code>src/app/role-models.ts</code>), a web panel that shows only items that need a
+person, and an agent-guided <code>SETUP.md</code>.</li>
+</ul>
+<h2 id="egm-in-brief">EGM in brief</h2>
+<p>EGM&#39;s motto is &quot;design with an elephant, review with a goldfish&quot;. A context-rich agent and the
+user write a spec. Then zero-context subagents stress-test it before any code is written.</p>
+<ul>
+<li><strong>Skills:</strong> <code>egm-bootstrap</code> (folder READMEs), <code>egm-brainstorm</code> (<code>concepts_brief.md</code>),
+<code>egm-draft</code> (<code>design_draft.md</code>, section by section), <code>egm-review</code> (staged subflows),
+<code>egm-review-loop</code> (review, resolve, repeat), <code>egm-resolve</code>, and <code>egm-drift-report</code>.</li>
+<li><strong>Reviewer personas:</strong> design critic, zoom out, comprehension, implementation readiness,
+structural, style, codebase details, inventive catalyst, plus a synthesizer.</li>
+<li><strong>A strict review contract.</strong> Each reviewer runs in a new child that receives only the target,
+the line ranges, its persona, the standards, and a reading list. It never gets the
+conversation. If the harness cannot start a fresh subagent, the review stops: &quot;a review in
+the same context is not a Goldfish review&quot;.</li>
+<li><strong>Anti-sycophancy rules.</strong> Critique comes first. The rules ban flattery and apologies. Each gate
+asks exactly one question. Large outputs go to files, not the chat.</li>
+<li><strong>Drift report.</strong> For each design doc or README, the skill finds the related code and reports
+only differences: missing features, incomplete models, hard-coded shortcuts, and
+architectural divergence.</li>
+<li><strong>Many harnesses, one skill text.</strong> Claude Code, Codex, Antigravity, OMP and others install the
+same plugin.
+(<a href="https://github.com/google/elephant-goldfish-model/blob/main/docs/harnesses.md">harnesses.md</a>)</li>
+</ul>
+<h3 id="egm-on-copilot-cli-today">EGM on Copilot CLI today</h3>
+<p>EGM&#39;s <a href="https://github.com/google/elephant-goldfish-model/blob/main/docs/copilot.md">Copilot guide</a>
+labels the adapter <strong>experimental</strong> and says workflow execution and reviewer isolation are <strong>unverified</strong>.</p>
+<ul>
+<li>It loads through <code>copilot --plugin-dir &quot;$EGM_ROOT&quot; --agent egm:egm</code>. The entry agent maps
+each persona to a native profile, such as <code>egm:egm-design</code>. Reviewers get only <code>read</code> and
+<code>search</code> and use <code>include-custom-instructions: false</code>.</li>
+<li>An offline test with CLI 1.0.82 confirmed that eight profiles and seven skills are discovered,
+using a disposable <code>COPILOT_HOME</code>, without calling a model.</li>
+<li>Its guide notes that <code>copilot plugin install</code> from a local path is unverified, and that a
+separate context window does not prove instructions or memory are isolated.</li>
+</ul>
+<h2 id="mapping-to-omc">Mapping to OMC</h2>
+<p>The table lists each idea and its fit. &quot;Our layer&quot; means an in-session Copilot CLI plugin:
+skills, agent files, extension tools, and hooks.</p>
+<div class="table-scroll" role="region" aria-label="Comparison table" tabindex="0"><table>
+<thead>
+<tr>
+<th>Idea</th>
+<th>Source</th>
+<th>OMC today</th>
+<th>Layer</th>
+<th>Recommendation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Fresh-context (goldfish) reviewers</td>
+<td>EGM</td>
+<td>Partial: the <code>reviewer</code> agent reviews diffs, not designs</td>
+<td>Ours</td>
+<td><strong>Bring in.</strong> Document EGM install next to OMC; add a design-review mode or persona</td>
+</tr>
+<tr>
+<td>Design workflow: brainstorm, draft, review, resolve</td>
+<td>EGM</td>
+<td>None</td>
+<td>Ours (skills)</td>
+<td><strong>Use EGM directly</strong>; do not fork its skills</td>
+</tr>
+<tr>
+<td>Drift report from docs to code</td>
+<td>EGM</td>
+<td>None</td>
+<td>Ours (skill)</td>
+<td><strong>Bring in.</strong> Small and useful in any repo; can reuse the reviewer&#39;s read-only setup</td>
+</tr>
+<tr>
+<td>Refuse to run without a fresh subagent</td>
+<td>EGM</td>
+<td>None</td>
+<td>Ours</td>
+<td><strong>Bring in</strong> to the reviewer: say so when it is not truly isolated</td>
+</tr>
+<tr>
+<td>Anti-sycophancy and one-question gates</td>
+<td>EGM, dsh</td>
+<td>Partial: reviewer asks for verdicts</td>
+<td>Ours (prompts)</td>
+<td><strong>Bring in</strong> as a style rule or nudge option</td>
+</tr>
+<tr>
+<td>Per-skill test scenarios (<code>TEST.md</code>, <code>test_scenarios.yaml</code>)</td>
+<td>EGM</td>
+<td>Benchmark suites and 163 unit tests</td>
+<td>Ours (test)</td>
+<td><strong>Bring in</strong> for the commit skill and reviewer</td>
+</tr>
+<tr>
+<td>Offline plugin discovery test via SDK RPC</td>
+<td>EGM</td>
+<td>Manual checks in <code>COPILOT_HOME</code></td>
+<td>Ours (CI)</td>
+<td><strong>Bring in</strong> to the packaging item: zero model calls</td>
+</tr>
+<tr>
+<td>Low-attention working style: ask only when needed, honest delivery, scope stop rules</td>
+<td>dsh</td>
+<td>Partial: rules can carry it</td>
+<td>Ours (rule or output style)</td>
+<td><strong>Bring in</strong> as an optional rule pack</td>
+</tr>
+<tr>
+<td>A person&#39;s pause holds across turns and restarts</td>
+<td>dsh</td>
+<td>None</td>
+<td>Ours (hook + state)</td>
+<td>Consider; needs session state</td>
+</tr>
+<tr>
+<td>Record-only (dry-run) mode for new rules</td>
+<td>dsh</td>
+<td>None</td>
+<td>Ours</td>
+<td><strong>Bring in</strong> for stream rules: log fires before enforcing</td>
+</tr>
+<tr>
+<td>Per-role models</td>
+<td>dsh</td>
+<td>Deferred roadmap item 10</td>
+<td>Ours</td>
+<td>Fold into item 10 (per-model profiles)</td>
+</tr>
+<tr>
+<td>Main session must not wait or sleep</td>
+<td>dsh</td>
+<td>None</td>
+<td>Ours (<code>preToolUse</code> rule)</td>
+<td>Possible as a rule example, low priority</td>
+</tr>
+<tr>
+<td>Agent-guided setup (<code>SETUP.md</code>)</td>
+<td>dsh</td>
+<td>README only</td>
+<td>Ours (docs)</td>
+<td><strong>Bring in</strong> to packaging item 2</td>
+</tr>
+<tr>
+<td>Listening to GitHub and chat, admission, tickets</td>
+<td>dsh</td>
+<td>None</td>
+<td>Orchestrator or service</td>
+<td>Out of scope; Copilot cloud agent, T3 Code</td>
+</tr>
+<tr>
+<td>Panel, outbox, worker slots, retries</td>
+<td>dsh</td>
+<td>None</td>
+<td>Orchestrator</td>
+<td>Out of scope</td>
+</tr>
+<tr>
+<td>Reviewer credit and auto-merge rules</td>
+<td>dsh</td>
+<td>None</td>
+<td>Service or repo policy</td>
+<td>Out of scope; possibly a commit-skill note</td>
+</tr>
+</tbody></table>
+</div><h2 id="recommended-additions">Recommended additions</h2>
+<p>These are proposals, not decisions, and are listed in suggested order.</p>
+<ol>
+<li><strong>Recommend EGM alongside OMC.</strong> Add a short install note and test it in the disposable
+<code>COPILOT_HOME</code>. Check for agent name conflicts with <code>oh-my-copilot:reviewer</code>. EGM already
+asks whether reviewer isolation holds on Copilot, so test that before relying on it.</li>
+<li><strong>Drift-report skill.</strong> A read-only skill that compares design docs or READMEs with the code
+and reports only the differences. It complements EGM rather than duplicating its design flow.</li>
+<li><strong>Honest isolation in the reviewer.</strong> Add <code>include-custom-instructions: false</code> if Copilot
+honors it for plugin agents, and state the limits in the reviewer&#39;s output.</li>
+<li><strong>Low-attention rule pack.</strong> An opt-in rule set based on dsh&#39;s prompts: confirm once, ask one
+question, stop at named scope limits, do not call a draft ready, and keep a person&#39;s pause.</li>
+<li><strong>Dry-run mode for stream rules.</strong> Log matches without aborting so users can tune patterns
+safely.</li>
+<li><strong>Offline discovery test in CI</strong>, following EGM&#39;s SDK RPC probe. Use it for packaging.</li>
+</ol>
+<h2 id="not-recommended">Not recommended</h2>
+<ul>
+<li><strong>Rebuilding dsh-superagent inside OMC.</strong> Admission, tickets, and multi-session routing need a
+long-running process and Source connectors. That belongs in an orchestrator. OMC can make
+sessions behave better when an orchestrator runs them.</li>
+<li><strong>Forking EGM&#39;s skills.</strong> EGM keeps one skill text for every harness and is still evolving.
+Copying it would create drift. OMC should integrate with it and fill gaps.</li>
+</ul>
+</article><footer>Documentation claims are not compatibility tests. Source links and uncertainty labels are preserved from the Markdown reports. Rebuild with <code>npm run docs:html</code>.</footer>
+</main></div></body></html>
