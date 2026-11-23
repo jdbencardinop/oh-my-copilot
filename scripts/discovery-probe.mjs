@@ -52,7 +52,7 @@ if (!cli) {
   process.exit(0);
 }
 
-const { CopilotClient, RuntimeConnection } = await import("@github/copilot-sdk");
+const { CopilotClient, RuntimeConnection } = await import("@microsoft/copilot-sdk");
 
 let modelRequests = 0;
 const server = http.createServer((_req, res) => {
@@ -74,7 +74,8 @@ let session;
 
 try {
   client = new CopilotClient({
-    connection: RuntimeConnection.forStdio({
+    mode: "coding-agent",
+    runtime: RuntimeConnection.forSpawnedStdio({
       path: cli.bin,
       env: {
         ...process.env,
@@ -85,22 +86,28 @@ try {
         COPILOT_MODEL: "probe-model",
       },
     }),
-    useLoggedInUser: false,
-    logLevel: "error",
+    github: { useLoggedInUser: false },
+    observability: { logLevel: "error" },
   });
   await client.start();
 
   session = await client.createSession({
     model: "probe-model",
-    provider: { type: "openai", baseUrl, apiKey: "probe" },
-    pluginDirectories: [pluginDir],
-    enableExperimentalMode: true,
-    requestExtensions: true,
+    github: { capi: { enabled: false } },
+    inference: {
+      providers: [{ name: "probe", type: "openai", baseUrl, apiKey: "probe" }],
+      defaultProvider: "probe",
+    },
+    plugins: { directories: [pluginDir] },
+    experiments: { enableExperimentalMode: true },
+    extensions: { enabled: true },
     workingDirectory: home,
     // Allow only the extension to load; refuse every tool or shell request.
-    onPermissionRequest: (req) => ({
-      kind: req.kind === "extension-permission-access" ? "approve-once" : "reject",
-    }),
+    permissions: {
+      onRequest: (req) => ({
+        kind: req.kind === "extension-permission-access" ? "approve-once" : "reject",
+      }),
+    },
   });
 
   let extensions = [];

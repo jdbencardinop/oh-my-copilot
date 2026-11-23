@@ -163,7 +163,7 @@ The six benchmark tasks were subsequently tested below. Interactive sessions and
 
 ### Full benchmark: the plugin's own nudge
 
-On November 5, 2026, the current plugin at `79a9a22` ran all six tasks with no prompt hint or personal instructions file: two models, three repetitions, 36 runs. Copilot CLI was 1.0.106-9, with concurrency 4. Each run used a disposable Copilot home and repository; the main profile's settings checksum was unchanged. Stream rules and rule imports stayed off by default.
+On November 5, 2026, the plugin at original commit `79a9a22` ran all six tasks with no prompt hint or personal instructions file: two models, three repetitions, 36 runs. The equivalent commit in the sanitized public history is [`c974871`](https://github.com/jdbencardinop/oh-my-copilot/commit/c9748712d69762228e7ab5979c32e5a38e414b91). Copilot CLI was 1.0.106-9, with concurrency 4. Each run used a disposable Copilot home and repository; the main profile's settings checksum was unchanged. Stream rules and rule imports stayed off by default.
 
 **All 36 runs passed and used both anchored tools.** Haiku had one rejected anchor edit, then recovered successfully. Total reported usage was **93.59 AI credits**.
 

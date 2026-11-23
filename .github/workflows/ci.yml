@@ -36,7 +36,8 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Install Copilot CLI
-        run: npm install -g @github/copilot
+        # Keep this version compatible with the locked @microsoft/copilot-sdk.
+        run: npm install -g @github/copilot@1.0.114
       # Loads ./plugin in a throwaway COPILOT_HOME with no sign-in and a local
       # provider that rejects all requests, so no model is called.
       - run: npm run test:discovery -- --require

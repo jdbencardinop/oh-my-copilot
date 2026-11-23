@@ -379,7 +379,7 @@ npm run test:discovery
 
 It starts Copilot headless in a throwaway `COPILOT_HOME`, loads `./plugin`, and checks for the `reviewer` agent, the `commit` skill, the `omc` extension and its four tools. It needs no sign-in and makes no model calls: the model provider is a local server that rejects every request, and the probe fails if that server is called at all. If Copilot CLI is not installed, the probe skips; pass `-- --require` to make that a failure. Set `COPILOT_BIN` to test a specific Copilot binary.
 
-CI runs `npm test` on Node 20, 22 and 24, and the discovery probe against the latest Copilot CLI. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+CI runs `npm test` on Node 20, 22 and 24, and the discovery probe against Copilot CLI 1.0.114 with the locked SDK version. The probe requires compatible CLI and SDK protocol versions; if yours differ, set `COPILOT_BIN` to a compatible CLI or update and test the pair together. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 | Path | Contents |
 |---|---|
@@ -395,3 +395,7 @@ CI runs `npm test` on Node 20, 22 and 24, and the discovery probe against the la
 | `docs/investigation.md` | Research notes, feature map, and roadmap |
 | `docs/benchmark.md` | Stock Copilot vs oh-my-copilot edit benchmark |
 | `bench/` | Benchmark tasks, runner (`run.mjs`), report (`report.mjs`) and raw results. Running it uses AI credits. |
+
+## License
+
+[MIT](LICENSE).

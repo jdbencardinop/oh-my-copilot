@@ -11,7 +11,7 @@
     "test:discovery": "node scripts/discovery-probe.mjs"
   },
   "devDependencies": {
-    "@github/copilot-sdk": "^1.0.29",
+    "@microsoft/copilot-sdk": "^2.0.1",
     "marked": "^17.0.0"
   },
   "engines": {
