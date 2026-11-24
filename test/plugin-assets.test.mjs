@@ -271,6 +271,8 @@ test("the marketplace manifest points at the plugin and matches its manifest", (
   assert.equal(entry.version, manifest.version);
   assert.equal(entry.description, manifest.description);
   assert.equal(market.metadata.version, manifest.version);
+  const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+  assert.equal(pkg.version, manifest.version);
   assert.equal(typeof entry.source, "string");
   assert.ok(existsSync(join(root, entry.source, "plugin.json")), `${entry.source}/plugin.json is missing`);
 });

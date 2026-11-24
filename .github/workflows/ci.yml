@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
 
 permissions:
@@ -41,3 +42,17 @@ jobs:
       # Loads ./plugin in a throwaway COPILOT_HOME with no sign-in and a local
       # provider that rejects all requests, so no model is called.
       - run: npm run test:discovery -- --require
+
+  release-tag:
+    name: Tag matches plugin version
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare tag and plugin.json version
+        run: |
+          expected="v$(node -p "require('./plugin/plugin.json').version")"
+          if [ "$GITHUB_REF_NAME" != "$expected" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match plugin version $expected"
+            exit 1
+          fi
