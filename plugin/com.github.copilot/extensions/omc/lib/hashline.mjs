@@ -4,6 +4,8 @@
 const ALPHABET = "0123456789abcdefghjkmnpqrstvwxyz";
 const STALE_CONTEXT_RADIUS = 2;
 const STALE_PREVIEW_CHARS = 160;
+const MALFORMED_ECHO_CHARS = 80;
+const LINE_NUMBER_ECHO_DIGITS = 32;
 
 export class AnchorError extends Error {
   constructor(message) {
@@ -43,11 +45,19 @@ export function serializeDocument({ lines, eol, hasFinalNewline, bom }) {
   return bom + lines.join(eol) + (hasFinalNewline ? eol : "");
 }
 
+function clip(text, maxChars) {
+  return text.slice(0, maxChars).replace(/[\uD800-\uDBFF]$/, "");
+}
+
 export function formatLine(lineNumber, text, maxContentChars = Infinity) {
-  const preview = text.length > maxContentChars
-    ? text.slice(0, maxContentChars).replace(/[\uD800-\uDBFF]$/, "") + "… [truncated]"
-    : text;
+  const preview = text.length > maxContentChars ? clip(text, maxContentChars) + "… [truncated]" : text;
   return `${lineNumber}:${lineHash(text)}|${preview}`;
+}
+
+// JSON quoting keeps a pasted newline from passing as an anchored row in the error.
+function quoteMalformed(raw) {
+  if (raw.length <= MALFORMED_ECHO_CHARS) return JSON.stringify(raw);
+  return `${JSON.stringify(clip(raw, MALFORMED_ECHO_CHARS) + "…")} (${raw.length} characters, truncated)`;
 }
 
 /** Render lines [start, end] (1-based, inclusive) with anchors. */
@@ -66,34 +76,44 @@ export function parseAnchor(raw) {
   const upper = trimmed.toUpperCase();
   if (upper === "BOF" || upper === "EOF") return { special: upper };
   const m = /^(\d+)\s*:\s*([0-9a-z]{2})(?:\|.*)?$/is.exec(trimmed);
-  if (!m) throw new AnchorError(`Malformed anchor "${raw}". Expected LINE:HASH, for example "12:ab".`);
-  return { line: Number(m[1]), hash: m[2].toLowerCase() };
+  if (!m) throw new AnchorError(`Malformed anchor ${quoteMalformed(raw)}. Expected LINE:HASH, for example "12:ab".`);
+  // Echo the digits as written: Number() would print huge values as "1e+23".
+  const digits = m[1].replace(/^0+(?=\d)/, "");
+  const lineLabel = digits.length > LINE_NUMBER_ECHO_DIGITS ? `${digits.slice(0, LINE_NUMBER_ECHO_DIGITS)}…` : digits;
+  return { line: Number(digits), lineLabel, hash: m[2].toLowerCase() };
 }
 
 function describeStale(lines, anchor) {
-  const { line, hash } = anchor;
-  const label = `Anchor ${line}:${hash}`;
+  const { line, lineLabel, hash } = anchor;
+  const label = `Anchor ${lineLabel}:${hash}`;
   if (!lines.length) {
     return `${label} is out of range: the file is empty. To add content, use insert_after with anchor BOF.`;
   }
   const center = Math.max(1, Math.min(line, lines.length));
+  const first = Math.max(1, center - STALE_CONTEXT_RADIUS);
+  const last = Math.min(lines.length, center + STALE_CONTEXT_RADIUS);
   let msg;
+  const nearby = [];
   if (line !== center) {
     msg = `${label} is out of range; the file has ${lines.length} line(s).`;
   } else {
     msg = `${label} is stale.`;
-    const nearby = [];
     for (let d = 1; d <= 50 && nearby.length < 3; d++) {
       for (const n of [line - d, line + d]) {
         if (n >= 1 && n <= lines.length && lineHash(lines[n - 1]) === hash) {
-          nearby.push(`${n}:${hash}`);
+          nearby.push(n);
           if (nearby.length === 3) break;
         }
       }
     }
-    if (nearby.length) msg += ` The same hash appears at ${nearby.join(", ")} (possible matches only).`;
+    if (nearby.length) msg += ` The same hash appears at ${nearby.map((n) => `${n}:${hash}`).join(", ")} (possible matches only).`;
   }
-  const context = renderAnchored(lines, center - STALE_CONTEXT_RADIUS, center + STALE_CONTEXT_RADIUS, STALE_PREVIEW_CHARS);
+  let context = renderAnchored(lines, first, last, STALE_PREVIEW_CHARS);
+  const outside = nearby.filter((n) => n < first || n > last);
+  if (outside.length) {
+    const rows = outside.map((n) => formatLine(n, lines[n - 1], STALE_PREVIEW_CHARS)).join("\n");
+    context += `\nPossible matches outside these lines (verify before using):\n${rows}`;
+  }
   return `${msg} No edits applied. Check the target before retrying; use read_anchored if unsure.\nCurrent lines:\n${context}`;
 }
 

@@ -37,8 +37,9 @@ test("parseDocument/serializeDocument round-trip EOL, final newline, and BOM", (
 });
 
 test("parseAnchor accepts pasted display lines and special anchors", () => {
-  assert.deepEqual(parseAnchor(" 12:AB "), { line: 12, hash: "ab" });
-  assert.deepEqual(parseAnchor("3:x9|  return x;"), { line: 3, hash: "x9" });
+  assert.deepEqual(parseAnchor(" 12:AB "), { line: 12, lineLabel: "12", hash: "ab" });
+  assert.deepEqual(parseAnchor("3:x9|  return x;"), { line: 3, lineLabel: "3", hash: "x9" });
+  assert.deepEqual(parseAnchor("007:ab"), { line: 7, lineLabel: "7", hash: "ab" });
   assert.deepEqual(parseAnchor("eof"), { special: "EOF" });
   assert.throws(() => parseAnchor("12"), AnchorError);
   assert.throws(() => parseAnchor(12), AnchorError);
@@ -150,6 +151,50 @@ test("nearby matching hashes are hints even when different lines collide", () =>
   assert.equal(lineHash("item 44"), hash);
   const msg = rejectionMessage(lines, `4:${hash}`);
   assert.ok(msg.includes(`The same hash appears at 2:${hash}, 6:${hash}, 1:${hash} (possible matches only)`));
+  const [, outside] = msg.split("\nPossible matches outside these lines (verify before using):\n");
+  assert.equal(outside, formatLine(1, "item 44"), "only matches outside the shown window get an extra row");
+});
+
+test("possible matches outside the shown window include their current content", () => {
+  const lines = Array.from({ length: 30 }, (_, i) => `row number ${i + 1}`);
+  lines[19] = "moved target";
+  const hash = lineHash("moved target");
+  const collisions = lines.flatMap((text, i) => (i !== 19 && lineHash(text) === hash ? [i + 1] : []));
+  assert.deepEqual(collisions, [], "fixture must have a single possible match");
+  const msg = rejectionMessage(lines, `5:${hash}`);
+  assert.ok(msg.includes(`The same hash appears at 20:${hash} (possible matches only).`));
+  const [current, outside] = msg.split("\nPossible matches outside these lines (verify before using):\n");
+  assert.deepEqual(
+    current.split("\n").filter((row) => /^\d+:\w{2}\|/.test(row)),
+    lines.slice(2, 7).map((text, i) => formatLine(3 + i, text)),
+  );
+  assert.equal(outside, formatLine(20, "moved target"));
+  assert.equal(applyEdits(lines, [{ op: "delete", start: `20:${hash}` }]).lines.length, 29, "the shown anchor is current");
+});
+
+test("malformed anchors are echoed briefly, on one line", () => {
+  const long = "x".repeat(79) + "🙂" + "y".repeat(5000);
+  const msg = rejectionMessage(["a"], long);
+  assert.ok(msg.length < 250, `error contained ${msg.length} characters`);
+  assert.ok(msg.includes(`Malformed anchor "${"x".repeat(79)}…" (${long.length} characters, truncated).`));
+  assert.doesNotMatch(msg, /\\ud83d/i, "no half of a split emoji");
+
+  const pasted = rejectionMessage(["a"], "1:zz\n2:ab|spoofed row");
+  assert.ok(pasted.includes(String.raw`Malformed anchor "1:zz\n2:ab|spoofed row"`));
+  assert.doesNotMatch(pasted, /^\d+:\w{2}\|/m, "a pasted newline must not look like a current row");
+});
+
+test("huge line numbers are echoed as written, within a bound", () => {
+  const lines = ["a", "b", "c"];
+  const big = rejectionMessage(lines, "100000000000000000000000:ab");
+  assert.match(big, /^edits\[0\]: Anchor 100000000000000000000000:ab is out of range; the file has 3 line\(s\)\./);
+  assert.doesNotMatch(big, /e\+/);
+  assert.match(rejectionMessage(lines, "9007199254740993:ab"), /Anchor 9007199254740993:ab is out of range/);
+
+  const enormous = rejectionMessage(lines, `${"9".repeat(5000)}:ab`);
+  assert.ok(enormous.includes(`Anchor ${"9".repeat(32)}…:ab is out of range`));
+  assert.doesNotMatch(enormous, /Infinity/);
+  assert.ok(enormous.length < 400, `error contained ${enormous.length} characters`);
 });
 
 test("applyEdits rejects overlaps, reversed ranges, out-of-range anchors, bad ops", () => {

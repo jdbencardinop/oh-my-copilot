@@ -87,7 +87,7 @@ So the plugin tells them. On the first prompt of each session, it adds this note
 Use `read_anchored` and `edit_anchored` to read and edit existing text files, instead of `view` and `edit`. Read the file with `read_anchored` first, then edit it with `edit_anchored` using the `LINE:HASH` anchors it returns. If an anchor is rejected, retry with a current anchor from the error only if you recognize the target; otherwise use `read_anchored` again. If these tools are not available or report that they are turned off, use `view` and `edit` as usual. Use `create` only for new files.
 ```
 
-- **It costs about 100 tokens once per session.** The note stays in the conversation, so later prompts add nothing.
+- **It costs about 130 tokens once per session.** The note stays in the conversation, so later prompts add nothing.
 - **It follows the kill switches.** No note is sent while `hashline` or `nudge` is off, from any source: `OMC_DISABLE`, `OMC_DISABLE_FEATURES`, a config file, `/omc off`, or the circuit breaker. If you turn it off after the note was sent, the next prompt tells the model to go back to the built-in tools. Turning it back on sends the note again. Use the same form you turned it off with: `/omc on` after `/omc off`, or `/omc on nudge` after `/omc off nudge`. A bare `/omc on` does not clear per-feature overrides.
 - **It is checked.** In a [small live check](docs/benchmark.md#spot-check-the-plugins-own-nudge), 3 of 3 runs used the anchored tools with no hint in the prompt, and a run with `OMC_DISABLE=1` used the built-in tools.
 
@@ -97,7 +97,7 @@ To keep the anchored tools but stop the note, use `/omc off nudge`, `OMC_DISABLE
 
 If an anchor is stale or out of range, `edit_anchored` rejects the whole batch. The error shows the current line and up to two lines on either side. For a request past the end, the preview ends at the last line; for line `0`, it starts at the first. Long lines are shortened for display, but their anchors still hash the full line as usual.
 
-If you recognize the target, use its displayed `LINE:HASH` and resubmit the batch. If the preview is ambiguous or the target is missing, use `read_anchored` to inspect the intended range first. Nearby lines with the same short hash are hints, not proof that the text moved. The tool never relocates an edit. An empty file has no numbered anchors; to add its first line, use `insert_after` with `BOF`.
+If you recognize the target, use its displayed `LINE:HASH` and resubmit the batch. If the preview is ambiguous or the target is missing, use `read_anchored` to inspect the intended range first. Nearby lines with the same short hash are hints, not proof that the text moved; up to three within 50 lines are named, and any outside the preview are shown with their current content. The tool never relocates an edit. An empty file has no numbered anchors; to add its first line, use `insert_after` with `BOF`. A malformed anchor is quoted in the error, shortened to 80 characters.
 
 ## Resolve merge conflicts
 
