@@ -41,7 +41,7 @@ This repository is also a Copilot plugin marketplace. Its catalog is [`.github/p
    copilot plugin marketplace add jdbencardinop/oh-my-copilot#v0.1.0
    ```
 
-   Without a tag, Copilot follows `main`, and every update fetches the latest commit. `copilot plugin list` still shows the last release's version number, so it does not tell you which commit you have; the `ref` under `extraKnownMarketplaces` in Copilot's `settings.json` does.
+   Without a tag, Copilot follows `main`, and every update fetches the latest commit. `copilot plugin list` still shows the last release's version number, so it does not tell you which commit you have.
 
    To use a local checkout instead, pass its absolute path, such as `copilot plugin marketplace add "$PWD"`. Copilot can read a relative path as a GitHub `owner/repo`.
 
