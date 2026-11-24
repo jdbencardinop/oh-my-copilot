@@ -41,7 +41,7 @@ This repository is also a Copilot plugin marketplace. Its catalog is [`.github/p
    copilot plugin marketplace add jdbencardinop/oh-my-copilot#v0.1.0
    ```
 
-   Without `#v0.1.0`, Copilot follows `main`, and every update fetches the latest commit. `copilot plugin list` still shows the last release's version number, so it does not tell you which commit you have.
+   Without a tag, Copilot follows `main`, and every update fetches the latest commit. `copilot plugin list` still shows the last release's version number, so it does not tell you which commit you have; the `ref` under `extraKnownMarketplaces` in Copilot's `settings.json` does.
 
    To use a local checkout instead, pass its absolute path, such as `copilot plugin marketplace add "$PWD"`. Copilot can read a relative path as a GitHub `owner/repo`.
 
@@ -53,15 +53,15 @@ This repository is also a Copilot plugin marketplace. Its catalog is [`.github/p
 
 3. Start Copilot with `--experimental`, and type `/omc status` to confirm that the plugin is active.
 
-On a pinned install, `copilot plugin marketplace update oh-my-copilot` and `copilot plugin update oh-my-copilot@oh-my-copilot` stay on that release. To move to another release, add the marketplace again at the new tag. Copilot cannot change the tag of a registered marketplace, and removing the marketplace also uninstalls the plugin, so install it again afterwards:
+On a pinned install, `copilot plugin marketplace update oh-my-copilot` and `copilot plugin update oh-my-copilot@oh-my-copilot` stay on that release. To move to another release, add the marketplace again at the new tag, shown here as `vX.Y.Z`. Copilot cannot change the tag of a registered marketplace. Removing the marketplace needs `--force` while the plugin is installed, and it uninstalls the plugin without saying so, so install it again afterwards:
 
 ```bash
 copilot plugin marketplace remove oh-my-copilot --force
-copilot plugin marketplace add jdbencardinop/oh-my-copilot#v0.1.0   # the new tag
+copilot plugin marketplace add jdbencardinop/oh-my-copilot#vX.Y.Z
 copilot plugin install oh-my-copilot@oh-my-copilot
 ```
 
-Your settings and rules in `~/.copilot/omc/` are kept. On an unpinned install, the two update commands fetch the latest `main`. A plugin installed from a local marketplace loads straight from your checkout, so code changes take effect the next time you start Copilot.
+Your settings and rules in `~/.copilot/omc/` (or `$COPILOT_HOME/omc/`) are kept. On an unpinned install, the two update commands fetch the latest `main`. A plugin installed from a local marketplace loads straight from your checkout, so code changes take effect the next time you start Copilot.
 
 `copilot plugin install ./plugin` also still works, but Copilot warns that installing from a local path is deprecated, and it installs a copy that you must reinstall after each change.
 
@@ -399,7 +399,7 @@ CI runs `npm test` on Node 20, 22 and 24, and the discovery probe against Copilo
 
 ### Release
 
-1. In one pull request, set the new version in `plugin/plugin.json`, in both places in `.github/plugin/marketplace.json`, and in `package.json`, and update the `#vX.Y.Z` install command above. `npm test` fails if the versions differ.
+1. In one pull request, set the new version in `plugin/plugin.json`, in both places in `.github/plugin/marketplace.json`, and in `package.json`, and update the tag in the first command of [Install from the marketplace](#install-from-the-marketplace). `npm test` fails if the versions differ.
 2. Merge it once CI passes.
 3. Tag the merge commit as `vX.Y.Z` and push the tag. CI runs on the tag and fails if the tag does not match the plugin version.
 4. Create a GitHub release from the tag.
