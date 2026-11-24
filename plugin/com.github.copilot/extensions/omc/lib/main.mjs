@@ -28,12 +28,11 @@ const MAX_READ_LINES = 2000;
 const MAX_READ_CHARS = 200_000;
 
 // Hidden context added to a prompt so the model picks the anchored tools
-// without a user-written instructions file. It is the instructions-file text
-// from the benchmark spot check, plus "or report that they are turned off".
+// without a user-written instructions file.
 export const NUDGE =
   "Use `read_anchored` and `edit_anchored` to read and edit existing text files, instead of `view` and `edit`. " +
   "Read the file with `read_anchored` first, then edit it with `edit_anchored` using the `LINE:HASH` anchors it returns. " +
-  "If an anchored edit is rejected as stale, read the file again. " +
+  "If an anchor is rejected, retry with a current anchor from the error only if you recognize the target; otherwise use `read_anchored` again. " +
   "If these tools are not available or report that they are turned off, use `view` and `edit` as usual. " +
   "Use `create` only for new files.";
 export const NUDGE_OFF =
@@ -480,8 +479,8 @@ export async function start(joinSession) {
         '{op:"replace", start, end?, content} replaces lines start..end (inclusive); ' +
         '{op:"delete", start, end?}; {op:"insert_after", anchor, content}; {op:"insert_before", anchor, content}. ' +
         'Inserts also accept anchor "BOF" or "EOF". content is the full new text of those lines, newline-separated. ' +
-        "All anchors refer to the file as last read and are checked first; if any line changed, nothing is written " +
-        "and you should read_anchored again. Edits in one call must not overlap. Returns fresh anchors around each change.",
+        "Edits must not overlap. Anchors are checked before writing. A stale or out-of-range anchor rejects the whole batch. " +
+        "Check the current lines in the error before retrying, or use read_anchored for more context. Returns fresh anchors around each change.",
       parameters: {
         type: "object",
         properties: {

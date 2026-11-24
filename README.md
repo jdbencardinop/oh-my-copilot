@@ -6,7 +6,7 @@ oh-my-copilot is a GitHub Copilot CLI plugin that brings ideas from [oh-my-pi](h
 
 It adds five things to Copilot:
 
-- **Hash-anchored editing.** `read_anchored` shows each line as `LINE:HASH|content`. `edit_anchored` then edits by anchor, for example `12:ab`, instead of retyping the old text. If the file changed since it was read, the edit is rejected and nothing is written. The plugin tells the model to prefer these tools, so you do not have to.
+- **Hash-anchored editing.** `read_anchored` shows each line as `LINE:HASH|content`. `edit_anchored` then edits by anchor, for example `12:ab`, instead of retyping the old text. If an anchor no longer matches, nothing is written. The error shows current lines you can use to retry. The plugin tells the model to prefer these tools, so you do not have to.
 - **Merge-conflict tools.** `list_conflicts` gives each conflict an id and shows ours, base and theirs. `resolve_conflicts` resolves conflicts by id with `ours`, `theirs`, `base`, both sides, or custom text. See [Resolve merge conflicts](#resolve-merge-conflicts).
 - **Tool-call rules.** Rules in `rules.json` run before every tool call, and optionally after it. A rule can deny the call, ask the user, or add a note for the model. Rules can be scoped to files with globs such as `src/**/*.ts`.
 - **Optional rule imports.** Import Cursor, Cline and Windsurf instructions without copying them. This OMP-inspired behavior is added by OMC, not native Copilot. Imports are off by default; enable all sources or select individual files and directories.
@@ -84,7 +84,7 @@ The plugin adds two tools: **`read_anchored`** and **`edit_anchored`**. On their
 So the plugin tells them. On the first prompt of each session, it adds this note as hidden context (the `nudge` feature):
 
 ```text
-Use `read_anchored` and `edit_anchored` to read and edit existing text files, instead of `view` and `edit`. Read the file with `read_anchored` first, then edit it with `edit_anchored` using the `LINE:HASH` anchors it returns. If an anchored edit is rejected as stale, read the file again. If these tools are not available or report that they are turned off, use `view` and `edit` as usual. Use `create` only for new files.
+Use `read_anchored` and `edit_anchored` to read and edit existing text files, instead of `view` and `edit`. Read the file with `read_anchored` first, then edit it with `edit_anchored` using the `LINE:HASH` anchors it returns. If an anchor is rejected, retry with a current anchor from the error only if you recognize the target; otherwise use `read_anchored` again. If these tools are not available or report that they are turned off, use `view` and `edit` as usual. Use `create` only for new files.
 ```
 
 - **It costs about 100 tokens once per session.** The note stays in the conversation, so later prompts add nothing.
@@ -92,6 +92,12 @@ Use `read_anchored` and `edit_anchored` to read and edit existing text files, in
 - **It is checked.** In a [small live check](docs/benchmark.md#spot-check-the-plugins-own-nudge), 3 of 3 runs used the anchored tools with no hint in the prompt, and a run with `OMC_DISABLE=1` used the built-in tools.
 
 To keep the anchored tools but stop the note, use `/omc off nudge`, `OMC_DISABLE_FEATURES=nudge`, or `{"features": {"nudge": false}}`. Then you can still ask for the tools in a prompt (for example, "Use the read_anchored and edit_anchored tools to read and edit files."), or put the text above in `~/.copilot/copilot-instructions.md` or `.github/copilot-instructions.md`. The sentence "If these tools are not available…" keeps that fallback working when the plugin is off.
+
+### Retry a rejected anchored edit
+
+If an anchor is stale or out of range, `edit_anchored` rejects the whole batch. The error shows the current line and up to two lines on either side. For a request past the end, the preview ends at the last line; for line `0`, it starts at the first. Long lines are shortened for display, but their anchors still hash the full line as usual.
+
+If you recognize the target, use its displayed `LINE:HASH` and resubmit the batch. If the preview is ambiguous or the target is missing, use `read_anchored` to inspect the intended range first. Nearby lines with the same short hash are hints, not proof that the text moved. The tool never relocates an edit. An empty file has no numbered anchors; to add its first line, use `insert_after` with `BOF`.
 
 ## Resolve merge conflicts
 

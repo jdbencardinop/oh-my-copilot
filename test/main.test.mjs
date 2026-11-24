@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, test } from "node:test";
@@ -117,20 +117,31 @@ test("rules hook denies and adds context from project rules", async () => {
   assert.deepEqual(ctx, { additionalContext: "[omc rule ctx] file an issue" });
 });
 
-test("read_anchored then edit_anchored round-trips; stale anchors fail without writing", async () => {
+test("edit_anchored leaves a rejected batch unwritten and accepts an explicit retry from the error", async () => {
   const h = await boot();
   await h.pre("view", { path: "a.txt" });
+  const path = join(project, "a.txt");
+  const edit = (edits) => h.tool("edit_anchored").handler({ path: "a.txt", edits }, {});
   const read = await h.tool("read_anchored").handler({ path: "a.txt" }, {});
   assert.equal(typeof read, "string");
+  const one = /^(1:\w{2})\|one$/m.exec(read)[1];
   const two = /^(2:\w{2})\|two$/m.exec(read)[1];
-  const edited = await h.tool("edit_anchored").handler({ path: "a.txt", edits: [{ op: "replace", start: two, content: "TWO" }] }, {});
+  const edited = await edit([{ op: "replace", start: two, content: "TWO" }]);
   assert.match(edited, /Applied 1 edit/);
-  assert.equal(readFileSync(join(project, "a.txt"), "utf8"), "one\nTWO\nthree\n");
+  assert.equal(readFileSync(path, "utf8"), "one\nTWO\nthree\n");
 
-  const stale = await h.tool("edit_anchored").handler({ path: "a.txt", edits: [{ op: "delete", start: two }] }, {});
+  const firstEdit = { op: "replace", start: one, content: "ONE" };
+  utimesSync(path, 1, 1); // An identical rewrite would also change this timestamp.
+  const stale = await edit([firstEdit, { op: "delete", start: two }]);
   assert.equal(stale.resultType, "failure");
-  assert.match(stale.textResultForLlm, /stale/);
-  assert.equal(readFileSync(join(project, "a.txt"), "utf8"), "one\nTWO\nthree\n");
+  assert.match(stale.textResultForLlm, /edits\[1\]:.*stale/);
+  assert.equal(readFileSync(path, "utf8"), "one\nTWO\nthree\n");
+  assert.equal(statSync(path).mtimeMs, 1000);
+
+  const fresh = /^(2:\w{2})\|TWO$/m.exec(stale.textResultForLlm)[1];
+  const retry = await edit([firstEdit, { op: "delete", start: fresh }]);
+  assert.match(retry, /Applied 2 edit/);
+  assert.equal(readFileSync(path, "utf8"), "ONE\nthree\n");
 
   const missing = await h.tool("read_anchored").handler({ path: "nope.txt" }, {});
   assert.equal(missing.resultType, "failure");

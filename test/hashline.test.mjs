@@ -105,14 +105,51 @@ test("applyEdits rejects stale anchors and writes nothing", () => {
   assert.deepEqual(lines, ["alpha", "beta", "gamma"]);
 });
 
-test("stale anchor error points at a moved line", () => {
-  const before = ["x", "target", "y"];
-  const after = ["inserted", "x", "target", "y"];
-  const old = anchor(before, 2);
-  assert.throws(
-    () => applyEdits(after, [{ op: "delete", start: old }]),
-    (err) => err.message.includes(`3:${old.split(":")[1]}`),
-  );
+function rejectionMessage(lines, start) {
+  try {
+    applyEdits(lines, [{ op: "delete", start }]);
+  } catch (err) {
+    assert.ok(err instanceof AnchorError);
+    return err.message;
+  }
+  assert.fail(`Expected rejection of ${start}`);
+}
+
+test("rejected anchors show only current rows around the mismatch or nearest file boundary", () => {
+  const lines = ["first", "  indented", "", "changed", "trailing  ", "sixth", "last"];
+  for (const [n, first, last] of [[4, 2, 6], [1, 1, 3], [7, 5, 7], [0, 1, 3], [999, 5, 7]]) {
+    const msg = rejectionMessage(lines, `${n}:${lineHash("obsolete")}`);
+    assert.match(msg, n === 0 || n > lines.length ? /out of range.*7 line/ : /stale/);
+    assert.deepEqual(
+      msg.split("\n").filter((row) => /^\d+:\w{2}\|/.test(row)),
+      lines.slice(first - 1, last).map((text, i) => formatLine(first + i, text)),
+    );
+  }
+});
+
+test("an empty file has no numbered retry anchor", () => {
+  const msg = rejectionMessage([], "1:ab");
+  assert.match(msg, /out of range.*empty/);
+  assert.match(msg, /insert_after.*BOF/);
+  assert.doesNotMatch(msg, /^\d+:\w{2}\|/m);
+});
+
+test("huge lines have bounded previews with full-line hashes and no unbounded echo", () => {
+  const prefix = "x".repeat(159);
+  const lines = Array.from({ length: 5 }, (_, i) => prefix + "🙂" + String(i).repeat(100_000));
+  const msg = rejectionMessage(lines, `3:${lineHash("obsolete")}|${lines[2]}`);
+  assert.ok(msg.length < 1500, `error contained ${msg.length} characters`);
+  const rows = msg.split("\n").filter((row) => /^\d+:\w{2}\|/.test(row));
+  assert.deepEqual(rows, lines.map((_, i) => `${anchor(lines, i + 1)}|${prefix}… [truncated]`));
+  assert.equal(msg.split(prefix).length - 1, rows.length, "no second preview in the error header");
+});
+
+test("nearby matching hashes are hints even when different lines collide", () => {
+  const lines = ["item 44", "item 31", "third", "changed", "fifth", "item 44", "item 31"];
+  const hash = lineHash("item 31");
+  assert.equal(lineHash("item 44"), hash);
+  const msg = rejectionMessage(lines, `4:${hash}`);
+  assert.ok(msg.includes(`The same hash appears at 2:${hash}, 6:${hash}, 1:${hash} (possible matches only)`));
 });
 
 test("applyEdits rejects overlaps, reversed ranges, out-of-range anchors, bad ops", () => {

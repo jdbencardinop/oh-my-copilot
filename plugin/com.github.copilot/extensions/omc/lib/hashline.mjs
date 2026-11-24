@@ -2,6 +2,8 @@
 // Pure functions only: no file system access, so they are easy to test.
 
 const ALPHABET = "0123456789abcdefghjkmnpqrstvwxyz";
+const STALE_CONTEXT_RADIUS = 2;
+const STALE_PREVIEW_CHARS = 160;
 
 export class AnchorError extends Error {
   constructor(message) {
@@ -41,15 +43,18 @@ export function serializeDocument({ lines, eol, hasFinalNewline, bom }) {
   return bom + lines.join(eol) + (hasFinalNewline ? eol : "");
 }
 
-export function formatLine(lineNumber, text) {
-  return `${lineNumber}:${lineHash(text)}|${text}`;
+export function formatLine(lineNumber, text, maxContentChars = Infinity) {
+  const preview = text.length > maxContentChars
+    ? text.slice(0, maxContentChars).replace(/[\uD800-\uDBFF]$/, "") + "… [truncated]"
+    : text;
+  return `${lineNumber}:${lineHash(text)}|${preview}`;
 }
 
 /** Render lines [start, end] (1-based, inclusive) with anchors. */
-export function renderAnchored(lines, start = 1, end = lines.length) {
+export function renderAnchored(lines, start = 1, end = lines.length, maxContentChars) {
   const out = [];
   for (let n = Math.max(1, start); n <= Math.min(end, lines.length); n++) {
-    out.push(formatLine(n, lines[n - 1]));
+    out.push(formatLine(n, lines[n - 1], maxContentChars));
   }
   return out.join("\n");
 }
@@ -67,18 +72,29 @@ export function parseAnchor(raw) {
 
 function describeStale(lines, anchor) {
   const { line, hash } = anchor;
-  if (line < 1 || line > lines.length) {
-    return `Anchor ${line}:${hash} is out of range; the file has ${lines.length} line(s).`;
+  const label = `Anchor ${line}:${hash}`;
+  if (!lines.length) {
+    return `${label} is out of range: the file is empty. To add content, use insert_after with anchor BOF.`;
   }
-  let msg = `Anchor ${line}:${hash} is stale: line ${line} is now ${formatLine(line, lines[line - 1])}`;
-  const nearby = [];
-  for (let d = 1; d <= 50 && nearby.length < 3; d++) {
-    for (const n of [line - d, line + d]) {
-      if (n >= 1 && n <= lines.length && lineHash(lines[n - 1]) === hash) nearby.push(`${n}:${hash}`);
+  const center = Math.max(1, Math.min(line, lines.length));
+  let msg;
+  if (line !== center) {
+    msg = `${label} is out of range; the file has ${lines.length} line(s).`;
+  } else {
+    msg = `${label} is stale.`;
+    const nearby = [];
+    for (let d = 1; d <= 50 && nearby.length < 3; d++) {
+      for (const n of [line - d, line + d]) {
+        if (n >= 1 && n <= lines.length && lineHash(lines[n - 1]) === hash) {
+          nearby.push(`${n}:${hash}`);
+          if (nearby.length === 3) break;
+        }
+      }
     }
+    if (nearby.length) msg += ` The same hash appears at ${nearby.join(", ")} (possible matches only).`;
   }
-  if (nearby.length) msg += `. The same hash appears at ${nearby.join(", ")} (the line may have moved)`;
-  return msg;
+  const context = renderAnchored(lines, center - STALE_CONTEXT_RADIUS, center + STALE_CONTEXT_RADIUS, STALE_PREVIEW_CHARS);
+  return `${msg} No edits applied. Check the target before retrying; use read_anchored if unsure.\nCurrent lines:\n${context}`;
 }
 
 /** Verify an anchor against the current lines and return its 1-based line number. */
