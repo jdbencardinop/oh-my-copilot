@@ -7,7 +7,7 @@
   "description": "OMP-style harness upgrades for GitHub Copilot CLI.",
   "scripts": {
     "docs:html": "node docs/build-html.mjs",
-    "test": "node --test \"test/*.test.mjs\"",
+    "test": "cd test && node --test",
     "test:discovery": "node scripts/discovery-probe.mjs"
   },
   "devDependencies": {
